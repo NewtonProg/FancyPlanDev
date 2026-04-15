@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Impressum | FancyPlan</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #0d9488;
+        --primary-hover: #0f766e;
+        --primary-light: #f0fdfa;
+        --dark: #0f172a;
+        --text: #334155;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --bg: #fafafa;
+        --surface: #ffffff;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+        --max-width: 1200px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* NAVIGATION */
+      .nav {
+        position: sticky; top: 0; z-index: 100;
+        background: rgba(255,255,255,0.88);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-inner {
+        max-width: var(--max-width); margin: 0 auto; padding: 0 2rem;
+        display: flex; justify-content: space-between; align-items: center; height: 64px;
+      }
+      .logo { font-weight: 800; font-size: 1.35rem; color: var(--primary); text-decoration: none; letter-spacing: -0.02em; }
+      .logo span { color: var(--dark); }
+      .nav-links { display: flex; align-items: center; gap: 2rem; }
+      .nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+      .nav-links a:hover { color: var(--dark); }
+      .nav-cta { background: var(--primary); color: white !important; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); font-weight: 600 !important; transition: background 0.2s !important; }
+      .nav-cta:hover { background: var(--primary-hover) !important; }
+      .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+      .hamburger span { display: block; width: 22px; height: 2px; background: var(--dark); border-radius: 2px; transition: all 0.3s; }
+      .mobile-menu { display: none; position: absolute; top: 64px; left: 0; right: 0; background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; box-shadow: var(--shadow-lg); }
+      .mobile-menu.active { display: flex; flex-direction: column; gap: 1rem; }
+      .mobile-menu a { text-decoration: none; color: var(--text); font-size: 1rem; font-weight: 500; padding: 0.5rem 0; }
+      @media (max-width: 768px) { .nav-links { display: none; } .hamburger { display: flex; } }
+
+      /* CONTENT */
+      .content { max-width: 720px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+      .content h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; color: var(--dark); margin-bottom: 1.5rem; }
+      .content p { font-size: 1rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 1rem; }
+      .content h2 { font-size: 1.35rem; font-weight: 700; color: var(--dark); margin-top: 2.5rem; margin-bottom: 0.75rem; }
+      .content a { color: var(--primary); text-decoration: none; }
+      .content a:hover { text-decoration: underline; }
+      .last-updated { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+
+      /* FOOTER */
+      .footer { background: #0a0f1e; color: #94a3b8; padding: 4rem 2rem 2rem; }
+      .footer-inner { max-width: var(--max-width); margin: 0 auto; }
+      .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
+      @media (max-width: 768px) { .footer-top { grid-template-columns: 1fr; gap: 2rem; } }
+      .footer-brand .logo-footer { font-weight: 800; font-size: 1.35rem; color: var(--primary); text-decoration: none; letter-spacing: -0.02em; display: inline-block; margin-bottom: 0.75rem; }
+      .footer-brand .logo-footer span { color: #e2e8f0; }
+      .footer-brand p { font-size: 0.875rem; line-height: 1.6; color: #64748b; max-width: 280px; }
+      .footer-col h5 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem; }
+      .footer-col a { display: block; font-size: 0.875rem; color: #64748b; text-decoration: none; padding: 0.3rem 0; transition: color 0.2s; }
+      .footer-col a:hover { color: white; }
+      .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+      .footer-bottom p { font-size: 0.8rem; color: #475569; }
+      .footer-eu { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #64748b; }
+    </style>
+  </head>
+  <body>
+
+    <!-- NAVIGATION -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="index.html" class="logo">Fancy<span>Plan</span></a>
+        <div class="nav-links">
+          <a href="index.html#features">Features</a>
+          <a href="index.html#preise">Preise</a>
+          <a href="index.html#faq">FAQ</a>
+          <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="nav-cta" target="_blank" rel="noopener">Kostenlos starten</a>
+        </div>
+        <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('active')" aria-label="Men&uuml;">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div class="mobile-menu">
+        <a href="index.html#features" onclick="this.parentElement.classList.remove('active')">Features</a>
+        <a href="index.html#preise" onclick="this.parentElement.classList.remove('active')">Preise</a>
+        <a href="index.html#faq" onclick="this.parentElement.classList.remove('active')">FAQ</a>
+      </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main class="content">
+      <h1>Impressum</h1>
+      <p class="last-updated">Stand: April 2026</p>
+
+      <h2>Angaben gem&auml;&szlig; &sect; 5 TMG / Art. 5 ECG</h2>
+      <p>
+        InPrime.Net<br />
+        Hans Waschinski<br />
+        Kesklinna linnaosa, Sakala tn 7-2<br />
+        10141 Tallinn, Estonia
+      </p>
+      <p>Operated by Hans Waschinski, international SAP consultant and software developer.</p>
+
+      <h2>Kontakt</h2>
+      <p>
+        E-Mail: <a href="mailto:sapco.cslt@gmail.com">sapco.cslt@gmail.com</a><br />
+        Telefonnummer: +372 5934 5001
+      </p>
+
+      <h2>Umsatzsteuer-Identifikationsnummer</h2>
+      <p>VAT = EE102088292</p>
+
+      <h2>Handelsregister</h2>
+      <p>Registry code: 14340455</p>
+
+      <h2>Verantwortlich f&uuml;r den Inhalt gem&auml;&szlig; &sect; 18 Abs. 2 MStV</h2>
+      <p>
+        Hans Waschinski<br />
+        Kesklinna linnaosa, Sakala tn 7-2<br />
+        10141 Tallinn, Estonia
+      </p>
+
+      <h2>EU-Streitschlichtung</h2>
+      <p>
+        Die Europ&auml;ische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+        <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>
+      </p>
+      <p>Unsere E-Mail-Adresse finden Sie oben im Impressum.</p>
+
+      <h2>Verbraucherstreitbeilegung / Universalschlichtungsstelle</h2>
+      <p>
+        Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+      </p>
+
+      <h2>Haftung f&uuml;r Inhalte</h2>
+      <p>
+        Als Diensteanbieter sind wir gem&auml;&szlig; &sect; 7 Abs. 1 TMG f&uuml;r eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach &sect;&sect; 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, &uuml;bermittelte oder gespeicherte fremde Informationen zu &uuml;berwachen oder nach Umst&auml;nden zu forschen, die auf eine rechtswidrige T&auml;tigkeit hinweisen.
+      </p>
+
+      <h2>Haftung f&uuml;r Links</h2>
+      <p>
+        Unser Angebot enth&auml;lt Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb k&ouml;nnen wir f&uuml;r diese fremden Inhalte auch keine Gew&auml;hr &uuml;bernehmen. F&uuml;r die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
+      </p>
+
+      <h2>Urheberrecht</h2>
+      <p>
+        Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielf&auml;ltigung, Bearbeitung, Verbreitung und jede Art der Verwertung au&szlig;erhalb der Grenzen des Urheberrechtes bed&uuml;rfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
+      </p>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <a href="index.html" class="logo-footer">Fancy<span>Plan</span></a>
+            <p>Fokus-Tool f&uuml;r digitale Profis. Lokal, serverlos, sofort einsatzbereit unter Windows.</p>
+          </div>
+          <div class="footer-col">
+            <h5>Produkt</h5>
+            <a href="index.html#features">Features</a>
+            <a href="index.html#preise">Preise</a>
+            <a href="index.html#faq">FAQ</a>
+          </div>
+          <div class="footer-col">
+            <h5>Ressourcen</h5>
+            <a href="index.html#faq">FAQ</a>
+            <a href="mailto:sapco.cslt@gmail.com">Support</a>
+            <a href="mailto:sapco.cslt@gmail.com">Kontakt</a>
+          </div>
+          <div class="footer-col">
+            <h5>Rechtliches</h5>
+            <a href="impressum.html">Impressum</a>
+            <a href="datenschutz.html">Datenschutz</a>
+            <a href="agb.html">AGB</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 FancyPlan &ndash; Alle Rechte vorbehalten.</p>
+          <div class="footer-eu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+            Developed in the EU
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+</html>
