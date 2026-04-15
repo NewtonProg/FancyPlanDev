@@ -52,8 +52,10 @@
         max-width: var(--max-width); margin: 0 auto; padding: 0 2rem;
         display: flex; justify-content: space-between; align-items: center; height: 64px;
       }
-      .logo { font-weight: 800; font-size: 1.35rem; color: var(--primary); text-decoration: none; letter-spacing: -0.02em; }
+      .logo { font-weight: 800; font-size: 1.35rem; color: var(--primary); text-decoration: none; letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.5rem; }
       .logo span { color: var(--dark); }
+      .nav-logo-img { height: 30px; width: auto; display: block; }
+      .nav-eu-logo { height: 30px; width: auto; margin-left: 0.5rem; opacity: 0.9; flex-shrink: 0; }
       .nav-links { display: flex; align-items: center; gap: 2rem; }
       .nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
       .nav-links a:hover { color: var(--dark); }
@@ -99,12 +101,16 @@
     <!-- NAVIGATION -->
     <nav class="nav">
       <div class="nav-inner">
-        <a href="index.html" class="logo">Fancy<span>Plan</span></a>
+        <a href="index.html" class="logo">
+          <img src="assets/transparent/FP tr gr.png" class="nav-logo-img" alt="FancyPlan Icon" />
+          Fancy<span>Plan</span>
+        </a>
         <div class="nav-links">
           <a href="index.html#features">Features</a>
           <a href="index.html#preise">Preise</a>
           <a href="index.html#faq">FAQ</a>
           <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="nav-cta" target="_blank" rel="noopener">Kostenlos starten</a>
+          <img src="assets/eu_commission_logo_transparent.png" alt="Developed in the EU" class="nav-eu-logo" title="Developed in the European Union" />
         </div>
         <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('active')" aria-label="Men&uuml;">
           <span></span><span></span><span></span>

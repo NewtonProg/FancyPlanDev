@@ -9,6 +9,9 @@
       content="FancyPlan ist das lokale Windows-Tool f&uuml;r Profis, die aufh&ouml;ren wollen, beschäftigt zu sein &ndash; und anfangen wollen, das Richtige zu tun. Kein Server. Keine Ablenkung. Sofort starten."
     />
 
+    <link rel="icon" href="assets/icons/Fancy 16x16.ico" sizes="16x16" />
+    <link rel="icon" href="assets/icons/FancyPlan 256x256.ico" sizes="256x256" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -64,8 +67,11 @@
       .logo {
         font-weight: 800; font-size: 1.35rem; color: var(--primary);
         text-decoration: none; letter-spacing: -0.02em;
+        display: flex; align-items: center; gap: 0.5rem;
       }
       .logo span { color: var(--dark); }
+      .nav-logo-img { height: 30px; width: auto; display: block; }
+      .nav-eu-logo { height: 30px; width: auto; margin-left: 0.5rem; opacity: 0.9; flex-shrink: 0; }
       .nav-links { display: flex; align-items: center; gap: 2rem; }
       .nav-links a {
         text-decoration: none; color: var(--text-muted);
@@ -232,11 +238,25 @@
       .ui-focus-label { font-size: 0.75rem; font-weight: 600; color: var(--primary); }
       .ui-focus-val { font-size: 0.75rem; font-weight: 700; color: var(--primary); }
 
+      /* Hero real screenshot */
+      .hero-screenshot {
+        width: 100%; max-width: 520px; border-radius: 12px;
+        box-shadow: 0 20px 50px -8px rgba(0,0,0,0.18), 0 4px 16px -4px rgba(0,0,0,0.1);
+        border: 1px solid var(--border); display: block;
+      }
+
+      /* Step screenshots */
+      .step-screenshot {
+        width: 100%; border-radius: 8px; margin-top: 1rem;
+        box-shadow: var(--shadow-md); border: 1px solid var(--border);
+        display: block;
+      }
+
       @media (max-width: 900px) {
         .hero-inner { grid-template-columns: 1fr; gap: 3rem; }
         .hero-text h1 { font-size: 2.5rem; }
         .hero-visual { order: -1; }
-        .ui-mockup { max-width: 280px; }
+        .hero-screenshot { max-width: 100%; }
       }
       @media (max-width: 480px) {
         .hero { padding: 3rem 1.5rem; }
@@ -503,13 +523,17 @@
     <!-- NAVIGATION -->
     <nav class="nav">
       <div class="nav-inner">
-        <a href="#" class="logo">Fancy<span>Plan</span></a>
+        <a href="#" class="logo">
+          <img src="assets/transparent/FP tr gr.png" class="nav-logo-img" alt="FancyPlan Icon" />
+          Fancy<span>Plan</span>
+        </a>
         <div class="nav-links">
           <a href="#features">Features</a>
           <a href="#how-it-works">Wie es funktioniert</a>
           <a href="#preise">Preise</a>
           <a href="#faq">FAQ</a>
-          <a href="https://app.fancyplan.de" class="nav-cta">Kostenlos starten</a>
+          <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="nav-cta" target="_blank" rel="noopener">Kostenlos starten</a>
+          <img src="assets/eu_commission_logo_transparent.png" alt="Developed in the EU" class="nav-eu-logo" title="Developed in the European Union" />
         </div>
         <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('active')" aria-label="Men&uuml;">
           <span></span><span></span><span></span>
@@ -550,48 +574,13 @@
           </div>
         </div>
 
-        <!-- UI Mockup -->
+        <!-- App Screenshot -->
         <div class="hero-visual">
-          <div class="ui-mockup">
-            <div class="ui-mockup-header">
-              <div class="ui-dot red"></div>
-              <div class="ui-dot yellow"></div>
-              <div class="ui-dot green"></div>
-              <span class="ui-title">FancyPlan</span>
-              <span class="ui-date">Di, 15. Apr</span>
-            </div>
-
-            <div class="ui-section-label">Heute &mdash; Fokus</div>
-            <div class="ui-task focus">
-              <div class="ui-check priority"></div>
-              <span class="ui-task-text">Anforderungsanalyse abschlie&szlig;en</span>
-            </div>
-            <div class="ui-task focus">
-              <div class="ui-check priority"></div>
-              <span class="ui-task-text">Kundencall vorbereiten (14:00)</span>
-            </div>
-            <div class="ui-task normal">
-              <div class="ui-check"></div>
-              <span class="ui-task-text">Sprint-Review dokumentieren</span>
-            </div>
-
-            <div class="ui-divider"></div>
-
-            <div class="ui-section-label">Erledigt</div>
-            <div class="ui-task done">
-              <div class="ui-check checked"></div>
-              <span class="ui-task-text">Daily Stand-up</span>
-            </div>
-            <div class="ui-task done">
-              <div class="ui-check checked"></div>
-              <span class="ui-task-text">E-Mails priorisiert</span>
-            </div>
-
-            <div class="ui-focus-score">
-              <span class="ui-focus-label">Fokus-Score heute</span>
-              <span class="ui-focus-val">82 % &uarr;</span>
-            </div>
-          </div>
+          <img
+            src="assets/screenshots/FToday2.png"
+            alt="FancyPlan &ndash; Heute-Ansicht mit Fokus-Aufgaben"
+            class="hero-screenshot"
+          />
         </div>
       </div>
     </section>
@@ -668,18 +657,21 @@
             <div class="step-number">1</div>
             <h3>Erfassen</h3>
             <p>Alle Aufgaben, Projekte und Ideen an einem Ort sammeln &ndash; schnell und ohne Aufwand.</p>
+            <img src="assets/screenshots/FTreeEdit.png" class="step-screenshot" alt="FancyPlan Aufgaben in Baumstruktur erfassen" />
             <div class="step-connector"></div>
           </div>
           <div class="step">
             <div class="step-number">2</div>
             <h3>Priorisieren</h3>
             <p>FancyPlan erkennt automatisch, was heute wirklich wichtig ist &ndash; du best&auml;tigst nur noch.</p>
+            <img src="assets/screenshots/FAct_oben.png" class="step-screenshot" alt="FancyPlan Aktivit&auml;ten priorisieren" />
             <div class="step-connector"></div>
           </div>
           <div class="step">
             <div class="step-number">3</div>
             <h3>Fokussieren</h3>
             <p>Du siehst nur die Aufgaben des Tages &ndash; kein Rauschen, keine Ablenkung, nur Fortschritt.</p>
+            <img src="assets/screenshots/FToday1.png" class="step-screenshot" alt="FancyPlan Heute-Ansicht &ndash; nur das Wichtige" />
           </div>
         </div>
       </div>
