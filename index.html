@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FancyPlan | Jeden Tag wissen, was wirklich z&auml;hlt.</title>
+    <meta
+      name="description"
+      content="FancyPlan ist das lokale Windows-Tool f&uuml;r Profis, die aufh&ouml;ren wollen, beschäftigt zu sein &ndash; und anfangen wollen, das Richtige zu tun. Kein Server. Keine Ablenkung. Sofort starten."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #0d9488;
+        --primary-hover: #0f766e;
+        --primary-light: #f0fdfa;
+        --dark: #0f172a;
+        --text: #334155;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --bg: #fafafa;
+        --surface: #ffffff;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+        --max-width: 1200px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* ── NAVIGATION ── */
+      .nav {
+        position: sticky; top: 0; z-index: 100;
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-inner {
+        max-width: var(--max-width); margin: 0 auto; padding: 0 2rem;
+        display: flex; justify-content: space-between; align-items: center; height: 64px;
+      }
+      .logo {
+        font-weight: 800; font-size: 1.35rem; color: var(--primary);
+        text-decoration: none; letter-spacing: -0.02em;
+      }
+      .logo span { color: var(--dark); }
+      .nav-links { display: flex; align-items: center; gap: 2rem; }
+      .nav-links a {
+        text-decoration: none; color: var(--text-muted);
+        font-size: 0.9rem; font-weight: 500; transition: color 0.2s;
+      }
+      .nav-links a:hover { color: var(--dark); }
+      .nav-cta {
+        background: var(--primary); color: white !important;
+        padding: 0.5rem 1.25rem; border-radius: var(--radius-sm);
+        font-weight: 600 !important; transition: background 0.2s !important;
+      }
+      .nav-cta:hover { background: var(--primary-hover) !important; }
+      .hamburger {
+        display: none; flex-direction: column; gap: 5px;
+        cursor: pointer; background: none; border: none; padding: 4px;
+      }
+      .hamburger span {
+        display: block; width: 22px; height: 2px;
+        background: var(--dark); border-radius: 2px; transition: all 0.3s;
+      }
+      .mobile-menu {
+        display: none; position: absolute; top: 64px; left: 0; right: 0;
+        background: var(--surface); border-bottom: 1px solid var(--border);
+        padding: 1.5rem 2rem; box-shadow: var(--shadow-lg);
+      }
+      .mobile-menu.active { display: flex; flex-direction: column; gap: 1rem; }
+      .mobile-menu a {
+        text-decoration: none; color: var(--text);
+        font-size: 1rem; font-weight: 500; padding: 0.5rem 0;
+      }
+      @media (max-width: 768px) {
+        .nav-links { display: none; }
+        .hamburger { display: flex; }
+      }
+
+      /* ── BUTTONS ── */
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+        padding: 0.75rem 1.75rem; border-radius: var(--radius-sm);
+        font-weight: 600; font-size: 0.95rem; text-decoration: none;
+        text-align: center; transition: all 0.2s; cursor: pointer;
+        border: none; font-family: inherit;
+      }
+      .btn-primary { background: var(--primary); color: white; }
+      .btn-primary:hover {
+        background: var(--primary-hover); transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+      }
+      .btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+      .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+      .btn-dark { background: var(--dark); color: white; }
+      .btn-dark:hover { background: #1e293b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,23,42,0.25); }
+      .btn-lg { padding: 1rem 2.25rem; font-size: 1.05rem; }
+
+      /* ── SECTIONS ── */
+      .section { padding: 6rem 2rem; }
+      .section-inner { max-width: var(--max-width); margin: 0 auto; }
+      .section-header { text-align: center; margin-bottom: 4rem; }
+      .section-header h2 {
+        font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;
+        color: var(--dark); margin-bottom: 0.75rem;
+      }
+      .section-header p { color: var(--text-muted); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+      /* ── HERO ── */
+      .hero {
+        position: relative; padding: 5rem 2rem 4rem;
+        background: linear-gradient(160deg, var(--primary-light) 0%, var(--bg) 60%);
+        overflow: hidden;
+      }
+      .hero::before {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(circle at 1px 1px, rgba(13, 148, 136, 0.07) 1px, transparent 0);
+        background-size: 32px 32px; pointer-events: none;
+      }
+      .hero-inner {
+        position: relative; max-width: var(--max-width); margin: 0 auto;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+      }
+      .hero-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.8rem; font-weight: 600; padding: 0.35rem 0.9rem;
+        border-radius: 100px; background: var(--primary-light);
+        color: var(--primary); border: 1px solid rgba(13,148,136,0.2);
+        margin-bottom: 1.25rem;
+      }
+      .hero-badge::before { content: "●"; font-size: 0.5rem; }
+      .hero-text h1 {
+        font-size: 3.25rem; font-weight: 800; letter-spacing: -0.035em;
+        line-height: 1.08; color: var(--dark); margin-bottom: 1.25rem;
+      }
+      .hero-text h1 em {
+        font-style: normal; color: var(--primary);
+      }
+      .hero-desc {
+        font-size: 1.1rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 2rem;
+      }
+      .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+      .hero-meta {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-top: 1.25rem; flex-wrap: wrap;
+      }
+      .price-tag {
+        font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.75rem;
+        border-radius: 100px; background: var(--primary-light); color: var(--primary);
+      }
+      .price-tag.free { background: #ecfdf5; color: var(--success); }
+      .price-tag.muted { background: var(--border); color: var(--text-muted); }
+
+      /* Hero visual: simple UI mockup */
+      .hero-visual {
+        display: flex; justify-content: center; align-items: center;
+      }
+      .ui-mockup {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 16px; box-shadow: var(--shadow-lg);
+        padding: 1.5rem; width: 100%; max-width: 340px;
+      }
+      .ui-mockup-header {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 1.25rem;
+      }
+      .ui-dot { width: 10px; height: 10px; border-radius: 50%; }
+      .ui-dot.red { background: #ef4444; }
+      .ui-dot.yellow { background: #f59e0b; }
+      .ui-dot.green { background: #10b981; }
+      .ui-title {
+        font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
+        margin-left: 0.5rem;
+      }
+      .ui-date {
+        font-size: 0.7rem; color: var(--text-muted);
+        margin-left: auto;
+      }
+      .ui-section-label {
+        font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--primary);
+        margin-bottom: 0.5rem;
+      }
+      .ui-task {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.5rem 0.6rem; border-radius: 8px;
+        margin-bottom: 0.35rem; transition: background 0.2s;
+      }
+      .ui-task.focus { background: var(--primary-light); }
+      .ui-task.normal { background: var(--bg); }
+      .ui-task.done { opacity: 0.4; }
+      .ui-check {
+        width: 16px; height: 16px; min-width: 16px; border-radius: 50%;
+        border: 2px solid var(--border); display: flex; align-items: center; justify-content: center;
+      }
+      .ui-check.checked { background: var(--success); border-color: var(--success); }
+      .ui-check.checked::after { content: "✓"; font-size: 0.55rem; color: white; font-weight: 700; }
+      .ui-check.priority { border-color: var(--primary); background: var(--primary); }
+      .ui-check.priority::after { content: "★"; font-size: 0.55rem; color: white; }
+      .ui-task-text { font-size: 0.82rem; color: var(--dark); font-weight: 500; }
+      .ui-task.done .ui-task-text { text-decoration: line-through; color: var(--text-muted); }
+      .ui-divider { height: 1px; background: var(--border); margin: 0.9rem 0; }
+      .ui-focus-score {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.6rem 0.6rem; background: var(--primary-light);
+        border-radius: 8px; margin-top: 0.75rem;
+      }
+      .ui-focus-label { font-size: 0.75rem; font-weight: 600; color: var(--primary); }
+      .ui-focus-val { font-size: 0.75rem; font-weight: 700; color: var(--primary); }
+
+      @media (max-width: 900px) {
+        .hero-inner { grid-template-columns: 1fr; gap: 3rem; }
+        .hero-text h1 { font-size: 2.5rem; }
+        .hero-visual { order: -1; }
+        .ui-mockup { max-width: 280px; }
+      }
+      @media (max-width: 480px) {
+        .hero { padding: 3rem 1.5rem; }
+        .hero-text h1 { font-size: 2rem; }
+        .hero-actions { flex-direction: column; }
+        .hero-actions .btn { width: 100%; }
+      }
+
+      /* ── PROBLEM ── */
+      .problem-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;
+      }
+      @media (max-width: 900px) { .problem-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 480px) { .problem-grid { grid-template-columns: 1fr; } }
+      .problem-card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 1.75rem; text-align: center;
+      }
+      .problem-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+      .problem-card h3 { font-size: 0.95rem; font-weight: 600; color: var(--dark); margin-bottom: 0.4rem; }
+      .problem-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+
+      /* ── REFRAME (dark) ── */
+      .reframe {
+        background: var(--dark); color: white; padding: 5rem 2rem;
+      }
+      .reframe-inner { max-width: var(--max-width); margin: 0 auto; }
+      .reframe-header { text-align: center; margin-bottom: 3rem; }
+      .reframe-header h2 {
+        font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;
+        color: white; margin-bottom: 0.75rem;
+      }
+      .reframe-header p { color: #94a3b8; font-size: 1.1rem; max-width: 560px; margin: 0 auto; }
+      .reframe-header strong { color: var(--primary); }
+      .reframe-items {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
+        max-width: 820px; margin: 0 auto;
+      }
+      @media (max-width: 600px) { .reframe-items { grid-template-columns: 1fr; } }
+      .reframe-item {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        padding: 1.25rem; border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .reframe-check {
+        width: 22px; height: 22px; min-width: 22px; margin-top: 1px;
+        background: var(--primary); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; color: white; font-weight: 700; flex-shrink: 0;
+      }
+      .reframe-item span { font-size: 0.95rem; color: #e2e8f0; line-height: 1.55; }
+
+      /* ── HOW IT WORKS ── */
+      .workflow-steps {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 2rem; max-width: 900px; margin: 0 auto;
+      }
+      @media (max-width: 600px) { .workflow-steps { grid-template-columns: 1fr; } }
+      .step { text-align: center; position: relative; }
+      .step-number {
+        width: 56px; height: 56px; background: var(--primary); color: white;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; font-weight: 800; margin: 0 auto 1.25rem;
+      }
+      .step h3 { font-size: 1.05rem; font-weight: 600; color: var(--dark); margin-bottom: 0.4rem; }
+      .step p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+      .step-connector { display: none; }
+      @media (min-width: 601px) {
+        .step-connector {
+          display: block; position: absolute; top: 28px; right: -1rem;
+          width: 2rem; height: 2px; background: var(--border);
+        }
+        .step:last-child .step-connector { display: none; }
+      }
+
+      /* ── FEATURES ── */
+      .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+      @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 550px) { .feature-grid { grid-template-columns: 1fr; } }
+      .feature-card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 2rem;
+        transition: all 0.3s ease;
+      }
+      .feature-card:hover {
+        border-color: var(--primary); box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+      }
+      .feature-icon {
+        width: 44px; height: 44px; background: var(--primary-light);
+        border-radius: 10px; display: flex; align-items: center;
+        justify-content: center; font-size: 1.25rem; margin-bottom: 1.25rem;
+      }
+      .feature-card h3 { font-size: 1.05rem; font-weight: 600; color: var(--dark); margin-bottom: 0.5rem; }
+      .feature-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+      .feature-badge {
+        display: inline-block; font-size: 0.65rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem; border-radius: 4px;
+        background: var(--primary-light); color: var(--primary);
+        margin-bottom: 0.5rem;
+      }
+      .feature-badge.pro { background: #fef3c7; color: #92400e; }
+
+      /* ── USE CASES ── */
+      .usecase-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+      .usecase-tag {
+        font-size: 0.9rem; font-weight: 500; padding: 0.6rem 1.25rem;
+        border-radius: 100px; background: var(--surface); border: 1px solid var(--border);
+        color: var(--text); transition: all 0.2s; cursor: default;
+      }
+      .usecase-tag:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+      /* ── PRICING ── */
+      .pricing { padding: 6rem 2rem; background: var(--surface); border-top: 1px solid var(--border); }
+      .pricing-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 2rem; max-width: 960px; margin: 0 auto;
+      }
+      @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; max-width: 400px; } }
+      .pricing-card {
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 2rem;
+        display: flex; flex-direction: column; position: relative;
+      }
+      .pricing-card.featured {
+        background: var(--dark); border-color: var(--dark);
+        transform: scale(1.03);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+      }
+      @media (max-width: 768px) { .pricing-card.featured { transform: none; } }
+      .pricing-badge {
+        position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+        background: var(--primary); color: white;
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+        text-transform: uppercase; padding: 0.3rem 1rem; border-radius: 100px;
+        white-space: nowrap;
+      }
+      .pricing-name { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+      .pricing-card.featured .pricing-name { color: #94a3b8; }
+      .pricing-price {
+        font-size: 2.75rem; font-weight: 800; letter-spacing: -0.04em;
+        color: var(--dark); line-height: 1; margin-bottom: 0.25rem;
+      }
+      .pricing-card.featured .pricing-price { color: white; }
+      .pricing-price sup { font-size: 1.25rem; font-weight: 600; vertical-align: super; margin-right: 2px; }
+      .pricing-period {
+        font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;
+      }
+      .pricing-card.featured .pricing-period { color: #64748b; }
+      .pricing-saving {
+        font-size: 0.8rem; font-weight: 600; color: var(--success);
+        margin-bottom: 1.5rem; min-height: 1.2em;
+      }
+      .pricing-divider { height: 1px; background: var(--border); margin-bottom: 1.5rem; }
+      .pricing-card.featured .pricing-divider { background: rgba(255,255,255,0.1); }
+      .pricing-features { list-style: none; flex: 1; margin-bottom: 1.75rem; }
+      .pricing-features li {
+        display: flex; align-items: flex-start; gap: 0.6rem;
+        font-size: 0.9rem; color: var(--text); padding: 0.35rem 0; line-height: 1.4;
+      }
+      .pricing-card.featured .pricing-features li { color: #cbd5e1; }
+      .pricing-features li::before {
+        content: "✓"; color: var(--success); font-weight: 700;
+        font-size: 0.85rem; margin-top: 1px; flex-shrink: 0;
+      }
+      .pricing-features li.no::before { content: "–"; color: var(--text-muted); }
+      .pricing-features li.no { color: var(--text-muted); }
+      .pricing-card.featured .pricing-features li.no { color: #475569; }
+      .pricing-cta { margin-top: auto; }
+
+      /* ── TRUST ── */
+      .trust { padding: 5rem 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--surface); }
+      .trust-inner { max-width: var(--max-width); margin: 0 auto; }
+      .trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+      @media (max-width: 900px) { .trust-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 500px) { .trust-grid { grid-template-columns: 1fr; } }
+      .trust-item {
+        text-align: center; padding: 2rem 1.5rem;
+        border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg);
+      }
+      .trust-icon {
+        width: 48px; height: 48px; margin: 0 auto 1rem;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .trust-item h4 { font-size: 0.95rem; font-weight: 600; color: var(--dark); margin-bottom: 0.4rem; }
+      .trust-item p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+      .trust-item a { color: var(--primary); text-decoration: none; font-weight: 500; }
+      .trust-item a:hover { text-decoration: underline; }
+
+      /* ── FAQ ── */
+      .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+      .faq-list details { border-bottom: 1px solid var(--border); }
+      .faq-list details:first-child { border-top: 1px solid var(--border); }
+      .faq-list summary {
+        padding: 1.25rem 0; font-weight: 600; font-size: 1rem;
+        color: var(--dark); cursor: pointer; list-style: none;
+        display: flex; justify-content: space-between; align-items: center; user-select: none;
+      }
+      .faq-list summary::-webkit-details-marker { display: none; }
+      .faq-list summary::after { content: "+"; font-size: 1.25rem; color: var(--text-muted); font-weight: 400; transition: transform 0.2s; }
+      .faq-list details[open] summary::after { content: "\2212"; }
+      .faq-list details p { padding-bottom: 1.25rem; font-size: 0.95rem; color: var(--text-muted); line-height: 1.7; }
+
+      /* ── FINAL CTA ── */
+      .final-cta {
+        padding: 7rem 2rem; text-align: center;
+        background: linear-gradient(160deg, var(--dark) 0%, #1e293b 100%);
+        position: relative; overflow: hidden;
+      }
+      .final-cta::before {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(circle at 1px 1px, rgba(13, 148, 136, 0.08) 1px, transparent 0);
+        background-size: 32px 32px; pointer-events: none;
+      }
+      .final-cta-inner { position: relative; max-width: 680px; margin: 0 auto; }
+      .final-cta h2 {
+        font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em;
+        color: white; margin-bottom: 1rem; line-height: 1.15;
+      }
+      .final-cta h2 em { font-style: normal; color: var(--primary); }
+      .final-cta p { font-size: 1.1rem; color: #94a3b8; margin-bottom: 2.5rem; }
+      .final-cta-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+      .final-cta-note { font-size: 0.8rem; color: #64748b; margin-top: 1rem; }
+      @media (max-width: 600px) {
+        .final-cta h2 { font-size: 1.85rem; }
+        .final-cta-actions { flex-direction: column; align-items: center; }
+        .final-cta-actions .btn { width: 100%; max-width: 320px; }
+      }
+
+      /* ── FOOTER ── */
+      .footer { background: #0a0f1e; color: #94a3b8; padding: 4rem 2rem 2rem; }
+      .footer-inner { max-width: var(--max-width); margin: 0 auto; }
+      .footer-top {
+        display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 3rem; margin-bottom: 3rem;
+      }
+      @media (max-width: 768px) { .footer-top { grid-template-columns: 1fr; gap: 2rem; } }
+      .footer-brand .logo-footer {
+        font-weight: 800; font-size: 1.35rem; color: var(--primary);
+        text-decoration: none; letter-spacing: -0.02em; display: inline-block; margin-bottom: 0.75rem;
+      }
+      .footer-brand .logo-footer span { color: #e2e8f0; }
+      .footer-brand p { font-size: 0.875rem; line-height: 1.6; color: #64748b; max-width: 280px; }
+      .footer-col h5 {
+        font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem;
+      }
+      .footer-col a {
+        display: block; font-size: 0.875rem; color: #64748b;
+        text-decoration: none; padding: 0.3rem 0; transition: color 0.2s;
+      }
+      .footer-col a:hover { color: white; }
+      .footer-bottom {
+        border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 2rem;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+      }
+      .footer-bottom p { font-size: 0.8rem; color: #475569; }
+      .footer-eu { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #64748b; }
+    </style>
+  </head>
+  <body>
+
+    <!-- NAVIGATION -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="#" class="logo">Fancy<span>Plan</span></a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">Wie es funktioniert</a>
+          <a href="#preise">Preise</a>
+          <a href="#faq">FAQ</a>
+          <a href="https://app.fancyplan.de" class="nav-cta">Kostenlos starten</a>
+        </div>
+        <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('active')" aria-label="Men&uuml;">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div class="mobile-menu">
+        <a href="#features" onclick="this.parentElement.classList.remove('active')">Features</a>
+        <a href="#how-it-works" onclick="this.parentElement.classList.remove('active')">Wie es funktioniert</a>
+        <a href="#preise" onclick="this.parentElement.classList.remove('active')">Preise</a>
+        <a href="#faq" onclick="this.parentElement.classList.remove('active')">FAQ</a>
+        <a href="https://app.fancyplan.de" onclick="this.parentElement.classList.remove('active')" style="color: var(--primary); font-weight: 600;">Kostenlos starten</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <div class="hero-badge">Sofort einsatzbereit &ndash; lokal unter Windows</div>
+          <h1>Jeden Tag wissen,<br>was wirklich <em>z&auml;hlt.</em></h1>
+          <p class="hero-desc">
+            Zu viele Aufgaben. Zu wenig Klarheit.<br>
+            FancyPlan zeigt dir automatisch, womit du heute anfangen musst &ndash; ohne endlose Listen, ohne Entscheidungsm&uuml;digkeit.
+          </p>
+          <div class="hero-actions">
+            <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="btn btn-primary btn-lg" target="_blank" rel="noopener">
+              Kostenlos starten
+            </a>
+            <a href="#preise" class="btn btn-outline btn-lg">
+              Jahresabo sichern
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span class="price-tag free">Kostenlos verf&uuml;gbar</span>
+            <span class="price-tag">7&thinsp;&euro;/Monat</span>
+            <span class="price-tag">49&thinsp;&euro;/Jahr</span>
+            <span class="price-tag muted">Keine Kreditkarte f&uuml;r Free</span>
+          </div>
+        </div>
+
+        <!-- UI Mockup -->
+        <div class="hero-visual">
+          <div class="ui-mockup">
+            <div class="ui-mockup-header">
+              <div class="ui-dot red"></div>
+              <div class="ui-dot yellow"></div>
+              <div class="ui-dot green"></div>
+              <span class="ui-title">FancyPlan</span>
+              <span class="ui-date">Di, 15. Apr</span>
+            </div>
+
+            <div class="ui-section-label">Heute &mdash; Fokus</div>
+            <div class="ui-task focus">
+              <div class="ui-check priority"></div>
+              <span class="ui-task-text">Anforderungsanalyse abschlie&szlig;en</span>
+            </div>
+            <div class="ui-task focus">
+              <div class="ui-check priority"></div>
+              <span class="ui-task-text">Kundencall vorbereiten (14:00)</span>
+            </div>
+            <div class="ui-task normal">
+              <div class="ui-check"></div>
+              <span class="ui-task-text">Sprint-Review dokumentieren</span>
+            </div>
+
+            <div class="ui-divider"></div>
+
+            <div class="ui-section-label">Erledigt</div>
+            <div class="ui-task done">
+              <div class="ui-check checked"></div>
+              <span class="ui-task-text">Daily Stand-up</span>
+            </div>
+            <div class="ui-task done">
+              <div class="ui-check checked"></div>
+              <span class="ui-task-text">E-Mails priorisiert</span>
+            </div>
+
+            <div class="ui-focus-score">
+              <span class="ui-focus-label">Fokus-Score heute</span>
+              <span class="ui-focus-val">82 % &uarr;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Du bist nicht unproduktiv. Du bist &uuml;berladen.</h2>
+          <p>Du arbeitest viel &ndash; aber nicht am Richtigen. Am Ende des Tages: beschäftigt, aber kein Fortschritt.</p>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-card">
+            <div class="problem-icon">&#128220;</div>
+            <h3>Endlose To-Do-Listen</h3>
+            <p>50 Aufgaben, aber welche ist wirklich heute wichtig?</p>
+          </div>
+          <div class="problem-card">
+            <div class="problem-icon">&#129327;</div>
+            <h3>Entscheidungsm&uuml;digkeit</h3>
+            <p>Jede Entscheidung kostet Energie &ndash; bevor die Arbeit beginnt.</p>
+          </div>
+          <div class="problem-card">
+            <div class="problem-icon">&#128260;</div>
+            <h3>Das Einfache zuerst</h3>
+            <p>Wichtige Tasks bleiben liegen, weil kleine erledigt werden.</p>
+          </div>
+          <div class="problem-card">
+            <div class="problem-icon">&#128296;</div>
+            <h3>Tool-Overhead</h3>
+            <p>Jira, Notion, Teams, Outlook &ndash; aber wo ist der Fokus?</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REFRAME -->
+    <section class="reframe">
+      <div class="reframe-inner">
+        <div class="reframe-header">
+          <h2>Das Problem ist nicht Zeit. Es ist Priorit&auml;t.</h2>
+          <p>Die meisten Tools verwalten Aufgaben. <strong>FancyPlan entscheidet, was z&auml;hlt.</strong></p>
+        </div>
+        <div class="reframe-items">
+          <div class="reframe-item">
+            <div class="reframe-check">&#10003;</div>
+            <span>Keine To-Do-Flut &ndash; du siehst nur das Wichtige, nicht alles auf einmal</span>
+          </div>
+          <div class="reframe-item">
+            <div class="reframe-check">&#10003;</div>
+            <span>Keine Entscheidungsm&uuml;digkeit &ndash; du wei&szlig;t sofort, womit du anfangen musst</span>
+          </div>
+          <div class="reframe-item">
+            <div class="reframe-check">&#10003;</div>
+            <span>Kein &bdquo;Ich mache erstmal das Einfache&ldquo; &ndash; du arbeitest endlich am Richtigen</span>
+          </div>
+          <div class="reframe-item">
+            <div class="reframe-check">&#10003;</div>
+            <span>Kein Tool-Overhead &ndash; klar, schnell, auf den Punkt. Lokal. Serverlos. Sofort.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);" id="how-it-works">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>So funktioniert FancyPlan</h2>
+          <p>Drei Schritte bis zum Fokus &ndash; jeden Morgen, in Sekunden.</p>
+        </div>
+        <div class="workflow-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Erfassen</h3>
+            <p>Alle Aufgaben, Projekte und Ideen an einem Ort sammeln &ndash; schnell und ohne Aufwand.</p>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Priorisieren</h3>
+            <p>FancyPlan erkennt automatisch, was heute wirklich wichtig ist &ndash; du best&auml;tigst nur noch.</p>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Fokussieren</h3>
+            <p>Du siehst nur die Aufgaben des Tages &ndash; kein Rauschen, keine Ablenkung, nur Fortschritt.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Warum FancyPlan funktioniert</h2>
+          <p>Gebaut f&uuml;r Profis, die Ergebnisse wollen &ndash; nicht mehr Tools.</p>
+        </div>
+        <div class="feature-grid">
+
+          <div class="feature-card">
+            <div class="feature-badge">Kern-Feature</div>
+            <div class="feature-icon">&#127919;</div>
+            <h3>Fokus-Ansicht</h3>
+            <p>Zeigt ausschlie&szlig;lich die Aufgaben des Tages. Keine &Uuml;bersicht &uuml;ber alles &ndash; nur das, was jetzt z&auml;hlt.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-badge">Kern-Feature</div>
+            <div class="feature-icon">&#9889;</div>
+            <h3>Sofortstart unter Windows</h3>
+            <p>Lokal installiert, kein Server, kein Login, kein Warten. Starte FancyPlan &ndash; fang sofort an.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-badge">Kern-Feature</div>
+            <div class="feature-icon">&#128274;</div>
+            <h3>Serverlos &amp; privat</h3>
+            <p>Deine Daten bleiben auf deinem Rechner. Kein Cloud-Zwang, kein Abo-Lock-in, volle Kontrolle.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-badge pro">Pro</div>
+            <div class="feature-icon">&#127775;</div>
+            <h3>Intelligente Priorisierung</h3>
+            <p>FancyPlan bewertet Aufgaben nach Dringlichkeit und Wichtigkeit &ndash; du entscheidest, nicht der Algorithmus.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-badge pro">Pro</div>
+            <div class="feature-icon">&#128200;</div>
+            <h3>Fokus-Score</h3>
+            <p>Sieh t&auml;glich, wie fokussiert du wirklich warst. Lerne aus deinen Mustern und verbessere dich.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-badge pro">Pro</div>
+            <div class="feature-icon">&#128259;</div>
+            <h3>Universell anpassbar</h3>
+            <p>FancyPlan passt sich deinem Workflow an &ndash; f&uuml;r IT-Projekte, SAP-Implementierungen und agile Teams.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section class="section" style="background: var(--surface); padding-top: 3rem; padding-bottom: 4rem;">
+      <div class="section-inner">
+        <div class="section-header" style="margin-bottom: 2rem;">
+          <h2>Gemacht f&uuml;r Profis wie dich</h2>
+          <p>FancyPlan passt in jeden Workflow, der Klarheit braucht.</p>
+        </div>
+        <div class="usecase-grid">
+          <span class="usecase-tag">IT-Berater</span>
+          <span class="usecase-tag">SAP Consultants</span>
+          <span class="usecase-tag">Projektleiter</span>
+          <span class="usecase-tag">Software-Entwickler</span>
+          <span class="usecase-tag">Scrum Master</span>
+          <span class="usecase-tag">Produktmanager</span>
+          <span class="usecase-tag">Wissensarbeiter</span>
+          <span class="usecase-tag">Digital Professionals</span>
+          <span class="usecase-tag">Freelancer</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing" id="preise">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Starte jetzt mit klarem Fokus</h2>
+          <p>Kostenlos ausprobieren. Upgraden, wenn du mehr willst.</p>
+        </div>
+        <div class="pricing-grid">
+
+          <!-- FREE -->
+          <div class="pricing-card">
+            <div class="pricing-name">Kostenlos</div>
+            <div class="pricing-price"><sup></sup>0<sup style="font-size:1.1rem;">&thinsp;&euro;</sup></div>
+            <div class="pricing-period">f&uuml;r immer</div>
+            <div class="pricing-saving">&nbsp;</div>
+            <div class="pricing-divider"></div>
+            <ul class="pricing-features">
+              <li>Fokus-Ansicht (heute)</li>
+              <li>Bis zu 10 Aufgaben</li>
+              <li>Lokale Datenspeicherung</li>
+              <li>Windows-App</li>
+              <li class="no">Intelligente Priorisierung</li>
+              <li class="no">Fokus-Score &amp; Statistiken</li>
+              <li class="no">Unbegrenzte Aufgaben</li>
+              <li class="no">Projektansichten</li>
+            </ul>
+            <div class="pricing-cta">
+              <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="btn btn-outline" style="width: 100%;" target="_blank" rel="noopener">
+                Kostenlos starten
+              </a>
+            </div>
+          </div>
+
+          <!-- YEARLY (featured) -->
+          <div class="pricing-card featured">
+            <div class="pricing-badge">Empfohlen &ndash; Beste Wahl</div>
+            <div class="pricing-name">Pro J&auml;hrlich</div>
+            <div class="pricing-price"><sup></sup>49<sup style="font-size:1.1rem;">&thinsp;&euro;</sup></div>
+            <div class="pricing-period">pro Jahr (4,08&thinsp;&euro;/Monat)</div>
+            <div class="pricing-saving">&#10003;&nbsp; 2 Monate gratis vs. monatlich</div>
+            <div class="pricing-divider"></div>
+            <ul class="pricing-features">
+              <li>Alles aus Kostenlos</li>
+              <li>Unbegrenzte Aufgaben</li>
+              <li>Intelligente Priorisierung</li>
+              <li>Fokus-Score &amp; Statistiken</li>
+              <li>Projektansichten</li>
+              <li>Priorisierungs-Vorlagen</li>
+              <li>Priorit&auml;ts-Support</li>
+              <li>Alle k&uuml;nftigen Updates</li>
+            </ul>
+            <div class="pricing-cta">
+              <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/yearly" class="btn btn-primary" style="width: 100%; background: var(--primary);" target="_blank" rel="noopener">
+                Jahresabo sichern
+              </a>
+            </div>
+          </div>
+
+          <!-- MONTHLY -->
+          <div class="pricing-card">
+            <div class="pricing-name">Pro Monatlich</div>
+            <div class="pricing-price"><sup></sup>7<sup style="font-size:1.1rem;">&thinsp;&euro;</sup></div>
+            <div class="pricing-period">pro Monat</div>
+            <div class="pricing-saving">Jederzeit k&uuml;ndbar</div>
+            <div class="pricing-divider"></div>
+            <ul class="pricing-features">
+              <li>Alles aus Kostenlos</li>
+              <li>Unbegrenzte Aufgaben</li>
+              <li>Intelligente Priorisierung</li>
+              <li>Fokus-Score &amp; Statistiken</li>
+              <li>Projektansichten</li>
+              <li>Priorisierungs-Vorlagen</li>
+              <li>E-Mail-Support</li>
+              <li>Alle k&uuml;nftigen Updates</li>
+            </ul>
+            <div class="pricing-cta">
+              <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/monthly" class="btn btn-dark" style="width: 100%;" target="_blank" rel="noopener">
+                Monatlich starten
+              </a>
+            </div>
+          </div>
+
+        </div>
+        <p style="text-align:center; font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem;">
+          Abwicklung &uuml;ber Lemon Squeezy &ndash; sicher, DSGVO-konform. Keine Kreditkarte f&uuml;r den Free-Plan erforderlich.
+        </p>
+      </div>
+    </section>
+
+    <!-- TRUST -->
+    <section class="trust">
+      <div class="trust-inner">
+        <div class="trust-grid">
+          <div class="trust-item">
+            <div class="trust-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/>
+              </svg>
+            </div>
+            <h4>Lokal &amp; Serverlos</h4>
+            <p>Alle Daten bleiben auf deinem Windows-PC. Kein Cloud-Zwang, kein Datenschutzrisiko.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h4>DSGVO-konform</h4>
+            <p>Zahlung &uuml;ber Lemon Squeezy. EU-Datenschutzstandards. Keine versteckten Kosten.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.21 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.12 1.2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 16.92z"/>
+              </svg>
+            </div>
+            <h4>Support auf Deutsch</h4>
+            <p>Pers&ouml;nlicher Support auf Deutsch. Fragen, W&uuml;nsche, Feedback &ndash; wir antworten.</p>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <h4>Kontakt</h4>
+            <p>Fragen, Ideen oder individuelle Anfragen?<br><a href="mailto:sapco.cslt@gmail.com">sapco.cslt@gmail.com</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>H&auml;ufige Fragen</h2>
+          <p>Alles Wichtige &uuml;ber FancyPlan auf einen Blick.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Funktioniert FancyPlan ohne Internetverbindung?</summary>
+            <p>Ja, vollst&auml;ndig. FancyPlan ist eine lokale Windows-Anwendung. Alle Daten werden auf deinem Rechner gespeichert. Du ben&ouml;tigst nur eine Verbindung f&uuml;r die initiale Aktivierung deiner Lizenz.</p>
+          </details>
+          <details>
+            <summary>Was unterscheidet FancyPlan von Todoist, Jira oder Notion?</summary>
+            <p>FancyPlan l&ouml;st ein spezifisches Problem: Fokus. W&auml;hrend andere Tools alles verwalten, zeigt FancyPlan nur, was heute z&auml;hlt. Kein Server, kein Browser-Tab, keine Ablenkung &ndash; eine App, ein Ziel: das Richtige tun.</p>
+          </details>
+          <details>
+            <summary>Was beinhaltet die kostenlose Version?</summary>
+            <p>Der Free-Plan erm&ouml;glicht die Fokus-Ansicht mit bis zu 10 Aufgaben, lokale Datenspeicherung und die Windows-App. F&uuml;r unbegrenzte Aufgaben, intelligente Priorisierung und den Fokus-Score ist der Pro-Plan erforderlich.</p>
+          </details>
+          <details>
+            <summary>Kann ich jederzeit k&uuml;ndigen?</summary>
+            <p>Ja. Das Monatsabo ist jederzeit k&uuml;ndbar &ndash; ohne Haken, ohne Fristen. Das Jahresabo gilt f&uuml;r die gebuchte Laufzeit. Keine versteckten Kosten, keine automatische Verl&auml;ngerung ohne Zustimmung.</p>
+          </details>
+          <details>
+            <summary>Ist FancyPlan f&uuml;r SAP-Projekte geeignet?</summary>
+            <p>Absolut. FancyPlan eignet sich besonders f&uuml;r SAP-Consultants und Projektleiter, die t&auml;glich viele parallele Tasks jonglieren. Die Fokus-Ansicht hilft dabei, die wichtigsten Deliverables im Blick zu behalten &ndash; unabh&auml;ngig von SAP-internen Tools.</p>
+          </details>
+          <details>
+            <summary>Wie erfolgt die Zahlungsabwicklung?</summary>
+            <p>Die Zahlung l&auml;uft &uuml;ber Lemon Squeezy, einen DSGVO-konformen Zahlungsdienstleister. Akzeptiert werden Kreditkarte, PayPal und weitere g&auml;ngige Zahlungsmethoden. Nach der Zahlung erh&auml;ltst du sofort Zugang zum Download und deiner Lizenz.</p>
+          </details>
+          <details>
+            <summary>Auf wie vielen Ger&auml;ten kann ich FancyPlan nutzen?</summary>
+            <p>Eine Lizenz gilt f&uuml;r ein Windows-Ger&auml;t. Bei mehreren Arbeitsrechnern bitte den Support kontaktieren &ndash; wir finden gemeinsam eine L&ouml;sung.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final-cta">
+      <div class="final-cta-inner">
+        <h2>H&ouml;r auf, besch&auml;ftigt zu sein.<br><em>Fang an, das Richtige zu tun.</em></h2>
+        <p>Mit FancyPlan wei&szlig;t du jeden Tag, was wirklich z&auml;hlt.</p>
+        <div class="final-cta-actions">
+          <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" class="btn btn-primary btn-lg" target="_blank" rel="noopener">
+            Jetzt kostenlos starten
+          </a>
+          <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/yearly" class="btn btn-outline btn-lg" style="border-color: rgba(255,255,255,0.2); color: #e2e8f0;" target="_blank" rel="noopener">
+            Jahresabo &mdash; 49&thinsp;&euro;
+          </a>
+        </div>
+        <p class="final-cta-note">Keine Kreditkarte f&uuml;r den kostenlosen Start &bull; Sofort-Download &bull; Lokal unter Windows</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <a href="#" class="logo-footer">Fancy<span>Plan</span></a>
+            <p>Fokus-Tool f&uuml;r digitale Profis. Lokal, serverlos, sofort einsatzbereit unter Windows.</p>
+          </div>
+          <div class="footer-col">
+            <h5>Produkt</h5>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">Wie es funktioniert</a>
+            <a href="#preise">Preise</a>
+            <a href="https://fancyplan.lemonsqueezy.com/checkout/buy/free" target="_blank" rel="noopener">Download</a>
+          </div>
+          <div class="footer-col">
+            <h5>Ressourcen</h5>
+            <a href="#faq">FAQ</a>
+            <a href="mailto:sapco.cslt@gmail.com">Support</a>
+            <a href="mailto:sapco.cslt@gmail.com">Kontakt</a>
+          </div>
+          <div class="footer-col">
+            <h5>Rechtliches</h5>
+            <a href="impressum.html">Impressum</a>
+            <a href="datenschutz.html">Datenschutz</a>
+            <a href="agb.html">AGB</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 FancyPlan &ndash; Alle Rechte vorbehalten.</p>
+          <div class="footer-eu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+            Developed in the EU
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+</html>
