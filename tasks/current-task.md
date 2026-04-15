@@ -1,87 +1,106 @@
 # Current Task: FancyPlan Shop Landingpage
 
-**Datum:** 2026-04-15  
-**Status:** In Entwicklung — Phase 1 abgeschlossen
+**Datum:** 2026-04-15 (Tagesabschluss)
+**Status:** Phase 1 abgeschlossen — bereit für Deployment
 
 ---
 
 ## Ziel
-Statische Landingpage für den Verkauf von FancyPlan (Windows-Tool) mit primärer Conversion-Ziel: Kauf (Monat / Jahr), sekundär: Kostenlos starten. Umsatzziel: 1.000 EUR/Monat in 6 Monaten.
+Statische Landingpage für den Verkauf von FancyPlan (Windows-Tool).
+Primär: Kauf (Monat / Jahr) | Sekundär: Kostenlos starten
+Umsatzziel: 1.000 EUR/Monat in 6 Monaten.
 
 ---
 
-## Abgeschlossen ✅
+## Heute erledigt ✅ (2026-04-15)
 
-- [x] index.html erstellt — vollständige Landingpage mit allen Sektionen
-- [x] Design aus KnowCapture-Vorlage übernommen und für FancyPlan adaptiert
+### Landingpage (index.html)
+- [x] Vollständige responsive Seite erstellt (alle Sektionen)
+- [x] Design aus KnowCapture-Vorlage adaptiert (Teal #0d9488, Inter Font)
 - [x] Inhalt aus FP LP Content.html integriert
-- [x] Responsives Layout (Mobile / Tablet / Desktop)
-- [x] Sticky Navigation mit Mobile-Menu (Hamburger)
-- [x] Hero-Sektion mit interaktivem UI-Mockup
-- [x] Problem-Sektion (4 Karten)
-- [x] Reframe-Sektion (dunkel, Vorteile)
-- [x] How-It-Works (3 Schritte)
-- [x] Feature-Grid (6 Features, Free vs. Pro markiert)
-- [x] Use-Cases (Zielgruppen-Tags)
-- [x] Pricing (3 Karten: Free / Pro Monatlich / Pro Jährlich — Jährlich highlighted)
-- [x] Trust-Section (4 Vertrauenspunkte)
-- [x] FAQ (7 Fragen, expandierbar)
-- [x] Final CTA (dunkler Hintergrund, Druck-Closing)
-- [x] Footer mit Links
-- [x] Git-Repo initialisiert, erster Commit angelegt
+- [x] Hero, Problem, Reframe, How-it-Works, Features, Use-Cases, Pricing, Trust, FAQ, Final CTA, Footer
+- [x] Pricing: Free (0€) / Pro Monatlich (7€) / Pro Jährlich (49€, highlighted)
+- [x] Mobile-Navigation mit Hamburger-Menü
+
+### Assets & Branding
+- [x] Favicon: `Fancy 16x16.ico` + `FancyPlan 256x256.ico`
+- [x] Logo-Icon in Navigation: `assets/transparent/FP tr gr.png`
+- [x] EU-Commission-Logo in Navigation (alle Seiten, 38px)
+- [x] Hero: Echter App-Screenshot `FToday2.png` (Heute-Fokusansicht)
+- [x] How-it-Works Schritt 1: Screenshot `FTreeEdit.png` (Baumstruktur)
+- [x] How-it-Works Schritt 2: Screenshot `FAct_oben.png` (Aktivitäten)
+- [x] How-it-Works Schritt 3: Screenshot `FToday1.png` (Fokus-Ansicht)
+
+### Rechtliche Seiten
+- [x] `impressum.html` — aus InPrimeShopDev adaptiert
+- [x] `datenschutz.html` — FancyPlan-spezifisch (Windows-App, lokal, keine Cloud)
+- [x] `agb.html` — Lieferung, Free-Tier, Kündigungsregelung angepasst
+- [x] Alle rechtlichen Seiten: Logo-Icon + EU-Logo konsistent
+
+### Projekt-Setup
+- [x] Git-Repo initialisiert, 5 Commits angelegt
+- [x] `tasks/current-task.md`, `tasks/decision-log.md`, `tasks/resume.md`
+
+---
+
+## Commits heute
+| Hash | Beschreibung |
+|---|---|
+| `a0f54b8` | feat: Initial FancyPlan Shop Landingpage |
+| `679e61d` | docs: Add resume.md |
+| `1034b54` | feat: Add legal pages (Impressum, Datenschutz, AGB) |
+| `aedfcc6` | feat: Integrate real app screenshots and brand assets |
+| `d7a6c65` | style: EU-Logo auf allen Seiten um 25% vergrößert |
 
 ---
 
 ## Offen / Nächste Schritte 🔲
 
-### Lemon Squeezy — KRITISCH (blockiert Verkauf)
-- [ ] **Lemon Squeezy Store einrichten** (falls noch nicht vorhanden)
-- [ ] **Free-Plan Checkout-URL** eintragen → `index.html` Zeilen mit `fancyplan.lemonsqueezy.com/checkout/buy/free`
-- [ ] **Pro Monatlich Checkout-URL** eintragen → `fancyplan.lemonsqueezy.com/checkout/buy/monthly`
-- [ ] **Pro Jährlich Checkout-URL** eintragen → `fancyplan.lemonsqueezy.com/checkout/buy/yearly`
-- [ ] **Nav-Link "Kostenlos starten"** → URL anpassen (`href="https://app.fancyplan.de"` aktuell Platzhalter)
+### KRITISCH — blockiert den Verkauf
+- [ ] **Lemon Squeezy Store einrichten** und echte Checkout-URLs eintragen
+  - `fancyplan.lemonsqueezy.com/checkout/buy/free` → ersetzen
+  - `fancyplan.lemonsqueezy.com/checkout/buy/monthly` → ersetzen
+  - `fancyplan.lemonsqueezy.com/checkout/buy/yearly` → ersetzen
 
 ### Deployment
-- [ ] **Netlify** Projekt anlegen, Repo verknüpfen
-- [ ] Custom Domain einrichten (z.B. fancyplan.de)
-- [ ] `netlify.toml` konfigurieren (Redirects, Header)
+- [ ] Netlify Projekt anlegen + Repo verknüpfen
+- [ ] Custom Domain (z.B. fancyplan.de) einrichten
+- [ ] `netlify.toml` erstellen (Redirects, Security-Header)
 
-### Rechtliches (Pflicht vor Go-Live)
-- [ ] `impressum.html` erstellen
-- [ ] `datenschutz.html` erstellen (DSGVO)
-- [ ] `agb.html` erstellen
+### Assets (optional / nice-to-have)
+- [ ] `og:image` (1200×630 px) für Social Sharing erstellen
+- [ ] Open Graph Meta-Tags in `<head>` ergänzen
 
-### Assets / Branding
-- [ ] Logo / Icon für FancyPlan (SVG oder PNG, 32x32 + 512x512)
-- [ ] Favicon (`favicon.ico` / `favicon.svg`)
-- [ ] Optional: Screenshot der echten App → im Hero ersetzen (aktuell UI-Mockup in CSS)
-- [ ] `og:image` für Social Sharing (1200×630 px)
-- [ ] Open Graph Meta-Tags ergänzen
+### Analytics
+- [ ] Plausible oder Fathom Analytics einbinden (DSGVO-konform)
 
-### Tracking / Analytics
-- [ ] Plausible oder Fathom Analytics einbinden (DSGVO-konform, kein Cookie-Banner)
+### Impressum prüfen
+- [ ] Firmendaten bestätigen (aktuell InPrime.Net / Tallinn)
 
-### Qualitätssicherung
+### QA vor Go-Live
 - [ ] Browser-Test: Chrome, Firefox, Edge
 - [ ] Mobile-Test: iOS Safari, Android Chrome
-- [ ] Lighthouse-Audit durchführen (Performance, SEO, Accessibility)
-- [ ] Alle Links prüfen (Lemon Squeezy URLs live testen)
+- [ ] Lighthouse-Audit (Performance, SEO, Accessibility)
+- [ ] Alle Lemon Squeezy Links live testen
 
 ---
 
-## Preisstruktur (Entscheidung 2026-04-15)
-| Plan | Preis | Basis |
+## Preisstruktur (bestätigung ausstehend)
+| Plan | Preis | Anmerkung |
 |---|---|---|
 | Free | 0 € | max. 10 Aufgaben, kein Fokus-Score |
-| Pro Monatlich | 7 €/Monat | unbegrenzt, alle Features |
-| Pro Jährlich | 49 €/Jahr (4,08 €/Monat) | 2 Monate gratis vs. Monatlich |
+| Pro Monatlich | 7 €/Monat | alle Features, jederzeit kündbar |
+| Pro Jährlich | 49 €/Jahr (4,08 €/Mo) | 2 Monate gratis |
 
 ---
 
-## Wichtige Dateien
+## Dateien
 | Datei | Zweck |
 |---|---|
 | `index.html` | Hauptseite (Landingpage) |
-| `tasks/current-task.md` | Dieser Status |
-| `tasks/decision-log.md` | Architektur- und Designentscheidungen |
+| `impressum.html` | Impressum |
+| `datenschutz.html` | Datenschutzerklärung |
+| `agb.html` | Allgemeine Geschäftsbedingungen |
+| `assets/` | Screenshots, Icons, Logos |
+| `tasks/decision-log.md` | Alle Architektur- und Designentscheidungen |
 | `tasks/resume.md` | Prompt für nächste Session |

@@ -1,91 +1,90 @@
 # Resume-Prompt — Nächste Session
 
-**Zuletzt bearbeitet:** 2026-04-15  
-**Aktueller Commit:** `a0f54b8` — feat: Initial FancyPlan Shop Landingpage  
-**Branch:** master
+**Letzter Arbeitstag:** 2026-04-15
+**Letzter Commit:** `d7a6c65` — style: EU-Logo auf allen Seiten um 25% vergrößert
+**Branch:** master (5 Commits)
 
 ---
 
 ## Kontext
 
-Du entwickelst die statische Landingpage für **FancyPlan** — ein lokales Windows-Fokus-Tool (kein Server, kein Cloud-Zwang). Die Seite liegt in:
+Du entwickelst die statische Landingpage für **FancyPlan** — ein lokales Windows-Fokus-Tool (kein Server, kein Cloud-Zwang). Entwicklungsverzeichnis:
+
 ```
 C:\Users\hwleo\Documents\Daten\Shop\Pro\FancyPlan\FancyPlanDev\
 ```
 
-Hauptdatei: `index.html` — vollständige Landingpage, Phase 1 abgeschlossen.
+**Dateien:**
+- `index.html` — vollständige Landingpage ✅
+- `impressum.html`, `datenschutz.html`, `agb.html` — rechtliche Seiten ✅
+- `assets/` — Screenshots, Icons, EU-Logo (alle eingebunden)
+- `tasks/current-task.md` — vollständiger Status
+- `tasks/decision-log.md` — alle Designentscheidungen
 
-Vorlage/Design: `C:\Users\hwleo\Documents\Daten\Shop\InPrimeShopDev\knowcapture\index.html`  
-Content-Quelle: `C:\Users\hwleo\Documents\Daten\Shop\Pro\FancyPlan\FPContent\FP LP Content.html`
-
-Zahlungsabwicklung: **Lemon Squeezy** (Checkout-URLs noch als Platzhalter)  
-Deployment-Ziel: **Netlify**
+**Vorlage/Design:** `C:\Users\hwleo\Documents\Daten\Shop\InPrimeShopDev\knowcapture\index.html`
+**Zahlungsabwicklung:** Lemon Squeezy (URLs aktuell Platzhalter)
+**Deployment-Ziel:** Netlify
 
 ---
 
-## Was heute erledigt wurde
+## Was heute fertig wurde
 
-- index.html vollständig erstellt (alle Sektionen, responsiv, Vanilla HTML/CSS, Inter Font)
-- Farbschema: Teal (#0d9488) — differenziert von KnowCapture (Indigo)
-- Preisstruktur festgelegt: Free (0€), Pro Monatlich (7€), Pro Jährlich (49€)
-- tasks/current-task.md aktualisiert
-- tasks/decision-log.md erstellt (10 Entscheidungen dokumentiert)
-- Git-Repo: erster Commit `a0f54b8`
+- Vollständige Landingpage (alle Sektionen, responsiv, Vanilla HTML/CSS)
+- Echte App-Screenshots im Hero und in der How-it-Works-Sektion
+- FancyPlan Logo-Icon + EU-Commission-Logo in der Navigation (alle Seiten)
+- Favicon (16px + 256px ICO)
+- Alle 3 rechtlichen Seiten (Impressum, Datenschutz, AGB)
+- 5 Git-Commits
 
 ---
 
 ## Nächste Schritte (Priorität)
 
 ### 1. KRITISCH — Lemon Squeezy URLs eintragen
-Sobald der LS-Store eingerichtet ist, in `index.html` alle 3 Platzhalter ersetzen:
-- `fancyplan.lemonsqueezy.com/checkout/buy/free` → echter Free-Checkout-Link
-- `fancyplan.lemonsqueezy.com/checkout/buy/monthly` → echter Monats-Checkout-Link
-- `fancyplan.lemonsqueezy.com/checkout/buy/yearly` → echter Jahres-Checkout-Link
-- Nav-Link `https://app.fancyplan.de` → richtiger Download-/App-Link
+In `index.html`, `impressum.html`, `datenschutz.html`, `agb.html` alle Vorkommen von Platzhaltern ersetzen:
+- `fancyplan.lemonsqueezy.com/checkout/buy/free` → echter Free-Link
+- `fancyplan.lemonsqueezy.com/checkout/buy/monthly` → echter Monats-Link
+- `fancyplan.lemonsqueezy.com/checkout/buy/yearly` → echter Jahres-Link
 
-### 2. Rechtliche Seiten erstellen (vor Go-Live Pflicht)
-```
-impressum.html
-datenschutz.html
-agb.html
-```
-Vorlage aus `C:\Users\hwleo\Documents\Daten\Shop\InPrimeShopDev\` nutzen falls vorhanden.
-
-### 3. Netlify Deployment
-- `netlify.toml` erstellen (404-Redirect, HTTP-Security-Header)
+### 2. Netlify Deployment
+- `netlify.toml` erstellen
 - Repo mit Netlify verknüpfen
-- Custom Domain konfigurieren
+- Custom Domain einrichten
 
-### 4. Assets / Favicon
-- `favicon.ico` und `favicon.svg` anlegen
-- Open Graph Meta-Tags in `<head>` ergänzen (og:title, og:description, og:image)
-- Wenn ein echter App-Screenshot verfügbar: Hero-Mockup ersetzen
+### 3. Open Graph Meta-Tags
+In `<head>` von `index.html` ergänzen:
+```html
+<meta property="og:title" content="FancyPlan | Jeden Tag wissen, was wirklich zählt." />
+<meta property="og:description" content="..." />
+<meta property="og:image" content="https://fancyplan.de/assets/og-image.png" />
+<meta property="og:url" content="https://fancyplan.de" />
+```
+Dazu: `og-image.png` (1200×630 px) erstellen.
 
-### 5. Analytics
-- Plausible oder Fathom einbinden (DSGVO-konform, kein Cookie-Banner)
+### 4. Analytics
+Plausible oder Fathom einbinden (DSGVO-konform, kein Cookie-Banner).
+
+### 5. Impressum-Firmendaten bestätigen
+Aktuell steht InPrime.Net / Hans Waschinski / Tallinn drin.
+Falls FancyPlan unter anderem Rechtssubjekt läuft → anpassen.
 
 ### 6. QA
-- Browser-Test: Chrome, Firefox, Edge
-- Lighthouse-Audit
-- Mobile-Test
+Browser-Test, Mobile-Test, Lighthouse-Audit.
 
 ---
 
-## Wichtige Entscheidungen (Kurzfassung)
-
+## Wichtige Entscheidungen
 | # | Entscheidung |
 |---|---|
-| D-001 | Farbe: Teal #0d9488 (kein Indigo wie KnowCapture) |
+| D-001 | Farbe: Teal #0d9488 |
 | D-002 | Preise: 0€ / 7€/Mo / 49€/Jahr (bestätigung ausstehend) |
-| D-003 | Pricing-Reihenfolge: Free | Jährlich (featured) | Monatlich |
-| D-004 | Hero-Visual als CSS-Mockup (kein Screenshot verfügbar) |
-| D-005 | LS-URLs als Platzhalter → vor Go-Live ersetzen |
-| D-008 | Stack: Vanilla HTML + CSS, keine Frameworks |
+| D-003 | Pricing: Free \| Jährlich (featured) \| Monatlich |
+| D-008 | Stack: Vanilla HTML + CSS |
 | D-009 | Deployment: Netlify |
 
-Details in: `tasks/decision-log.md`
+Alle Details: `tasks/decision-log.md`
 
 ---
 
-## Wichtige Regel
-Du verlässt das Verzeichnis `C:\Users\hwleo\Documents\Daten\Shop\` nur mit Zustimmung des Nutzers.
+## Regel
+Das Verzeichnis `C:\Users\hwleo\Documents\Daten\Shop\` nur mit Zustimmung des Nutzers verlassen.
