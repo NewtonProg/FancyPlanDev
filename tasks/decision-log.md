@@ -13,13 +13,11 @@
 
 ### D-002: Preisstruktur
 **Entscheidung:**
-- Free: 0 € (max. 10 Aufgaben, kein Fokus-Score)
-- Pro Monatlich: 7 €/Monat
-- Pro Jährlich: 49 €/Jahr (= 4,08 €/Monat, 2 Monate gratis)
+- Free: 0 € (max. 10 Aufgaben)
+- Pro Monatlich: 19 €/Monat (LS Variant-ID: 1536198)
+- Pro Jährlich: 180 €/Jahr (= 15 €/Monat, spart 48 €) (LS Variant-ID: 1536243)
 
-**Begründung:** Preise wurden nicht in der Content-Vorlage festgelegt. 7 €/Monat liegt im typischen Bereich für Productivity-Tools (Todoist: 4–6 €, Notion: 10 €). 49 €/Jahr schafft einen Saving-Anreiz (≈ 35 % Rabatt vs. monatlich). Umsatzziel 1.000 €/Monat erreichbar mit ca. 143 Monatsabos oder 21 Jahresabos/Monat.
-
-**Offen:** Preise müssen vom Eigentümer vor Go-Live final bestätigt werden.
+**Begründung:** Preise vom Eigentümer über Lemon Squeezy Produkte festgelegt und bestätigt (2026-04-15). Ursprünglicher Entwurf (7 €/19 €) wurde durch die echten LS-Produktdaten ersetzt. Sparanreiz: 19 € × 12 = 228 € vs. 180 € = 48 € gespart.
 
 ---
 
@@ -66,5 +64,38 @@
 ---
 
 ### D-010: Kontakt-E-Mail
-**Entscheidung:** `sapco.cslt@gmail.com` aus dem User-Profil als Support-/Kontakt-E-Mail verwendet.  
+**Entscheidung:** `sapco.cslt@gmail.com` als Support-/Kontakt-E-Mail verwendet.  
 **Begründung:** Keine dedizierte FancyPlan-Kontaktadresse bekannt. Vor Go-Live ggf. durch eine produktspezifische Adresse ersetzen (z.B. hello@fancyplan.de).
+
+---
+
+## 2026-04-16
+
+### D-011: Kostenlos-Download über eigene Seite (nicht LS)
+**Entscheidung:** Free-Version wird über `download.html` auf Netlify bereitgestellt, kein Lemon Squeezy Free-Produkt.  
+**Begründung:** Lemon Squeezy unterstützt keine echten kostenlosen Produkte ohne Workarounds. Eigene Download-Seite ist einfacher, schneller und braucht kein Payment-Gateway. Alle „Kostenlos starten"-CTAs zeigen auf `download.html`.
+
+---
+
+### D-012: Lizenzschlüssel-Infrastruktur (CSV/Webhook) — gebaut, aber nicht aktiv für v1
+**Entscheidung:** Webhook-Handler (`ls-webhook.js`), CSV-Dateien und Netlify Blobs wurden gebaut und committed, werden für v1 aber nicht aktiv genutzt.  
+**Begründung:** FancyPlan verwendet hardwaregebundene Lizenzkeys (CPU-ID-basiert). Keys können daher nicht vorgeneriert werden — der CSV-Ansatz ist mit diesem Modell nicht kompatibel. Infrastruktur bleibt im Repo für v2.
+
+---
+
+### D-013: Lizenzkey-Vergabe v1 — manueller Flow
+**Entscheidung:** Pro-Keys werden in v1 manuell vergeben.  
+**Flow:**
+1. User kauft auf Website (Lemon Squeezy)
+2. User öffnet FancyPlan → In-App-Dialog → sendet CPU-ID per E-Mail an Entwickler
+3. Entwickler generiert Key manuell aus CPU-ID → sendet per E-Mail zurück
+4. User gibt Key im App-Dialog ein → Pro aktiv
+
+**Begründung:** Hardwaregebundene Keys (CPU-ID) lassen sich nicht automatisiert vorgenerieren. Manueller Flow ist für den Start (<20 Verkäufe/Monat) vertretbar. Automatisierung wird in v2 angegangen.
+
+---
+
+### D-014: Lizenzkey-Automatisierung — verschoben auf v2
+**Entscheidung:** Vollautomatische Key-Vergabe über Lemon Squeezy Native Keys wird auf v2 verschoben.  
+**Ziel v2:** App-seitige Validierung von CPU-ID-Bindung auf LS Native Keys umschreiben → LS generiert und versendet Keys nach Kauf automatisch, keine manuelle Intervention.  
+**Begründung:** Erfordert App-Code-Änderung. Entwickler kennt die Lizenz-Key-Programmierung gut → Aufwand in v2 überschaubar. Auslöser: wenn ~20 Verkäufe/Monat erreicht werden und manueller Flow zum Engpass wird.
