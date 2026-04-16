@@ -1,0 +1,39 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Pretty URLs
+[[redirects]]
+  from = "/danke"
+  to   = "/danke.html"
+  status = 200
+
+[[redirects]]
+  from = "/download"
+  to   = "/download.html"
+  status = 200
+
+# Cache assets long-term
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Security headers for HTML pages
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Prevent direct access to license CSV files
+[[headers]]
+  for = "/licenses/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[redirects]]
+  from = "/licenses/*"
+  to   = "/404.html"
+  status = 404

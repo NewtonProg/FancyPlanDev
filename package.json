@@ -1,0 +1,9 @@
+{
+  "name": "fancyplan-shop",
+  "version": "1.0.0",
+  "description": "FancyPlan Shop Landing Page & License Delivery",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
+  }
+}
