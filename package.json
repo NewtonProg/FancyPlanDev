@@ -1,0 +1,81 @@
+{
+  "name": "fancyplan",
+  "version": "0.1.0",
+  "description": "FancyPlan — Tagesplanung und Aktivitätsmanagement",
+  "main": "./out/main/index.js",
+  "author": "Leonardo",
+  "scripts": {
+    "start": "electron-vite preview",
+    "dev": "node scripts/dev.js",
+    "build": "electron-vite build",
+    "build:win": "npm run build && electron-builder --win",
+    "build:win:test": "npm run build && electron-builder --win --dir",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "googleapis": "^171.4.0",
+    "i18next": "^26.0.10",
+    "imapflow": "^1.3.3",
+    "mailparser": "^3.9.8",
+    "mdb-reader": "^3.2.0",
+    "node-ical": "^0.26.1",
+    "nodemailer": "^8.0.7",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-i18next": "^17.0.7",
+    "tsdav": "^2.2.1",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.0",
+    "@electron-toolkit/utils": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "^20.0.0",
+    "@types/nodemailer": "^8.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^24.13.0",
+    "electron-rebuild": "^3.2.9",
+    "electron-vite": "^2.3.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  },
+  "build": {
+    "appId": "com.fancyplan.app",
+    "productName": "FancyPlan",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg"
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage"
+        }
+      ]
+    }
+  }
+}

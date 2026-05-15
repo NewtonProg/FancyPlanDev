@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Midnight Executive — default theme (space-separated RGB for Tailwind opacity modifiers) */
+    --fp-primary:                   173 198 255;
+    --fp-on-primary:                0 46 105;
+    --fp-primary-container:         75 142 255;
+    --fp-on-primary-container:      0 40 92;
+    --fp-inverse-primary:           0 91 193;
+    --fp-primary-fixed:             216 226 255;
+    --fp-primary-fixed-dim:         173 198 255;
+    --fp-on-primary-fixed:          0 26 65;
+    --fp-on-primary-fixed-variant:  0 68 147;
+    --fp-secondary:                 221 252 255;
+    --fp-on-secondary:              0 54 58;
+    --fp-secondary-container:       0 241 254;
+    --fp-on-secondary-container:    0 106 112;
+    --fp-secondary-fixed:           116 245 255;
+    --fp-secondary-fixed-dim:       0 219 231;
+    --fp-on-secondary-fixed:        0 32 34;
+    --fp-on-secondary-fixed-variant:0 79 84;
+    --fp-tertiary:                  255 181 149;
+    --fp-on-tertiary:               87 30 0;
+    --fp-tertiary-container:        239 103 25;
+    --fp-on-tertiary-container:     76 26 0;
+    --fp-tertiary-fixed:            255 219 204;
+    --fp-tertiary-fixed-dim:        255 181 149;
+    --fp-on-tertiary-fixed:         53 16 0;
+    --fp-on-tertiary-fixed-variant: 124 46 0;
+    --fp-error:                     255 180 171;
+    --fp-on-error:                  105 0 5;
+    --fp-error-container:           147 0 10;
+    --fp-on-error-container:        255 218 214;
+    --fp-surface:                   16 19 27;
+    --fp-surface-dim:               16 19 27;
+    --fp-surface-bright:            54 57 66;
+    --fp-surface-container-lowest:  11 14 22;
+    --fp-surface-container-low:     24 28 35;
+    --fp-surface-container:         28 32 40;
+    --fp-surface-container-high:    39 42 50;
+    --fp-surface-container-highest: 49 53 61;
+    --fp-on-surface:                224 226 237;
+    --fp-on-surface-variant:        193 198 215;
+    --fp-inverse-surface:           224 226 237;
+    --fp-inverse-on-surface:        45 48 57;
+    --fp-outline:                   139 144 160;
+    --fp-outline-variant:           65 71 85;
+    --fp-surface-tint:              173 198 255;
+    --fp-surface-variant:           49 53 61;
+    --fp-background:                16 19 27;
+    --fp-on-background:             224 226 237;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(24, 28, 35, 0.4);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.02);
+  }
+
+  .activity-card {
+    position: relative;
+    background: rgba(24, 28, 35, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 4px 15px -5px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .activity-card::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: 10%;
+    width: 80%;
+    height: 50px;
+    background: radial-gradient(ellipse at center, var(--glow-color, rgba(173, 198, 255, 0.12)) 0%, transparent 75%);
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.5;
+    transition: all 0.4s ease;
+  }
+
+  .activity-card:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-6px) scale(1.01);
+    background: rgba(49, 53, 61, 0.6);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .activity-card:hover::after {
+    opacity: 1;
+    transform: scale(1.15);
+    bottom: -40px;
+  }
+
+  /* Dark-theme sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 w-full px-3 py-2 rounded-apple-sm text-sm font-medium cursor-pointer transition-colors duration-150 text-left;
+    color: rgb(var(--fp-on-surface-variant));
+  }
+
+  .sidebar-item:hover {
+    background-color: rgb(var(--fp-surface-container-high));
+    color: rgb(var(--fp-on-surface));
+  }
+
+  .sidebar-item.active {
+    color: rgb(var(--fp-primary));
+    font-weight: 600;
+    background-color: rgb(var(--fp-primary) / 0.1);
+  }
+
+  /* Dark-theme buttons */
+  .btn-primary {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed;
+    background-color: rgb(var(--fp-primary));
+    color: rgb(var(--fp-on-primary));
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+    border: 1px solid rgb(var(--fp-outline-variant));
+    color: rgb(var(--fp-on-surface-variant));
+  }
+
+  .btn-secondary:hover {
+    background-color: rgb(var(--fp-surface-container-high));
+    color: rgb(var(--fp-on-surface));
+  }
+
+  /* Dark-theme inputs */
+  .input-field {
+    @apply rounded-lg px-3 py-1.5 text-sm focus:outline-none;
+    background-color: rgb(var(--fp-surface-container));
+    border: 1px solid rgb(var(--fp-outline-variant));
+    color: rgb(var(--fp-on-surface));
+  }
+
+  .input-field:focus {
+    border-color: rgb(var(--fp-primary));
+    box-shadow: 0 0 0 2px rgb(var(--fp-primary) / 0.2);
+  }
+
+  .input-field::placeholder {
+    color: rgb(var(--fp-on-surface-variant) / 0.5);
+  }
+
+  .label-field {
+    @apply block text-xs mb-1;
+    color: rgb(var(--fp-on-surface-variant));
+  }
+}

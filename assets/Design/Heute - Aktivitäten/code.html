@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stratos Dashboard - Activity Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#adc6ff",
+                    "secondary-fixed-dim": "#00dbe7",
+                    "on-secondary": "#00363a",
+                    "surface-container-low": "#181c23",
+                    "secondary": "#ddfcff",
+                    "on-primary-fixed": "#001a41",
+                    "surface-container-lowest": "#0b0e16",
+                    "on-primary": "#002e69",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "on-tertiary-container": "#4c1a00",
+                    "on-primary-container": "#00285c",
+                    "surface-container-highest": "#31353d",
+                    "inverse-surface": "#e0e2ed",
+                    "inverse-on-surface": "#2d3039",
+                    "primary-fixed": "#d8e2ff",
+                    "surface-variant": "#31353d",
+                    "on-surface-variant": "#c1c6d7",
+                    "surface-tint": "#adc6ff",
+                    "on-primary-fixed-variant": "#004493",
+                    "on-secondary-fixed-variant": "#004f54",
+                    "on-tertiary": "#571e00",
+                    "surface-container": "#1c2028",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffdbcc",
+                    "tertiary": "#ffb595",
+                    "on-secondary-fixed": "#002022",
+                    "secondary-fixed": "#74f5ff",
+                    "primary-fixed-dim": "#adc6ff",
+                    "tertiary-container": "#ef6719",
+                    "surface-dim": "#10131b",
+                    "secondary-container": "#00f1fe",
+                    "outline-variant": "#414755",
+                    "on-surface": "#e0e2ed",
+                    "on-error": "#690005",
+                    "background": "#10131b",
+                    "error-container": "#93000a",
+                    "inverse-primary": "#005bc1",
+                    "surface-bright": "#363942",
+                    "surface": "#10131b",
+                    "on-tertiary-fixed": "#351000",
+                    "on-background": "#e0e2ed",
+                    "primary-container": "#4b8eff",
+                    "error": "#ffb4ab",
+                    "surface-container-high": "#272a32",
+                    "on-secondary-container": "#006a70",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "outline": "#8b90a0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "edge_margin": "20px",
+                    "lg": "24px",
+                    "xs": "8px"
+            },
+            "fontFamily": {
+                    "title-lg": ["Outfit"],
+                    "headline-md": ["Outfit"],
+                    "label-caps": ["Outfit"],
+                    "body-md": ["Outfit"],
+                    "body-lg": ["Outfit"],
+                    "display-lg": ["Outfit"]
+            },
+            "fontSize": {
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>body { font-family: 'Outfit', sans-serif; }
+        .glass-card {
+            background: rgba(24, 28, 35, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.02);
+        }
+        .activity-card {
+            position: relative;
+            background: rgba(24, 28, 35, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 4px 15px -5px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .activity-card::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 10%;
+            width: 80%;
+            height: 50px;
+            background: radial-gradient(ellipse at center, var(--glow-color, rgba(173, 198, 255, 0.12)) 0%, transparent 75%);
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.5;
+            transition: all 0.4s ease;
+        }
+        .activity-card:hover {
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateY(-6px) scale(1.01);
+            background: rgba(49, 53, 61, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+        }
+        .activity-card:hover::after {
+            opacity: 1;
+            transform: scale(1.15);
+            bottom: -40px;
+        }</style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- Top Navigation -->
+<header class="bg-surface-dim dark:bg-surface-dim border-b border-outline-variant/30 flex justify-between items-center w-full px-lg py-sm sticky top-0 z-50">
+<div class="flex items-center gap-md">
+<!-- "Heute" size matches activity titles (headline-md) -->
+<span class="font-headline-md text-on-surface-variant/70 text-[26px]">Heute</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant/50">search</span>
+<input class="bg-surface-container-high/50 border-none rounded-full pl-10 pr-md py-xs text-body-md focus:ring-1 focus:ring-primary/50 w-80" placeholder="Search activities..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant/70 hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant/70 hover:text-primary transition-colors">settings</button>
+</div>
+</header>
+<!-- Side Navigation -->
+<aside class="flex flex-col h-screen fixed left-0 top-0 py-lg px-md gap-md bg-surface-container-low border-r border-outline-variant/30 w-64 pt-[80px] hidden md:flex">
+<nav class="flex flex-col gap-xs flex-grow">
+<a class="bg-secondary-container/10 text-on-secondary-container rounded-lg font-semibold flex items-center gap-md px-md py-sm transition-all duration-150" href="#">
+<span class="material-symbols-outlined opacity-70" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="list_alt">list_alt</span>
+<span class="font-label-md text-label-md">Activities</span>
+</a>
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="folder_shared">folder_shared</span>
+<span class="font-label-md text-label-md">Resources</span>
+</a>
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant/30 pt-lg">
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="support_agent">support_agent</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="text-on-surface-variant/70 hover:bg-surface-container-high/50 rounded-lg flex items-center gap-md px-md py-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined opacity-50" data-icon="manage_accounts">manage_accounts</span>
+<span class="font-label-md text-label-md">Account</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-64 p-lg">
+<div class="max-w-7xl mx-auto space-y-xl">
+<!-- Filter Section with custom logic icons -->
+<section class="space-y-lg pt-md">
+<div class="grid grid-cols-3 gap-md">
+<div class="glass-card rounded-xl p-md flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-sm">
+<!-- Bereich: Simple vertical rectangle -->
+<span class="material-symbols-outlined text-secondary-fixed-dim/50">rectangle</span>
+<span class="font-title-lg text-title-lg opacity-80">Bereich</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-y-1 transition-transform opacity-40">expand_more</span>
+</div>
+<div class="glass-card rounded-xl p-md flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-sm">
+<!-- Thema: Vertical rectangle with one arrow pointing right -->
+<span class="material-symbols-outlined text-secondary-fixed-dim/50">input</span>
+<span class="font-title-lg text-title-lg opacity-80">Thema</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-y-1 transition-transform opacity-40">expand_more</span>
+</div>
+<div class="glass-card rounded-xl p-md flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-sm">
+<!-- Kategorien: Vertical rectangle with two arrows (using double_arrow as approximate) -->
+<span class="material-symbols-outlined text-secondary-fixed-dim/50">keyboard_double_arrow_right</span>
+<span class="font-title-lg text-title-lg opacity-80">Kategorien</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-y-1 transition-transform opacity-40">expand_more</span>
+</div>
+</div>
+</section>
+<!-- Activity List Section -->
+<section class="space-y-md">
+<!-- Activity Item 1 -->
+<div class="activity-card rounded-xl p-lg flex items-start gap-lg border-l-2 border-l-primary/40 transition-all" style="--glow-color: rgba(173, 198, 255, 0.05)">
+<div class="flex flex-col gap-xs flex-grow self-stretch justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface opacity-90">Cloud Infrastructure Audit</h3>
+<p class="text-on-surface-variant/70 font-body-md text-body-md">Quarterly security review and performance optimization for Azure instances.</p>
+</div>
+<div class="flex gap-sm mt-sm">
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">event_repeat</span>
+                            Verschieben
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">check_circle</span>
+                            Fertigstellen
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">delete</span>
+                            Löschen
+                        </button>
+</div>
+</div>
+<div class="flex gap-xl items-end self-stretch">
+<div class="text-left flex flex-col justify-end">
+<!-- Status value: 20% larger than previous, left aligned, description removed -->
+<span class="px-md py-1.5 bg-secondary-container/10 text-secondary-fixed-dim/70 rounded-md border border-secondary-fixed-dim/20 font-label-md text-[20px] text-left flex items-center justify-start min-h-[44px]">In Progress</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<!-- Centered Tage label -->
+<p class="text-[10px] uppercase tracking-wider font-semibold text-on-surface-variant/40 text-center">Tage</p>
+<!-- Muted Tage numeric value (lower contrast) -->
+<div class="bg-surface-container-highest/20 rounded-xl border border-outline-variant/10 min-w-[60px] h-[44px] flex items-center justify-center">
+<span class="text-xl font-bold text-on-surface-variant/30">03</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="activity-card rounded-xl p-lg flex items-start gap-lg border-l-2 border-l-tertiary/40 transition-all" style="--glow-color: rgba(255, 181, 149, 0.05)">
+<div class="flex flex-col gap-xs flex-grow self-stretch justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface opacity-90">Client Stakeholder Meeting</h3>
+<p class="text-on-surface-variant/70 font-body-md text-body-md">Monthly roadmap alignment and feedback session with the Tier 1 enterprise partners.</p>
+</div>
+<div class="flex gap-sm mt-sm">
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">event_repeat</span>
+                            Verschieben
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">check_circle</span>
+                            Fertigstellen
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">delete</span>
+                            Löschen
+                        </button>
+</div>
+</div>
+<div class="flex gap-xl items-end self-stretch">
+<div class="text-left flex flex-col justify-end">
+<span class="px-md py-1.5 bg-tertiary-container/10 text-tertiary-fixed-dim/70 rounded-md border border-tertiary-fixed-dim/20 font-label-md text-[20px] text-left flex items-center justify-start min-h-[44px]">Waiting</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<p class="text-[10px] uppercase tracking-wider font-semibold text-on-surface-variant/40 text-center">Tage</p>
+<div class="bg-surface-container-highest/20 rounded-xl border border-outline-variant/10 min-w-[60px] h-[44px] flex items-center justify-center">
+<span class="text-xl font-bold text-on-surface-variant/30">01</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="activity-card rounded-xl p-lg flex items-start gap-lg border-l-2 border-l-error/40 transition-all" style="--glow-color: rgba(255, 180, 171, 0.05)">
+<div class="flex flex-col gap-xs flex-grow self-stretch justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface opacity-90">Database Migration Fix</h3>
+<p class="text-on-surface-variant/70 font-body-md text-body-md">Critical: Address the latency spikes in the production data cluster immediately.</p>
+</div>
+<div class="flex gap-sm mt-sm">
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">event_repeat</span>
+                            Verschieben
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">check_circle</span>
+                            Fertigstellen
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">delete</span>
+                            Löschen
+                        </button>
+</div>
+</div>
+<div class="flex gap-xl items-end self-stretch">
+<div class="text-left flex flex-col justify-end">
+<span class="px-md py-1.5 bg-error-container/10 text-error/70 rounded-md border border-error/20 font-label-md text-[20px] text-left flex items-center justify-start min-h-[44px]">Overdue</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<p class="text-[10px] uppercase tracking-wider font-semibold text-on-surface-variant/40 text-center">Tage</p>
+<div class="bg-surface-container-highest/20 rounded-xl border border-outline-variant/10 min-w-[60px] h-[44px] flex items-center justify-center">
+<span class="text-xl font-bold text-on-surface-variant/30">00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Item 4 -->
+<div class="activity-card rounded-xl p-lg flex items-start gap-lg border-l-2 border-l-on-surface-variant/30 transition-all" style="--glow-color: rgba(193, 198, 215, 0.05)">
+<div class="flex flex-col gap-xs flex-grow self-stretch justify-between">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface opacity-90">UI Design System Update</h3>
+<p class="text-on-surface-variant/70 font-body-md text-body-md">Finalizing the luxurious navy component library for the next release cycle.</p>
+</div>
+<div class="flex gap-sm mt-sm">
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">event_repeat</span>
+                            Verschieben
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">check_circle</span>
+                            Fertigstellen
+                        </button>
+<button class="flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high/20 backdrop-blur-md text-on-surface-variant/60 hover:bg-surface-variant transition-colors text-label-md font-label-md border border-outline-variant/10">
+<span class="material-symbols-outlined text-[16px] opacity-70">delete</span>
+                            Löschen
+                        </button>
+</div>
+</div>
+<div class="flex gap-xl items-end self-stretch">
+<div class="text-left flex flex-col justify-end">
+<span class="px-md py-1.5 bg-surface-container/30 text-on-surface-variant/70 rounded-md font-label-md text-[20px] text-left flex items-center justify-start min-h-[44px]">Scheduled</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<p class="text-[10px] uppercase tracking-wider font-semibold text-on-surface-variant/40 text-center">Tage</p>
+<div class="bg-surface-container-highest/20 rounded-xl border border-outline-variant/10 min-w-[60px] h-[44px] flex items-center justify-center">
+<span class="text-xl font-bold text-on-surface-variant/30">12</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="pt-xl border-t border-outline-variant/20">
+<div class="grid grid-cols-2 gap-md">
+<div class="glass-card rounded-xl p-md flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary-fixed-dim/50">person_edit</span>
+<span class="font-title-lg text-title-lg opacity-80">Bearbeitet</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-y-1 transition-transform opacity-40">expand_more</span>
+</div>
+<div class="glass-card rounded-xl p-md flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary-fixed-dim/50">schedule</span>
+<span class="font-title-lg text-title-lg opacity-80">Tage</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-y-1 transition-transform opacity-40">expand_more</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>
