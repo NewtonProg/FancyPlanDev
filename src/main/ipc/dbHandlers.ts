@@ -18,19 +18,32 @@ ipcMain.handle('db:act:getAll', (_event, filter: Partial<Row> = {}) => {
     params.push(like, like, like, like)
   }
   if (filter.SToday !== undefined) {
-    const d = filter.forDate ? `'${String(filter.forDate)}'` : `date('now')`
-    const isToday = !filter.forDate || filter.forDate === new Date().toISOString().slice(0, 10)
     if (filter.SToday === 1) {
-      if (isToday) {
-        sql += ` AND (SToday = 1 OR (Pl1Beg IS NOT NULL AND Pl1End IS NOT NULL AND date(Pl1Beg) <= ${d} AND date(Pl1End) >= ${d}))`
-      } else {
-        sql += ` AND (Pl1Beg IS NOT NULL AND Pl1End IS NOT NULL AND date(Pl1Beg) <= ${d} AND date(Pl1End) >= ${d})`
-      }
+      const d = filter.forDate ? `'${String(filter.forDate)}'` : `date('now')`
+      sql += ` AND (SToday = 1 OR (Pl1Beg IS NOT NULL AND Pl1End IS NOT NULL AND date(Pl1Beg) <= ${d} AND date(Pl1End) >= ${d}))`
     } else {
       sql += ' AND SToday = ?'; params.push(filter.SToday)
     }
   }
+
   if (filter.Sdone !== undefined)  { sql += ' AND Sdone = ?';  params.push(filter.Sdone)  }
+  if (filter.planFrom && filter.planTo) {
+    sql += ' AND Pl1Beg IS NOT NULL AND Pl1End IS NOT NULL AND date(Pl1Beg) <= date(?) AND date(Pl1End) >= date(?)'
+    params.push(filter.planTo, filter.planFrom)
+  } else if (filter.planFrom) {
+    sql += ' AND date(Pl1End) >= date(?)'; params.push(filter.planFrom)
+  } else if (filter.planTo) {
+    sql += ' AND date(Pl1End) <= date(?)'; params.push(filter.planTo)
+  }
+  if (filter.doneFrom) { sql += ' AND date(TodayDone) >= date(?)';    params.push(filter.doneFrom) }
+  if (filter.doneTo)   { sql += ' AND date(TodayDone) <= date(?)';    params.push(filter.doneTo)   }
+  if (filter.svFrom)   { sql += ' AND date(ToDayShifted) >= date(?)'; params.push(filter.svFrom)   }
+  if (filter.svTo)     { sql += ' AND date(ToDayShifted) <= date(?)'; params.push(filter.svTo)     }
+  if (filter.editedFrom || filter.editedTo) {
+    sql += ' AND TodayEdited IS NOT NULL'
+    if (filter.editedFrom) { sql += ' AND date(TodayEdited) >= date(?)'; params.push(filter.editedFrom) }
+    if (filter.editedTo)   { sql += ' AND date(TodayEdited) <= date(?)'; params.push(filter.editedTo)   }
+  }
 
   if (filter.sortByPrio) {
     sql += ' ORDER BY COALESCE(Prio1, 9999) ASC, COALESCE(Prio2, 9999) ASC, date(Pl1Beg) ASC'
@@ -131,6 +144,39 @@ ipcMain.handle('db:tel:getByCompany', (_event, company: string) =>
 ipcMain.handle('db:tel:getEmailsByCompany', (_event, company: string) =>
   dbAll("SELECT EMail1, EMail2, EMail3 FROM TTel WHERE Company = ? AND (EMail1 IS NOT NULL AND EMail1 != '' OR EMail2 IS NOT NULL AND EMail2 != '' OR EMail3 IS NOT NULL AND EMail3 != '')", [company])
 )
+
+// ── TActTel — Aktivität ↔ Kontakt (m:n) ───────────────────────────────────
+
+ipcMain.handle('db:acttel:getByAct', (_event, actId: number) =>
+  dbAll(
+    `SELECT t.* FROM TTel t
+     INNER JOIN TActTel at ON at.IDTTel = t.id
+     WHERE at.IDTAct = ?
+     ORDER BY t.SurName ASC, t.FirstName ASC`,
+    [actId]
+  )
+)
+
+ipcMain.handle('db:acttel:getByTel', (_event, telId: number) =>
+  dbAll(
+    `SELECT a.id, a.Title, a.Status, a.AreaName, a.ThemeName, a.Pl1End, a.Sdone
+     FROM TAct a
+     INNER JOIN TActTel at ON at.IDTAct = a.id
+     WHERE at.IDTTel = ? AND a.Sdel = 0
+     ORDER BY a.ActBeg DESC`,
+    [telId]
+  )
+)
+
+ipcMain.handle('db:acttel:add', (_event, actId: number, telId: number) => {
+  dbRun('INSERT OR IGNORE INTO TActTel (IDTAct, IDTTel) VALUES (?, ?)', [actId, telId])
+  return { ok: true }
+})
+
+ipcMain.handle('db:acttel:remove', (_event, actId: number, telId: number) => {
+  dbRun('DELETE FROM TActTel WHERE IDTAct = ? AND IDTTel = ?', [actId, telId])
+  return { ok: true }
+})
 
 // ── Reference tables ───────────────────────────────────────────────────────
 
@@ -340,6 +386,54 @@ ipcMain.handle('db:fcmstatus:delete', (_event, id: number) => {
     dbRun(`DELETE FROM ${table} WHERE id = ?`, [id])
     return { ok: true }
   })
+})
+
+// ── TTelEmail — E-Mail-Adressen (1:n) ─────────────────────────────────────
+
+ipcMain.handle('db:ttelmail:getByTel', (_event, telId: number) =>
+  dbAll('SELECT * FROM TTelEmail WHERE tel_id = ? ORDER BY sort_order ASC, id ASC', [telId])
+)
+
+ipcMain.handle('db:ttelmail:create', (_event, data: Row) => {
+  const cols = Object.keys(data)
+  const sql = `INSERT INTO TTelEmail (${cols.join(', ')}, created_at) VALUES (${cols.map(() => '?').join(', ')}, CURRENT_TIMESTAMP)`
+  const r = dbRun(sql, Object.values(data))
+  return { id: r.lastInsertRowid }
+})
+
+ipcMain.handle('db:ttelmail:update', (_event, id: number, data: Row) => {
+  const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ')
+  dbRun(`UPDATE TTelEmail SET ${sets} WHERE id = ?`, [...Object.values(data), id])
+  return { ok: true }
+})
+
+ipcMain.handle('db:ttelmail:delete', (_event, id: number) => {
+  dbRun('DELETE FROM TTelEmail WHERE id = ?', [id])
+  return { ok: true }
+})
+
+// ── TTelWeb — Web-Adressen (1:n) ──────────────────────────────────────────
+
+ipcMain.handle('db:ttelweb:getByTel', (_event, telId: number) =>
+  dbAll('SELECT * FROM TTelWeb WHERE tel_id = ? ORDER BY sort_order ASC, id ASC', [telId])
+)
+
+ipcMain.handle('db:ttelweb:create', (_event, data: Row) => {
+  const cols = Object.keys(data)
+  const sql = `INSERT INTO TTelWeb (${cols.join(', ')}, created_at) VALUES (${cols.map(() => '?').join(', ')}, CURRENT_TIMESTAMP)`
+  const r = dbRun(sql, Object.values(data))
+  return { id: r.lastInsertRowid }
+})
+
+ipcMain.handle('db:ttelweb:update', (_event, id: number, data: Row) => {
+  const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ')
+  dbRun(`UPDATE TTelWeb SET ${sets} WHERE id = ?`, [...Object.values(data), id])
+  return { ok: true }
+})
+
+ipcMain.handle('db:ttelweb:delete', (_event, id: number) => {
+  dbRun('DELETE FROM TTelWeb WHERE id = ?', [id])
+  return { ok: true }
 })
 
 // ── TAct_Log ───────────────────────────────────────────────────────────────

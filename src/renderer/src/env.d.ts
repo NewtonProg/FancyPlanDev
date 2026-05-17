@@ -101,6 +101,24 @@ interface DbApi {
       errors?: string[]
     }>
   }
+  acttel: {
+    getByAct: (actId: number)               => Promise<Row[]>
+    getByTel: (telId: number)               => Promise<Row[]>
+    add:      (actId: number, telId: number) => Promise<{ ok: boolean }>
+    remove:   (actId: number, telId: number) => Promise<{ ok: boolean }>
+  }
+  ttelmail: {
+    getByTel: (telId: number)               => Promise<Row[]>
+    create:   (data: Row)                   => Promise<{ id: number | bigint }>
+    update:   (id: number, data: Row)       => Promise<{ ok: boolean }>
+    delete:   (id: number)                  => Promise<{ ok: boolean }>
+  }
+  ttelweb: {
+    getByTel: (telId: number)               => Promise<Row[]>
+    create:   (data: Row)                   => Promise<{ id: number | bigint }>
+    update:   (id: number, data: Row)       => Promise<{ ok: boolean }>
+    delete:   (id: number)                  => Promise<{ ok: boolean }>
+  }
   actlog: {
     getByAct:    (idTAct: number) => Promise<Row[]>
     deleteByAct: (idTAct: number) => Promise<{ ok: boolean }>

@@ -35,6 +35,20 @@ function dateDiffDays(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86_400_000)
 }
 
+function parsePlanDate(v: unknown): Date | null {
+  if (v == null || v === '') return null
+  const n = Number(v)
+  if (!isNaN(n) && Number.isInteger(n) && n > 0 && n < 99999) {
+    return new Date(-2209161600000 + n * 86400000)
+  }
+  const s = String(v)
+  if (s.length >= 10) {
+    const d = new Date(s.slice(0, 10) + 'T00:00:00')
+    return isNaN(d.getTime()) ? null : d
+  }
+  return null
+}
+
 function addDays(date: string, days: number): string {
   const d = new Date(date)
   d.setDate(d.getDate() + days)
@@ -70,6 +84,10 @@ export default function FNowModal({
   const [showCatPicker,  setShowCatPicker]   = useState(false)
   const [showActLink,    setShowActLink]      = useState(false)
   const [linkedActTitle, setLinkedActTitle]  = useState('')
+  const [linkedTels,     setLinkedTels]      = useState<Row[]>([])
+  const [telSearch,      setTelSearch]       = useState('')
+  const [telResults,     setTelResults]      = useState<Row[]>([])
+  const telSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const skipDbLoad = useRef(false)
 
@@ -129,6 +147,9 @@ export default function FNowModal({
           if (linked) setLinkedActTitle(String(linked.Title ?? ''))
         })
       }
+      window.db.acttel.getByAct(currentId).then((tels) => {
+        if (!cancelled) setLinkedTels(tels as Row[])
+      })
       setLoading(false)
     })
     return () => { cancelled = true }
@@ -140,10 +161,11 @@ export default function FNowModal({
   // ── Bereich→Thema filtering ──────────────────────────────────────────────
   const selectedArea  = areas.find(a => String(a.AreaName) === String(form.AreaName))
   const visibleThemes: Row[] = selectedArea
-    ? areaThemeLinks
-        .filter(at => Number(at.IDArea) === Number(selectedArea.id))
-        .map(at => allThemes.find(t => Number(t.id) === Number(at.IDTheme)))
-        .filter((t): t is Row => t !== undefined)
+    ? allThemes.filter(t => {
+        if (Number(t.IDArea) === 0) return true
+        if (Number(t.IDArea) === Number(selectedArea.id)) return true
+        return areaThemeLinks.some(at => Number(at.IDArea) === Number(selectedArea.id) && Number(at.IDTheme) === Number(t.id))
+      })
     : allThemes
 
   // ── Thema→Kategorie filtering (by CatGrp === ThemeName) ──────────────────
@@ -224,6 +246,7 @@ export default function FNowModal({
     setSaving(true)
     const { id, created_at, updated_at, ...data } = form
     if (Number(data.Sdone) === 1) data.SToday = 0
+    data.TodayEdited = new Date().toISOString().slice(0, 10)
     await window.db.act.update(id as number, data)
     onSaved({ ...form, ...data })
     setSaving(false)
@@ -244,6 +267,13 @@ export default function FNowModal({
   )
   const hasPlan           = !!toDateStr(form.Pl1Beg)
   const navTitle          = navStack.length > 0 ? navStack[navStack.length - 1].title : ''
+
+  const daysLeft = (() => {
+    const due = parsePlanDate(form.Pl1End)
+    if (!due) return null
+    const today = new Date(); today.setHours(0, 0, 0, 0); due.setHours(0, 0, 0, 0)
+    return Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  })()
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'status',     label: t('fnow.tabStatus')   },
@@ -436,7 +466,14 @@ export default function FNowModal({
                       type="date"
                       className={inputCls}
                       value={toDateStr(form.Pl1Beg)}
-                      onChange={(e) => set('Pl1Beg', e.target.value)}
+                      onChange={(e) => {
+                        const newFrom = e.target.value
+                        setForm(prev => {
+                          const endStr = toDateStr(prev.Pl1End)
+                          const clampedEnd = endStr && endStr < newFrom ? newFrom : endStr
+                          return { ...prev, Pl1Beg: newFrom, Pl1End: clampedEnd ?? prev.Pl1End }
+                        })
+                      }}
                       onDoubleClick={handlePlanVonDblClick}
                       title={t('fnow.planFromDblClick')}
                     />
@@ -449,6 +486,18 @@ export default function FNowModal({
                       onChange={(e) => set('Pl1End', e.target.value)}
                     />
                   </Field>
+
+                  {daysLeft !== null && (
+                    <Field label={t('fnow.daysLeft')}>
+                      <div className={
+                        daysLeft <= 0
+                          ? 'w-full text-sm font-semibold rounded-lg px-2.5 py-1.5 bg-red-950/60 border border-red-500/60 text-red-400'
+                          : daysLeft === 1
+                            ? 'w-full text-sm font-semibold rounded-lg px-2.5 py-1.5 bg-amber-950/40 border border-amber-500/50 text-amber-400'
+                            : 'w-full text-sm rounded-lg px-2.5 py-1.5 bg-surface-container border border-outline-variant text-on-surface'
+                      }>{daysLeft}</div>
+                    </Field>
+                  )}
 
                   <Field label={t('common.status')}>
                     <select className={selectCls}
@@ -559,6 +608,73 @@ export default function FNowModal({
                     <input className={inputCls} value={String(form.OrderNr ?? '')}
                       onChange={(e) => set('OrderNr', e.target.value)} />
                   </Field>
+
+                  {/* ── Ansprechpartner (TActTel) ── */}
+                  <div className="border-t border-outline-variant/40 pt-3 mt-2">
+                    <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
+                      {t('fnow.contacts')}
+                    </p>
+                    {linkedTels.length === 0 ? (
+                      <p className="text-xs text-on-surface-variant/40 italic mb-2">{t('fnow.noContacts')}</p>
+                    ) : (
+                      <div className="flex flex-col gap-1 mb-2">
+                        {linkedTels.map((c) => (
+                          <div key={String(c.id)}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20">
+                            <span className="flex-1 text-sm text-on-surface truncate">
+                              {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
+                            </span>
+                            {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
+                            <button
+                              onClick={async () => {
+                                await window.db.acttel.remove(currentId, Number(c.id))
+                                setLinkedTels((prev) => prev.filter((x) => x.id !== c.id))
+                              }}
+                              className="text-error/50 hover:text-error text-xs leading-none flex-shrink-0 transition-colors">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Kontakt-Suche */}
+                    <div className="relative">
+                      <input
+                        className="w-full text-xs border border-outline-variant/40 rounded-lg px-2.5 py-1 bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40"
+                        placeholder={t('fnow.searchContact')}
+                        value={telSearch}
+                        onChange={(e) => {
+                          const q = e.target.value
+                          setTelSearch(q)
+                          if (telSearchRef.current) clearTimeout(telSearchRef.current)
+                          if (!q.trim()) { setTelResults([]); return }
+                          telSearchRef.current = setTimeout(async () => {
+                            const rows = await window.db.tel.getAll(q)
+                            const existing = new Set(linkedTels.map((x) => Number(x.id)))
+                            setTelResults((rows as Row[]).filter((r) => !existing.has(Number(r.id))).slice(0, 8))
+                          }, 250)
+                        }}
+                        onBlur={() => setTimeout(() => setTelResults([]), 200)}
+                      />
+                      {telResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-0.5 border border-outline-variant/40 rounded-lg bg-surface-container-high shadow-lg z-20 max-h-36 overflow-y-auto">
+                          {telResults.map((c) => (
+                            <button key={String(c.id)}
+                              onMouseDown={async (e) => {
+                                e.preventDefault()
+                                await window.db.acttel.add(currentId, Number(c.id))
+                                setLinkedTels((prev) => [...prev, c])
+                                setTelSearch('')
+                                setTelResults([])
+                              }}
+                              className="w-full text-left text-xs px-2.5 py-1.5 hover:bg-surface-container-highest border-b border-outline-variant/20 last:border-0 text-on-surface truncate transition-colors">
+                              {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
+                              {c.Company ? <span className="text-on-surface-variant/50 ml-2">{String(c.Company)}</span> : null}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

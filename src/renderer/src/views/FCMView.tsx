@@ -13,9 +13,21 @@ interface Profile {
   seq: number
 }
 
-export default function FCMView() {
+interface FCMViewProps { onLabelChange?: (label: string | null) => void }
+
+export default function FCMView({ onLabelChange }: FCMViewProps) {
   const { t } = useTranslation()
   const [subView, setSubView] = useState<FCMSubView>('hub')
+
+  useEffect(() => {
+    const labels: Record<FCMSubView, string | null> = {
+      hub:       null,
+      fcmbtn:    t('fcmbtn.title'),
+      values:    t('fcmval.title'),
+      fcmstatus: t('fcmst.title'),
+    }
+    onLabelChange?.(labels[subView])
+  }, [subView, t, onLabelChange])
   const [activeTab, setActiveTab] = useState<FCMTab>('profile')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [newProfileName, setNewProfileName] = useState('')

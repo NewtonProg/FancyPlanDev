@@ -383,6 +383,37 @@ CREATE INDEX IF NOT EXISTS idx_ttel_surname ON TTel(SurName);
 CREATE INDEX IF NOT EXISTS idx_ttel_company ON TTel(Company);
 CREATE INDEX IF NOT EXISTS idx_ttel_email1  ON TTel(EMail1);
 
+-- ── TTelEmail — E-Mail-Adressen (1:n) ────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS TTelEmail (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  tel_id       INTEGER NOT NULL,
+  EMail        TEXT NOT NULL DEFAULT '',
+  bSender      INTEGER DEFAULT 0,
+  bFavorit     INTEGER DEFAULT 0,
+  bIsImap      INTEGER DEFAULT 0,
+  Com          TEXT,
+  Pwd          TEXT,
+  MailProvider TEXT,
+  sort_order   INTEGER DEFAULT 0,
+  created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ttelemail_tel ON TTelEmail(tel_id);
+
+-- ── TTelWeb — Web-Adressen (1:n) ─────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS TTelWeb (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  tel_id       INTEGER NOT NULL,
+  Url          TEXT NOT NULL DEFAULT '',
+  Com          TEXT,
+  sort_order   INTEGER DEFAULT 0,
+  created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ttelweb_tel ON TTelWeb(tel_id);
+
 -- ── TTree — Baumstruktur ──────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS TTree (
@@ -671,5 +702,18 @@ CREATE TABLE IF NOT EXISTS TRecurring (
   active       INTEGER DEFAULT 1,
   created_at   TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ── TActTel — Verknüpfung Aktivität ↔ Kontakt (m:n) ─────────────────────────
+
+CREATE TABLE IF NOT EXISTS TActTel (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  IDTAct     INTEGER NOT NULL,
+  IDTTel     INTEGER NOT NULL,
+  role       TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(IDTAct, IDTTel)
+);
+CREATE INDEX IF NOT EXISTS idx_tacttel_act ON TActTel(IDTAct);
+CREATE INDEX IF NOT EXISTS idx_tacttel_tel ON TActTel(IDTTel);
 
 `

@@ -93,6 +93,24 @@ const dbApi = {
     delete:  (id: number)                                 => ipcRenderer.invoke('db:projekt:delete', id)
   },
   migrate: { fromAccess: ()             => ipcRenderer.invoke('db:migrate:fromAccess')    },
+  acttel: {
+    getByAct: (actId: number)              => ipcRenderer.invoke('db:acttel:getByAct', actId),
+    getByTel: (telId: number)              => ipcRenderer.invoke('db:acttel:getByTel', telId),
+    add:      (actId: number, telId: number) => ipcRenderer.invoke('db:acttel:add', actId, telId),
+    remove:   (actId: number, telId: number) => ipcRenderer.invoke('db:acttel:remove', actId, telId)
+  },
+  ttelmail: {
+    getByTel: (telId: number)                                    => ipcRenderer.invoke('db:ttelmail:getByTel', telId),
+    create:   (data: Record<string, unknown>)                    => ipcRenderer.invoke('db:ttelmail:create', data),
+    update:   (id: number, data: Record<string, unknown>)        => ipcRenderer.invoke('db:ttelmail:update', id, data),
+    delete:   (id: number)                                       => ipcRenderer.invoke('db:ttelmail:delete', id)
+  },
+  ttelweb: {
+    getByTel: (telId: number)                                    => ipcRenderer.invoke('db:ttelweb:getByTel', telId),
+    create:   (data: Record<string, unknown>)                    => ipcRenderer.invoke('db:ttelweb:create', data),
+    update:   (id: number, data: Record<string, unknown>)        => ipcRenderer.invoke('db:ttelweb:update', id, data),
+    delete:   (id: number)                                       => ipcRenderer.invoke('db:ttelweb:delete', id)
+  },
   actlog: {
     getByAct:    (idTAct: number) => ipcRenderer.invoke('db:actlog:getByAct', idTAct),
     deleteByAct: (idTAct: number) => ipcRenderer.invoke('db:actlog:deleteByAct', idTAct),

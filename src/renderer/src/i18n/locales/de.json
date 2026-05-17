@@ -107,6 +107,8 @@
     "colStatus": "Status"
   },
   "contacts": {
+    "collapseSidebar": "Liste einklappen",
+    "expandSidebar": "Liste ausklappen",
     "searchPh": "Name, Firma, E-Mail…",
     "count": "{{count}} Kontakte",
     "searching": "Suche…",
@@ -139,7 +141,26 @@
     "sectionWeb": "Web",
     "labelNote": "Titel/Notiz",
     "mailTokenHint": "Mail-Token → Einstellungen",
-    "deleteConfirm": "Kontakt \"{{name}}\" wirklich löschen?"
+    "deleteConfirm": "Kontakt \"{{name}}\" wirklich löschen?",
+    "newContact": "Neuer Kontakt",
+    "labelTitle": "Anrede/Titel",
+    "labelJob": "Position",
+    "showCbx": "Optionen",
+    "hideCbx": "Optionen ▲",
+    "showMore": "+ {{n}} weitere",
+    "showLess": "Weniger anzeigen",
+    "addEmail": "E-Mail hinzufügen",
+    "addWeb": "Web-Adresse hinzufügen",
+    "emailPh": "name@firma.de",
+    "sectionActivities": "Zugeordnete Aktivitäten",
+    "noActivities": "Keine Aktivitäten verknüpft.",
+    "searchActivity": "Aktivität suchen und verknüpfen…",
+    "sectionPrimaryContact": "Primäre Kontaktdaten",
+    "tabGeneral": "Allgemein",
+    "tabAddress": "Adresse",
+    "tabContact": "Kontakt",
+    "tabWeb": "Web",
+    "tabActivities": "Aktivitäten"
   },
   "tree": {
     "title": "Baumstruktur",
@@ -335,6 +356,7 @@
     "linksHint": "URL / PC-Pfad / Social / Netzwerk",
     "planFrom": "Plan von",
     "planTo": "Plan bis",
+    "daysLeft": "Tage",
     "theme": "Thema",
     "area": "Bereich",
     "category": "Kategorie",
@@ -373,7 +395,10 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "prio1": "Prio1",
-    "prio2": "Prio2"
+    "prio2": "Prio2",
+    "contacts": "Ansprechpartner",
+    "noContacts": "Keine Ansprechpartner verknüpft.",
+    "searchContact": "Kontakt suchen und verknüpfen…"
   },
   "fcm": {
     "title": "Einstellungen",

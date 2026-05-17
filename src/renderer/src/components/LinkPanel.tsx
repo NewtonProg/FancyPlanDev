@@ -38,6 +38,8 @@ function chipColor(type: string): string {
   return map[type] ?? 'bg-surface-container-low text-on-surface border-outline-variant'
 }
 
+const linkinp = 'text-xs border border-outline-variant rounded px-2 py-1 text-gray-800 placeholder-gray-500'
+
 export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' | 'tree'; entityId: number }): JSX.Element {
   const { t } = useTranslation()
   const [links, setLinks] = useState<Link[]>([])
@@ -106,11 +108,11 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
           </select>
           <input placeholder={t('links.urlPh')} value={form.url}
             onChange={(e) => setForm({ ...form, url: e.target.value })}
-            className="text-xs border border-outline-variant rounded px-2 py-1" />
+            className={linkinp} />
           <input placeholder={t('links.labelPh')} value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-            className="text-xs border border-outline-variant rounded px-2 py-1" />
+            className={linkinp} />
           <div className="flex gap-1.5">
             <button onClick={handleAdd}
               className="flex-1 text-xs bg-primary text-on-primary rounded px-2 py-1 hover:bg-blue-600">{t('links.add')}</button>
@@ -132,11 +134,11 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
                 {LINK_TYPES.map((tp) => <option key={tp.value} value={tp.value}>{tp.label}</option>)}
               </select>
               <input value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                className="text-xs border border-outline-variant rounded px-2 py-1" />
+                className={linkinp} />
               <input value={editForm.label} onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
                 placeholder={t('links.labelPh')}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave() }}
-                className="text-xs border border-outline-variant rounded px-2 py-1" />
+                className={linkinp} />
               <div className="flex gap-1.5">
                 <button onClick={handleEditSave}
                   className="flex-1 text-xs bg-primary text-on-primary rounded px-2 py-1 hover:bg-blue-600">{t('links.save')}</button>

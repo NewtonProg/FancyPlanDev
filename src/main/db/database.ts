@@ -41,10 +41,109 @@ export function initDb(): void {
     db.exec('ALTER TABLE TTheme ADD COLUMN IDArea INTEGER DEFAULT 0')
   }
 
+  const tactCols = db.prepare('PRAGMA table_info(TAct)').all() as { name: string }[]
+  if (!tactCols.some((c) => c.name === 'TodayEdited')) {
+    db.exec('ALTER TABLE TAct ADD COLUMN TodayEdited TEXT')
+  }
+
   const tcatCols = db.prepare('PRAGMA table_info(TCat)').all() as { name: string }[]
   if (!tcatCols.some((c) => c.name === 'IDTheme')) {
     db.exec('ALTER TABLE TCat ADD COLUMN IDTheme INTEGER DEFAULT 0')
     db.exec(`UPDATE TCat SET IDTheme = COALESCE((SELECT id FROM TTheme WHERE ThemeName = TCat.CatGrp LIMIT 1), 0) WHERE CatGrp IS NOT NULL AND CatGrp != '*'`)
+  }
+
+  const tacttelCols = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='TActTel'").get()
+  if (!tacttelCols) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS TActTel (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        IDTAct     INTEGER NOT NULL,
+        IDTTel     INTEGER NOT NULL,
+        role       TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(IDTAct, IDTTel)
+      );
+      CREATE INDEX IF NOT EXISTS idx_tacttel_act ON TActTel(IDTAct);
+      CREATE INDEX IF NOT EXISTS idx_tacttel_tel ON TActTel(IDTTel);
+    `)
+  }
+
+  const ttelemailTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='TTelEmail'").get()
+  if (!ttelemailTable) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS TTelEmail (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        tel_id       INTEGER NOT NULL,
+        EMail        TEXT NOT NULL DEFAULT '',
+        bSender      INTEGER DEFAULT 0,
+        bFavorit     INTEGER DEFAULT 0,
+        bIsImap      INTEGER DEFAULT 0,
+        Com          TEXT,
+        Pwd          TEXT,
+        MailProvider TEXT,
+        sort_order   INTEGER DEFAULT 0,
+        created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_ttelemail_tel ON TTelEmail(tel_id);
+    `)
+    const telRows = db.prepare(`
+      SELECT id, EMail1, bSender1, bMailFavo1, bIsImap1, EMail1Com, EMAil1Pwd, MailProvider1,
+             EMail2, bSender2, bMailFavo2, bIsImap2, EMail2Com, EMail2Pwd, MailProvider2,
+             EMail3, bSender3, bMailFavo3, bIsImap3, EMail3Com, EMail3Pwd, MailProvider3
+      FROM TTel
+    `).all() as Record<string, unknown>[]
+    const insert = db.prepare(
+      'INSERT INTO TTelEmail (tel_id, EMail, bSender, bFavorit, bIsImap, Com, Pwd, MailProvider, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    const migrate = db.transaction(() => {
+      for (const r of telRows) {
+        for (const n of [1, 2, 3] as const) {
+          const email = r[`EMail${n}`] as string | null
+          if (email && String(email).trim()) {
+            insert.run(
+              r.id,
+              email,
+              r[`bSender${n}`] ?? 0,
+              r[`bMailFavo${n}`] ?? 0,
+              r[`bIsImap${n}`] ?? 0,
+              r[n === 1 ? 'EMail1Com' : n === 2 ? 'EMail2Com' : 'EMail3Com'] ?? null,
+              r[n === 1 ? 'EMAil1Pwd' : n === 2 ? 'EMail2Pwd' : 'EMail3Pwd'] ?? null,
+              r[`MailProvider${n}`] ?? null,
+              n - 1
+            )
+          }
+        }
+      }
+    })
+    migrate()
+  }
+
+  const ttelwebTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='TTelWeb'").get()
+  if (!ttelwebTable) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS TTelWeb (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        tel_id       INTEGER NOT NULL,
+        Url          TEXT NOT NULL DEFAULT '',
+        Com          TEXT,
+        sort_order   INTEGER DEFAULT 0,
+        created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_ttelweb_tel ON TTelWeb(tel_id);
+    `)
+    const telWebRows = db.prepare('SELECT id, www1, www1Com, www2, www2Com, www3, www3Com FROM TTel').all() as Record<string, unknown>[]
+    const insertWeb = db.prepare('INSERT INTO TTelWeb (tel_id, Url, Com, sort_order) VALUES (?, ?, ?, ?)')
+    const migrateWeb = db.transaction(() => {
+      for (const r of telWebRows) {
+        for (const n of [1, 2, 3] as const) {
+          const url = r[`www${n}`] as string | null
+          if (url && String(url).trim()) {
+            insertWeb.run(r.id, url, r[`www${n}Com`] ?? null, n - 1)
+          }
+        }
+      }
+    })
+    migrateWeb()
   }
 
   const row = db.prepare("SELECT value FROM db_meta WHERE key = 'schema_version'").get() as

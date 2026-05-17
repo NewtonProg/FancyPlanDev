@@ -134,6 +134,24 @@ export default function RichEditor({
     setMenu(null); setShowSizes(false)
   }
 
+  function applyFontSize(size: number): void {
+    restoreRange()
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const range = sel.getRangeAt(0)
+    if (range.collapsed) return
+    const span = document.createElement('span')
+    span.style.fontSize = `${size}px`
+    const frag = range.extractContents()
+    frag.querySelectorAll<HTMLElement>('[style]').forEach(el => {
+      el.style.fontSize = ''
+    })
+    span.appendChild(frag)
+    range.insertNode(span)
+    notify()
+    setMenu(null); setShowSizes(false)
+  }
+
   function insertLink(): void {
     const url = prompt('URL eingeben:')
     if (!url) { setMenu(null); return }
@@ -291,7 +309,7 @@ export default function RichEditor({
               {SIZES.map((s) => (
                 <button
                   key={s}
-                  onClick={() => wrapSpan({ fontSize: `${s}px` })}
+                  onClick={() => applyFontSize(s)}
                   className="px-1.5 py-0.5 text-[10px] rounded border border-outline-variant text-on-surface hover:bg-surface-container-high"
                 >
                   {s}

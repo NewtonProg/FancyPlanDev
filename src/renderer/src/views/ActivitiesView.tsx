@@ -21,11 +21,23 @@ function stripHtml(s: string): string {
   return s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
 }
 
+function parsePlanDate(v: unknown): Date | null {
+  if (v == null || v === '') return null
+  const n = Number(v)
+  if (!isNaN(n) && Number.isInteger(n) && n > 0 && n < 99999) {
+    return new Date(-2209161600000 + n * 86400000)
+  }
+  const s = String(v)
+  if (s.length >= 10) {
+    const d = new Date(s.slice(0, 10) + 'T00:00:00')
+    return isNaN(d.getTime()) ? null : d
+  }
+  return null
+}
+
 function computeTageRaw(act: Act): number {
-  const raw = act.dateFin || act.Pl1End || act.dateTarget
-  if (!raw) return 99999
-  const due = new Date(String(raw))
-  if (isNaN(due.getTime())) return 99999
+  const due = parsePlanDate(act.Pl1End)
+  if (!due) return 99999
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   due.setHours(0, 0, 0, 0)
@@ -34,14 +46,14 @@ function computeTageRaw(act: Act): number {
 
 function computeTageTxt(act: Act): string {
   const v = computeTageRaw(act)
-  return v === 99999 ? '—' : String(Math.abs(v))
+  return v === 99999 ? '—' : String(v)
 }
 
 function tageColorCls(act: Act): string {
   const v = computeTageRaw(act)
   if (v === 99999) return 'text-on-surface-variant/30'
-  if (v < 0) return 'text-error'
-  if (v <= 7) return 'text-tertiary'
+  if (v <= 0) return 'text-red-400'
+  if (v === 1) return 'text-amber-400'
   return 'text-on-surface-variant/60'
 }
 
@@ -100,6 +112,7 @@ export default function ActivitiesView(): JSX.Element {
   const [openActId, setOpenActId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'list'>('table')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initializedRef = useRef(false)
 
   // Referenz-Daten laden + Filter wiederherstellen
   useEffect(() => {
@@ -111,26 +124,29 @@ export default function ActivitiesView(): JSX.Element {
     ]).then(([ar, th, at, ct]: [Row[], Row[], Row[], Row[]]) => {
       setAreas(ar); setThemes(th); setAreaTheme(at); setCats(ct)
       const saved = loadFromLS()
-      if (!saved) return
-      setDoneFilter(saved.done ?? 'open')
-      setColFilters(saved.colFilters ?? {})
-      setSort(saved.sort ?? { col: null, dir: 'asc' })
-      if (saved.area || saved.theme || saved.cat) {
-        const l1 = ar.map(a => ({
-          id: Number(a.id), name: String(a.AreaName),
-          childIds: at.filter(x => Number(x.IDArea) === Number(a.id)).map(x => Number(x.IDTheme))
-        })).find(i => i.name === saved.area) ?? null
-        const l2 = th.map(t2 => ({ id: Number(t2.id), name: String(t2.ThemeName) })).find(i => i.name === saved.theme) ?? null
-        const l3 = ct.filter(c => c.Cat).map(c => ({
-          id: Number(c.id), name: String(c.Cat), parentId: Number(c.IDTheme ?? 0)
-        })).find(i => i.name === saved.cat) ?? null
-        if (l1 || l2 || l3) setBtkSel({ level1: l1, level2: l2, level3: l3 })
+      if (saved) {
+        setDoneFilter(saved.done ?? 'open')
+        setColFilters(saved.colFilters ?? {})
+        setSort(saved.sort ?? { col: null, dir: 'asc' })
+        if (saved.area || saved.theme || saved.cat) {
+          const l1 = ar.map(a => ({
+            id: Number(a.id), name: String(a.AreaName),
+            childIds: at.filter(x => Number(x.IDArea) === Number(a.id)).map(x => Number(x.IDTheme))
+          })).find(i => i.name === saved.area) ?? null
+          const l2 = th.map(t2 => ({ id: Number(t2.id), name: String(t2.ThemeName) })).find(i => i.name === saved.theme) ?? null
+          const l3 = ct.filter(c => c.Cat).map(c => ({
+            id: Number(c.id), name: String(c.Cat), parentId: Number(c.IDTheme ?? 0)
+          })).find(i => i.name === saved.cat) ?? null
+          if (l1 || l2 || l3) setBtkSel({ level1: l1, level2: l2, level3: l3 })
+        }
       }
+      initializedRef.current = true
     })
   }, [])
 
-  // Filter bei jeder Änderung persistieren
+  // Filter bei jeder Änderung persistieren (erst nach Initialisierung)
   useEffect(() => {
+    if (!initializedRef.current) return
     localStorage.setItem(LS_KEY, JSON.stringify({
       area: btkSel.level1?.name ?? null,
       theme: btkSel.level2?.name ?? null,
