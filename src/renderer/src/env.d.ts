@@ -20,6 +20,7 @@ interface DbApi {
     getCompaniesByLetter: (letter: string)    => Promise<{ Company: string }[]>
     getByCompany:         (company: string)   => Promise<Row[]>
     getEmailsByCompany:   (company: string)   => Promise<{ EMail1: string; EMail2: string; EMail3: string }[]>
+    getByCat:             (cat: string)       => Promise<Row[]>
   }
   area: {
     getAll:  ()                              => Promise<Row[]>
@@ -102,10 +103,11 @@ interface DbApi {
     }>
   }
   acttel: {
-    getByAct: (actId: number)               => Promise<Row[]>
-    getByTel: (telId: number)               => Promise<Row[]>
-    add:      (actId: number, telId: number) => Promise<{ ok: boolean }>
-    remove:   (actId: number, telId: number) => Promise<{ ok: boolean }>
+    getByAct:  (actId: number)                    => Promise<Row[]>
+    getByTel:  (telId: number)                    => Promise<Row[]>
+    add:       (actId: number, telId: number)     => Promise<{ ok: boolean }>
+    remove:    (actId: number, telId: number)     => Promise<{ ok: boolean }>
+    updateCom: (acttelId: number, com: string)    => Promise<{ ok: boolean }>
   }
   ttelmail: {
     getByTel: (telId: number)               => Promise<Row[]>

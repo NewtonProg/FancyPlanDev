@@ -45,6 +45,9 @@ export function initDb(): void {
   if (!tactCols.some((c) => c.name === 'TodayEdited')) {
     db.exec('ALTER TABLE TAct ADD COLUMN TodayEdited TEXT')
   }
+  if (!tactCols.some((c) => c.name === 'ProjektName')) {
+    db.exec('ALTER TABLE TAct ADD COLUMN ProjektName TEXT')
+  }
 
   const tcatCols = db.prepare('PRAGMA table_info(TCat)').all() as { name: string }[]
   if (!tcatCols.some((c) => c.name === 'IDTheme')) {
@@ -60,12 +63,16 @@ export function initDb(): void {
         IDTAct     INTEGER NOT NULL,
         IDTTel     INTEGER NOT NULL,
         role       TEXT,
+        Com        TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(IDTAct, IDTTel)
       );
       CREATE INDEX IF NOT EXISTS idx_tacttel_act ON TActTel(IDTAct);
       CREATE INDEX IF NOT EXISTS idx_tacttel_tel ON TActTel(IDTTel);
     `)
+  } else {
+    const tacttelColumns = (db.prepare("PRAGMA table_info(TActTel)").all() as { name: string }[]).map(c => c.name)
+    if (!tacttelColumns.includes('Com')) db.exec("ALTER TABLE TActTel ADD COLUMN Com TEXT")
   }
 
   const ttelemailTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='TTelEmail'").get()

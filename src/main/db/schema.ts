@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS TAct (
   Num2                INTEGER,
   OrderNr             TEXT,
   OrderName           TEXT,
+  ProjektName         TEXT,
   Pl1Beg              TEXT,
   Pl1End              TEXT,
   Pl1Dur              TEXT,
@@ -710,6 +711,7 @@ CREATE TABLE IF NOT EXISTS TActTel (
   IDTAct     INTEGER NOT NULL,
   IDTTel     INTEGER NOT NULL,
   role       TEXT,
+  Com        TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(IDTAct, IDTTel)
 );

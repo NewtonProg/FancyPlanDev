@@ -611,7 +611,7 @@ function ContactDetail({
   )
 }
 
-export default function ContactsView(): JSX.Element {
+export default function ContactsView({ initialTelId, onContactOpened, returnActId, onNavigateBack }: { initialTelId?: number; onContactOpened?: () => void; returnActId?: number; onNavigateBack?: () => void }): JSX.Element {
   const { t } = useTranslation()
   const [contacts, setContacts] = useState<Tel[]>([])
   const [selected, setSelected] = useState<Tel | null>(null)
@@ -633,6 +633,14 @@ export default function ContactsView(): JSX.Element {
   useEffect(() => {
     window.db.cat.getAll('FTel').then((rows) => setCats(rows as Row[]))
   }, [])
+
+  useEffect(() => {
+    if (!initialTelId) return
+    window.db.tel.getById(initialTelId).then((row) => {
+      if (row) { setSelected(row as Tel); setSearch(''); setAlphaFilter('') }
+      onContactOpened?.()
+    })
+  }, [initialTelId])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -669,7 +677,20 @@ export default function ContactsView(): JSX.Element {
   }
 
   return (
-    <div className="flex h-full bg-background">
+    <div className="flex flex-col h-full bg-background">
+
+      {returnActId && (
+        <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-primary/10 border-b border-primary/20 text-sm text-primary">
+          <button
+            onClick={onNavigateBack}
+            className="flex items-center gap-1.5 hover:text-primary/70 transition-colors font-medium">
+            <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
+            {t('contacts.backToActivity')}
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-1 min-h-0">
 
       {/* ── Linke Kontaktliste ── */}
       <div className={`flex-shrink-0 flex flex-col border-r border-outline-variant/40 bg-surface-container-low overflow-hidden transition-all duration-200 ${sidebarOpen ? 'w-64' : 'w-8'}`}>
@@ -775,6 +796,7 @@ export default function ContactsView(): JSX.Element {
             onDeleted={handleDeleted}
           />
         )}
+      </div>
       </div>
     </div>
   )

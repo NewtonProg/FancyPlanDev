@@ -141,6 +141,18 @@ ipcMain.handle('db:tel:getByCompany', (_event, company: string) =>
   dbAll("SELECT * FROM TTel WHERE Company = ? ORDER BY SurName ASC, FirstName ASC", [company])
 )
 
+ipcMain.handle('db:tel:getByCat', (_event, cat: string) => {
+  const cats = String(cat).split(';').map(c => c.trim()).filter(Boolean)
+  if (cats.length === 0) return []
+  const conditions = cats.map(() => 'Cat LIKE ?').join(' OR ')
+  const params = cats.map(c => `%${c}%`)
+  return dbAll(
+    `SELECT id, SurName, FirstName, Company, EMail1, TelNr1, Mobile1, Cat
+     FROM TTel WHERE (${conditions}) ORDER BY SurName ASC, FirstName ASC`,
+    params
+  )
+})
+
 ipcMain.handle('db:tel:getEmailsByCompany', (_event, company: string) =>
   dbAll("SELECT EMail1, EMail2, EMail3 FROM TTel WHERE Company = ? AND (EMail1 IS NOT NULL AND EMail1 != '' OR EMail2 IS NOT NULL AND EMail2 != '' OR EMail3 IS NOT NULL AND EMail3 != '')", [company])
 )
@@ -149,7 +161,7 @@ ipcMain.handle('db:tel:getEmailsByCompany', (_event, company: string) =>
 
 ipcMain.handle('db:acttel:getByAct', (_event, actId: number) =>
   dbAll(
-    `SELECT t.* FROM TTel t
+    `SELECT t.*, at.id as acttel_id, at.Com as acttel_Com FROM TTel t
      INNER JOIN TActTel at ON at.IDTTel = t.id
      WHERE at.IDTAct = ?
      ORDER BY t.SurName ASC, t.FirstName ASC`,
@@ -175,6 +187,11 @@ ipcMain.handle('db:acttel:add', (_event, actId: number, telId: number) => {
 
 ipcMain.handle('db:acttel:remove', (_event, actId: number, telId: number) => {
   dbRun('DELETE FROM TActTel WHERE IDTAct = ? AND IDTTel = ?', [actId, telId])
+  return { ok: true }
+})
+
+ipcMain.handle('db:acttel:updateCom', (_event, acttelId: number, com: string) => {
+  dbRun('UPDATE TActTel SET Com = ? WHERE id = ?', [com, acttelId])
   return { ok: true }
 })
 

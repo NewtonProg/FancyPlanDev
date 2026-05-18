@@ -18,7 +18,8 @@ const dbApi = {
     getLetters:           ()                                  => ipcRenderer.invoke('db:tel:getLetters'),
     getCompaniesByLetter: (letter: string)                    => ipcRenderer.invoke('db:tel:getCompaniesByLetter', letter),
     getByCompany:         (company: string)                   => ipcRenderer.invoke('db:tel:getByCompany', company),
-    getEmailsByCompany:   (company: string)                   => ipcRenderer.invoke('db:tel:getEmailsByCompany', company)
+    getEmailsByCompany:   (company: string)                   => ipcRenderer.invoke('db:tel:getEmailsByCompany', company),
+    getByCat:             (cat: string)                       => ipcRenderer.invoke('db:tel:getByCat', cat)
   },
   area: {
     getAll:  ()                                           => ipcRenderer.invoke('db:area:getAll'),
@@ -94,10 +95,11 @@ const dbApi = {
   },
   migrate: { fromAccess: ()             => ipcRenderer.invoke('db:migrate:fromAccess')    },
   acttel: {
-    getByAct: (actId: number)              => ipcRenderer.invoke('db:acttel:getByAct', actId),
-    getByTel: (telId: number)              => ipcRenderer.invoke('db:acttel:getByTel', telId),
-    add:      (actId: number, telId: number) => ipcRenderer.invoke('db:acttel:add', actId, telId),
-    remove:   (actId: number, telId: number) => ipcRenderer.invoke('db:acttel:remove', actId, telId)
+    getByAct:  (actId: number)                     => ipcRenderer.invoke('db:acttel:getByAct', actId),
+    getByTel:  (telId: number)                     => ipcRenderer.invoke('db:acttel:getByTel', telId),
+    add:       (actId: number, telId: number)      => ipcRenderer.invoke('db:acttel:add', actId, telId),
+    remove:    (actId: number, telId: number)      => ipcRenderer.invoke('db:acttel:remove', actId, telId),
+    updateCom: (acttelId: number, com: string)     => ipcRenderer.invoke('db:acttel:updateCom', acttelId, com),
   },
   ttelmail: {
     getByTel: (telId: number)                                    => ipcRenderer.invoke('db:ttelmail:getByTel', telId),

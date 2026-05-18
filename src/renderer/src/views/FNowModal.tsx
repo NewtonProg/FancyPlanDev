@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next'
 import TreePickerModal from '../components/TreePickerModal'
 import FdlgCatModal from '../components/FdlgCatModal'
 import FdlgActModal from '../components/FdlgActModal'
+import FdlgTelModal from '../components/FdlgTelModal'
 import RichEditor from '../components/RichEditor'
+import LinkPanel from '../components/LinkPanel'
 
 type Act = Record<string, unknown>
 type Row = Record<string, unknown>
-type Tab = 'status' | 'zugeordnet' | 'control' | 'info'
+type Tab = 'status' | 'kontakt' | 'links' | 'control' | 'info' | 'zugeordnet'
 type NavEntry = { id: number; title: string; form: Act; logs: Row[]; linkedActTitle: string }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
@@ -85,9 +87,8 @@ export default function FNowModal({
   const [showActLink,    setShowActLink]      = useState(false)
   const [linkedActTitle, setLinkedActTitle]  = useState('')
   const [linkedTels,     setLinkedTels]      = useState<Row[]>([])
-  const [telSearch,      setTelSearch]       = useState('')
-  const [telResults,     setTelResults]      = useState<Row[]>([])
-  const telSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showTelPicker,  setShowTelPicker]   = useState(false)
+  const [catContacts,   setCatContacts]     = useState<Row[]>([])
 
   const skipDbLoad = useRef(false)
 
@@ -154,6 +155,11 @@ export default function FNowModal({
     })
     return () => { cancelled = true }
   }, [currentId])
+
+  useEffect(() => {
+    if (tab !== 'kontakt' || !form.Cat) { setCatContacts([]); return }
+    window.db.tel.getByCat(String(form.Cat)).then(rows => setCatContacts(rows as Row[]))
+  }, [tab, form.Cat])
 
   const set = (key: string, value: unknown): void =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -277,9 +283,11 @@ export default function FNowModal({
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'status',     label: t('fnow.tabStatus')   },
-    { id: 'zugeordnet', label: t('fnow.tabAssigned') },
+    { id: 'kontakt',    label: t('fnow.tabKontakt')  },
+    { id: 'links',      label: t('fnow.tabLinks')    },
     { id: 'control',    label: t('fnow.tabControl')  },
-    { id: 'info',       label: t('fnow.tabInfo')     }
+    { id: 'info',       label: t('fnow.tabInfo')     },
+    { id: 'zugeordnet', label: t('fnow.tabAssigned') }
   ]
 
   // ── Prio helper ─────────────────────────────────────────────────────────
@@ -408,22 +416,10 @@ export default function FNowModal({
                 placeholder={t('fnow.text2Ph')}
               />
             </div>
-
-            <div className="flex gap-3 mt-2">
-              <div className="flex-1 rounded-xl border border-outline-variant/40 bg-surface-container-low p-3">
-                <p className="text-xs font-semibold text-on-surface-variant/60 mb-2">{t('fnow.contactLinks')}</p>
-                <p className="text-xs text-on-surface-variant/40 italic">{t('fnow.contactLinksPhase')}</p>
-              </div>
-              <div className="flex-1 rounded-xl border border-outline-variant/40 bg-surface-container-low p-3">
-                <p className="text-xs font-semibold text-on-surface-variant/60 mb-2">{t('fnow.links')}</p>
-                <p className="text-xs text-on-surface-variant/40 italic">{t('fnow.linksHint')}</p>
-                <p className="text-xs text-on-surface-variant/40 italic">{t('fnow.contactLinksPhase')}</p>
-              </div>
-            </div>
           </div>
 
           {/* ── Sidebar ──────────────────────────────────────────────── */}
-          <div className="w-80 flex-shrink-0 flex flex-col overflow-y-auto bg-surface-container-high">
+          <div className="w-96 flex-shrink-0 flex flex-col overflow-y-auto bg-surface-container-high">
 
             {/* Tab-Leiste */}
             <div className="flex bg-surface-container-high border-b border-outline-variant px-2 pt-2 gap-0.5 flex-shrink-0">
@@ -593,88 +589,94 @@ export default function FNowModal({
 
               {/* ── Zugeordnet-Tab ─────────────────────────────────── */}
               {tab === 'zugeordnet' && (
-                <div>
-                  <Field label={t('fnow.assigned')}>
-                    <input className={inputCls} value={String(form.CostCtrName ?? '')}
-                      onChange={(e) => set('CostCtrName', e.target.value)}
-                      placeholder={t('fnow.assignedPh')} />
-                  </Field>
-                  <Field label={t('fnow.delegated')}>
-                    <input className={inputCls} value={String(form.OrderName ?? '')}
-                      onChange={(e) => set('OrderName', e.target.value)}
-                      placeholder={t('fnow.delegatedPh')} />
-                  </Field>
-                  <Field label={t('fnow.orderNr')}>
-                    <input className={inputCls} value={String(form.OrderNr ?? '')}
-                      onChange={(e) => set('OrderNr', e.target.value)} />
-                  </Field>
+                <div className="flex flex-col gap-3">
 
-                  {/* ── Ansprechpartner (TActTel) ── */}
-                  <div className="border-t border-outline-variant/40 pt-3 mt-2">
+                  {/* ANSPRECHPARTNER */}
+                  <div>
                     <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
-                      {t('fnow.contacts')}
+                      {t('fnow.assignedContacts')}
                     </p>
                     {linkedTels.length === 0 ? (
                       <p className="text-xs text-on-surface-variant/40 italic mb-2">{t('fnow.noContacts')}</p>
                     ) : (
-                      <div className="flex flex-col gap-1 mb-2">
+                      <div className="flex flex-col gap-1.5 mb-2">
                         {linkedTels.map((c) => (
-                          <div key={String(c.id)}
-                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20">
-                            <span className="flex-1 text-sm text-on-surface truncate">
-                              {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
-                            </span>
-                            {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
-                            <button
-                              onClick={async () => {
-                                await window.db.acttel.remove(currentId, Number(c.id))
-                                setLinkedTels((prev) => prev.filter((x) => x.id !== c.id))
+                          <div key={String(c.acttel_id ?? c.id)}
+                            onDoubleClick={() => {
+                              window.dispatchEvent(new CustomEvent('fp:open-contact', { detail: { telId: Number(c.id), actId: currentId } }))
+                              onClose()
+                            }}
+                            title={t('fnow.dblClickContact')}
+                            className="cursor-default select-none flex flex-col gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:bg-surface-container-high transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="flex-1 text-sm text-on-surface truncate">
+                                {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
+                              </span>
+                              {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
+                              <button
+                                onClick={async () => {
+                                  await window.db.acttel.remove(currentId, Number(c.id))
+                                  setLinkedTels((prev) => prev.filter((x) => x.acttel_id !== c.acttel_id))
+                                }}
+                                className="text-error/50 hover:text-error text-xs leading-none flex-shrink-0 transition-colors">✕</button>
+                            </div>
+                            {/* Abtlg + Team aus TTel */}
+                            {(c.Departm || c.Grp1 || c.Grp2) && (
+                              <div className="flex gap-3 text-xs text-on-surface-variant/60">
+                                {c.Departm && (
+                                  <span><span className="text-on-surface-variant/40">{t('fnow.contactDepartm')}:</span> {String(c.Departm)}</span>
+                                )}
+                                {(c.Grp1 || c.Grp2) && (
+                                  <span><span className="text-on-surface-variant/40">{t('fnow.contactTeam')}:</span> {[c.Grp1, c.Grp2].filter(Boolean).join(' / ')}</span>
+                                )}
+                              </div>
+                            )}
+                            <input
+                              key={`com-${String(c.acttel_id)}`}
+                              className="w-full text-xs border border-outline-variant/30 rounded px-2 py-0.5 bg-surface-container-highest focus:outline-none focus:ring-1 focus:ring-primary/30 text-on-surface placeholder-on-surface-variant/30"
+                              placeholder="Kommentar…"
+                              defaultValue={String(c.acttel_Com ?? '')}
+                              onBlur={async (e) => {
+                                if (c.acttel_id != null) {
+                                  await window.db.acttel.updateCom(Number(c.acttel_id), e.target.value)
+                                  setLinkedTels((prev) => prev.map((x) => x.acttel_id === c.acttel_id ? { ...x, acttel_Com: e.target.value } : x))
+                                }
                               }}
-                              className="text-error/50 hover:text-error text-xs leading-none flex-shrink-0 transition-colors">✕</button>
+                            />
                           </div>
                         ))}
                       </div>
                     )}
-
-                    {/* Kontakt-Suche */}
-                    <div className="relative">
-                      <input
-                        className="w-full text-xs border border-outline-variant/40 rounded-lg px-2.5 py-1 bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40"
-                        placeholder={t('fnow.searchContact')}
-                        value={telSearch}
-                        onChange={(e) => {
-                          const q = e.target.value
-                          setTelSearch(q)
-                          if (telSearchRef.current) clearTimeout(telSearchRef.current)
-                          if (!q.trim()) { setTelResults([]); return }
-                          telSearchRef.current = setTimeout(async () => {
-                            const rows = await window.db.tel.getAll(q)
-                            const existing = new Set(linkedTels.map((x) => Number(x.id)))
-                            setTelResults((rows as Row[]).filter((r) => !existing.has(Number(r.id))).slice(0, 8))
-                          }, 250)
-                        }}
-                        onBlur={() => setTimeout(() => setTelResults([]), 200)}
-                      />
-                      {telResults.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-0.5 border border-outline-variant/40 rounded-lg bg-surface-container-high shadow-lg z-20 max-h-36 overflow-y-auto">
-                          {telResults.map((c) => (
-                            <button key={String(c.id)}
-                              onMouseDown={async (e) => {
-                                e.preventDefault()
-                                await window.db.acttel.add(currentId, Number(c.id))
-                                setLinkedTels((prev) => [...prev, c])
-                                setTelSearch('')
-                                setTelResults([])
-                              }}
-                              className="w-full text-left text-xs px-2.5 py-1.5 hover:bg-surface-container-highest border-b border-outline-variant/20 last:border-0 text-on-surface truncate transition-colors">
-                              {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
-                              {c.Company ? <span className="text-on-surface-variant/50 ml-2">{String(c.Company)}</span> : null}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => setShowTelPicker(true)}
+                      className="w-full text-xs border border-dashed border-outline-variant/50 rounded-lg px-2.5 py-1.5 text-on-surface-variant/60 hover:border-primary/40 hover:text-primary transition-colors text-left">
+                      {t('fnow.searchContact')}
+                    </button>
                   </div>
+
+                  {/* Kostenstelle / Auftrag / Projekt */}
+                  <div className="border-t border-outline-variant/30 pt-3">
+                    <Field label={t('fnow.assigned')}>
+                      <input className={inputCls} value={String(form.CostCtrName ?? '')}
+                        onChange={(e) => set('CostCtrName', e.target.value)}
+                        placeholder={t('fnow.assignedPh')} />
+                    </Field>
+                    <Field label={t('fnow.delegated')}>
+                      <input className={inputCls} value={String(form.OrderName ?? '')}
+                        onChange={(e) => set('OrderName', e.target.value)}
+                        placeholder={t('fnow.delegatedPh')} />
+                    </Field>
+                    <Field label={t('fnow.orderNr')}>
+                      <input className={inputCls} value={String(form.OrderNr ?? '')}
+                        onChange={(e) => set('OrderNr', e.target.value)} />
+                    </Field>
+                    <Field label={t('fnow.projektName')}>
+                      <input className={inputCls} value={String(form.ProjektName ?? '')}
+                        onChange={(e) => set('ProjektName', e.target.value)}
+                        placeholder={t('fnow.projektNamePh')} />
+                    </Field>
+                  </div>
+
                 </div>
               )}
 
@@ -727,6 +729,111 @@ export default function FNowModal({
                       <p className="text-xs text-on-surface-variant/60">{t('fnow.detailLogHint')}</p>
                     </div>
                   </label>
+                </div>
+              )}
+
+              {/* ── Links-Tab ─────────────────────────────────────── */}
+              {tab === 'links' && (
+                <div className="py-1">
+                  <LinkPanel entityType="act" entityId={currentId} />
+                </div>
+              )}
+
+              {/* ── Kontakt-Tab ───────────────────────────────────── */}
+              {tab === 'kontakt' && (
+                <div className="flex flex-col gap-3">
+
+                  {/* Manuell verknüpfte Ansprechpartner */}
+                  <div>
+                    <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
+                      {t('fnow.contacts')}
+                    </p>
+                    {linkedTels.length === 0 ? (
+                      <p className="text-xs text-on-surface-variant/40 italic mb-2">{t('fnow.noContacts')}</p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 mb-2">
+                        {linkedTels.map((c) => (
+                          <div key={String(c.acttel_id ?? c.id)}
+                            onDoubleClick={() => {
+                              window.dispatchEvent(new CustomEvent('fp:open-contact', { detail: { telId: Number(c.id), actId: currentId } }))
+                              onClose()
+                            }}
+                            title={t('fnow.dblClickContact')}
+                            className="cursor-default select-none flex flex-col gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:bg-surface-container-high transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="flex-1 text-sm text-on-surface truncate">
+                                {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
+                              </span>
+                              {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
+                              <button
+                                onClick={async () => {
+                                  await window.db.acttel.remove(currentId, Number(c.id))
+                                  setLinkedTels((prev) => prev.filter((x) => x.acttel_id !== c.acttel_id))
+                                }}
+                                className="text-error/50 hover:text-error text-xs leading-none flex-shrink-0 transition-colors">✕</button>
+                            </div>
+                            <input
+                              key={`com-${String(c.acttel_id)}`}
+                              className="w-full text-xs border border-outline-variant/30 rounded px-2 py-0.5 bg-surface-container-highest focus:outline-none focus:ring-1 focus:ring-primary/30 text-on-surface placeholder-on-surface-variant/30"
+                              placeholder="Kommentar…"
+                              defaultValue={String(c.acttel_Com ?? '')}
+                              onBlur={async (e) => {
+                                if (c.acttel_id != null) {
+                                  await window.db.acttel.updateCom(Number(c.acttel_id), e.target.value)
+                                  setLinkedTels((prev) => prev.map((x) => x.acttel_id === c.acttel_id ? { ...x, acttel_Com: e.target.value } : x))
+                                }
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Kontakt verknüpfen */}
+                    <button
+                      onClick={() => setShowTelPicker(true)}
+                      className="w-full text-xs border border-dashed border-outline-variant/50 rounded-lg px-2.5 py-1.5 text-on-surface-variant/60 hover:border-primary/40 hover:text-primary transition-colors text-left">
+                      {t('fnow.searchContact')}
+                    </button>
+                  </div>
+
+                  {/* Kontakte nach Kategorie */}
+                  {(form.Cat || catContacts.length > 0) && (
+                    <div className="border-t border-outline-variant/30 pt-3">
+                      <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
+                        Kontakte nach Kategorie
+                      </p>
+                      {!form.Cat && (
+                        <p className="text-xs text-on-surface-variant/40 italic">{t('fnow.noCatForContacts')}</p>
+                      )}
+                      {form.Cat && catContacts.length === 0 && (
+                        <p className="text-xs text-on-surface-variant/40 italic">{t('fnow.noContactsForCat')}</p>
+                      )}
+                      <div className="flex flex-col gap-1">
+                        {catContacts.map(tel => (
+                          <div key={tel.id as number}
+                            onDoubleClick={() => {
+                              window.dispatchEvent(new CustomEvent('fp:open-contact', { detail: { telId: Number(tel.id), actId: currentId } }))
+                              onClose()
+                            }}
+                            title={t('fnow.dblClickContact')}
+                            className="cursor-default select-none rounded-lg px-2.5 py-2 flex items-center gap-3 hover:bg-surface-container-high transition-colors">
+                            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary flex-shrink-0">
+                              {String(tel.FirstName ?? tel.Company ?? '?')[0]?.toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-on-surface truncate">
+                                {[tel.FirstName, tel.SurName].filter(Boolean).join(' ') || String(tel.Company ?? '—')}
+                              </p>
+                              {(tel.FirstName || tel.SurName) && tel.Company && (
+                                <p className="text-xs text-on-surface-variant/60 truncate">{String(tel.Company)}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -799,6 +906,19 @@ export default function FNowModal({
           currentTitle={String(form.Title ?? '')}
           onConfirm={(id, title) => { set('IDActLink', id); setLinkedActTitle(title); setShowActLink(false) }}
           onClose={() => setShowActLink(false)}
+        />
+      )}
+
+      {showTelPicker && (
+        <FdlgTelModal
+          excludeIds={new Set(linkedTels.map((x) => Number(x.id)))}
+          onSelect={async (c) => {
+            await window.db.acttel.add(currentId, Number(c.id))
+            const fresh = await window.db.acttel.getByAct(currentId)
+            setLinkedTels(fresh as Row[])
+            setShowTelPicker(false)
+          }}
+          onClose={() => setShowTelPicker(false)}
         />
       )}
     </>

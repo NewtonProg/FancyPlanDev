@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLicense } from './hooks/useLicense'
 import ErrorBoundary from './components/ErrorBoundary'
+import FNowModal from './views/FNowModal'
 import ImportView from './views/ImportView'
 import TodayView from './views/TodayView'
 import PrioritiesView from './views/PrioritiesView'
@@ -23,8 +24,21 @@ function App(): JSX.Element {
   const [activeView, setActiveView] = useState<NavView>('today')
   const [subViewLabel, setSubViewLabel] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(true)
-
+  const [openContactId, setOpenContactId] = useState<number | null>(null)
+  const [returnActId,   setReturnActId]   = useState<number | null>(null)
+  const [globalActId,   setGlobalActId]   = useState<number | null>(null)
   useEffect(() => { setSubViewLabel(null) }, [activeView])
+
+  useEffect(() => {
+    const handler = (e: Event): void => {
+      const { telId, actId } = (e as CustomEvent<{ telId: number; actId: number }>).detail
+      setReturnActId(actId ?? null)
+      setOpenContactId(telId)
+      setActiveView('contacts')
+    }
+    window.addEventListener('fp:open-contact', handler)
+    return () => window.removeEventListener('fp:open-contact', handler)
+  }, [])
 
   const navItems: { id: NavView; label: string }[] = [
     { id: 'today',      label: t('nav.today') },
@@ -129,7 +143,12 @@ function App(): JSX.Element {
         ) : activeView === 'activities' ? (
           <ActivitiesView />
         ) : activeView === 'contacts' ? (
-          <ContactsView />
+          <ContactsView
+            initialTelId={openContactId ?? undefined}
+            onContactOpened={() => setOpenContactId(null)}
+            returnActId={returnActId ?? undefined}
+            onNavigateBack={() => { setGlobalActId(returnActId); setReturnActId(null) }}
+          />
         ) : activeView === 'tree' ? (
           <TreeView />
         ) : activeView === 'mail' ? (
@@ -151,6 +170,14 @@ function App(): JSX.Element {
         ) : null}
         </ErrorBoundary>
       </main>
+
+      {globalActId !== null && (
+        <FNowModal
+          actId={globalActId}
+          onClose={() => setGlobalActId(null)}
+          onSaved={() => setGlobalActId(null)}
+        />
+      )}
     </div>
   )
 }

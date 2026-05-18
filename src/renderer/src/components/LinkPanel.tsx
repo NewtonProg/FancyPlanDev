@@ -40,7 +40,7 @@ function chipColor(type: string): string {
 
 const linkinp = 'text-xs border border-outline-variant rounded px-2 py-1 text-gray-800 placeholder-gray-500'
 
-export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' | 'tree'; entityId: number }): JSX.Element {
+export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' | 'tree' | 'act'; entityId: number }): JSX.Element {
   const { t } = useTranslation()
   const [links, setLinks] = useState<Link[]>([])
   const [adding, setAdding] = useState(false)
