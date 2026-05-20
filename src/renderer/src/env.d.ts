@@ -155,16 +155,20 @@ interface DbApi {
     getAll: (prefix?: string)                   => Promise<Record<string, string>>
   }
   mail: {
-    authStatus: () => Promise<{ configured: boolean; email: string }>
-    configTest: () => Promise<{ ok?: boolean; error?: string }>
-    sync:       () => Promise<{ count: number; error?: string }>
-    list:       (filter?: { search?: string; unreadOnly?: boolean }) => Promise<Row[]>
-    get:        (id: number)   => Promise<Row | null>
-    send:       (data: { to: string; subject: string; body: string; cc?: string }) => Promise<{ ok?: boolean; error?: string }>
-    markRead:   (id: number)   => Promise<{ ok: boolean }>
+    authStatus:         () => Promise<{ configured: boolean; email: string }>
+    configTest:         () => Promise<{ ok?: boolean; error?: string }>
+    sync:               () => Promise<{ count: number; error?: string }>
+    list:               (filter?: { search?: string; unreadOnly?: boolean }) => Promise<Row[]>
+    get:                (id: number)   => Promise<Row | null>
+    send:               (data: { to: string; subject: string; body: string; cc?: string }) => Promise<{ ok?: boolean; error?: string }>
+    markRead:           (id: number)   => Promise<{ ok: boolean }>
+    getAttachments:     (mailId: number) => Promise<Row[]>
+    downloadAttachment: (attachmentId: number) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>
   }
   export: {
-    csv: (csvString: string, defaultFilename: string) => Promise<{ ok?: boolean; path?: string; canceled?: boolean; error?: string }>
+    csv:        (csvString: string, defaultFilename: string) => Promise<{ ok?: boolean; path?: string; canceled?: boolean; error?: string }>
+    jsonExport: () => Promise<{ ok?: boolean; path?: string; total?: number; canceled?: boolean; error?: string }>
+    jsonImport: () => Promise<{ ok?: boolean; counts?: Record<string, number>; canceled?: boolean; error?: string }>
   }
   gcal: {
     authStatus:  () => Promise<{ configured: boolean; email: string }>
@@ -178,6 +182,22 @@ interface DbApi {
     list:       (filter?: { from?: string; to?: string }) => Promise<Row[]>
     create:     (data: { summary: string; dtstart: string; dtend: string; description?: string; location?: string; allDay?: boolean }) => Promise<{ ok: boolean; uid?: string }>
     delete:     (id: number) => Promise<{ ok: boolean }>
+  }
+  termin: {
+    getByDate:       (date: string)                             => Promise<Row[]>
+    getByDateRange:  (from: string, to: string)                 => Promise<Row[]>
+    getByAct:        (actId: number)                            => Promise<Row[]>
+    create:          (data: Row)                                => Promise<Row>
+    update:          (id: number, data: Row)                    => Promise<boolean>
+    delete:          (id: number)                               => Promise<boolean>
+    upsertFromSync:  (data: Row)                                => Promise<boolean>
+  }
+  recurring: {
+    getAll:     ()                          => Promise<Row[]>
+    isDueToday: (date: string)              => Promise<Row[]>
+    create:     (data: Row)                 => Promise<Row>
+    update:     (id: number, data: Row)     => Promise<boolean>
+    delete:     (id: number)               => Promise<boolean>
   }
   fcm: {
     profile: {
@@ -199,11 +219,25 @@ interface DbApi {
   }
 }
 
+type LicenseInfo = {
+  key: string | null
+  tier: string
+  trialDays: number
+  trialExpired: boolean
+  validatedAt: string | null
+}
+
 declare global {
   interface Window {
     db: DbApi & {
       backup: {
         create: () => Promise<string>
+      }
+      license: {
+        get:      () => Promise<LicenseInfo>
+        activate: (key: string) => Promise<{ ok: boolean; tier?: string; error?: string }>
+        validate: () => Promise<{ ok: boolean; tier?: string; reason?: string }>
+        reset:    () => Promise<{ ok: boolean }>
       }
     }
   }

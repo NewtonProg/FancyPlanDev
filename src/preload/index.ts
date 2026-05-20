@@ -147,13 +147,15 @@ const dbApi = {
     getAll: (prefix?: string)                  => ipcRenderer.invoke('settings:getAll', prefix)
   },
   mail: {
-    authStatus: ()                                  => ipcRenderer.invoke('mail:auth:status'),
-    configTest: ()                                  => ipcRenderer.invoke('mail:config:test'),
-    sync:       ()                                  => ipcRenderer.invoke('mail:sync'),
-    list:       (filter?: Record<string, unknown>)  => ipcRenderer.invoke('mail:list', filter),
-    get:        (id: number)                        => ipcRenderer.invoke('mail:get', id),
-    send:       (data: Record<string, unknown>)     => ipcRenderer.invoke('mail:send', data),
-    markRead:   (id: number)                        => ipcRenderer.invoke('mail:markRead', id)
+    authStatus:          ()                                  => ipcRenderer.invoke('mail:auth:status'),
+    configTest:          ()                                  => ipcRenderer.invoke('mail:config:test'),
+    sync:                ()                                  => ipcRenderer.invoke('mail:sync'),
+    list:                (filter?: Record<string, unknown>)  => ipcRenderer.invoke('mail:list', filter),
+    get:                 (id: number)                        => ipcRenderer.invoke('mail:get', id),
+    send:                (data: Record<string, unknown>)     => ipcRenderer.invoke('mail:send', data),
+    markRead:            (id: number)                        => ipcRenderer.invoke('mail:markRead', id),
+    getAttachments:      (mailId: number)                    => ipcRenderer.invoke('mail:attachment:list', mailId),
+    downloadAttachment:  (attachmentId: number)              => ipcRenderer.invoke('mail:attachment:download', attachmentId)
   },
   cal: {
     authStatus: ()                                      => ipcRenderer.invoke('cal:auth:status'),
@@ -163,7 +165,9 @@ const dbApi = {
     delete:     (id: number)                            => ipcRenderer.invoke('cal:delete', id)
   },
   export: {
-    csv: (csvString: string, defaultFilename: string) => ipcRenderer.invoke('export:csv', csvString, defaultFilename)
+    csv:        (csvString: string, defaultFilename: string) => ipcRenderer.invoke('export:csv', csvString, defaultFilename),
+    jsonExport: ()                                           => ipcRenderer.invoke('json:export'),
+    jsonImport: ()                                           => ipcRenderer.invoke('json:import')
   },
   gcal: {
     authStatus:  ()                             => ipcRenderer.invoke('gcal:auth:status'),
@@ -173,6 +177,7 @@ const dbApi = {
   },
   termin: {
     getByDate:       (date: string)                            => ipcRenderer.invoke('termin:getByDate', date),
+    getByDateRange:  (from: string, to: string)                => ipcRenderer.invoke('termin:getByDateRange', from, to),
     getByAct:        (actId: number)                           => ipcRenderer.invoke('termin:getByAct', actId),
     create:          (data: Record<string, unknown>)            => ipcRenderer.invoke('termin:create', data),
     update:          (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('termin:update', id, data),
@@ -206,6 +211,12 @@ const dbApi = {
   },
   backup: {
     create: () => ipcRenderer.invoke('db:backup:create')
+  },
+  license: {
+    get:      ()                    => ipcRenderer.invoke('license:get'),
+    activate: (key: string)         => ipcRenderer.invoke('license:activate', key),
+    validate: ()                    => ipcRenderer.invoke('license:validate'),
+    reset:    ()                    => ipcRenderer.invoke('license:reset')
   }
 }
 

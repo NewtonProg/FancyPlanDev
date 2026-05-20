@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import FNowModal from './FNowModal'
 import PlanVariantPanel from '../components/PlanVariantPanel'
+import { TerminModal } from './CalendarView'
 
 type Act = Record<string, unknown>
 type Termin = Record<string, unknown>
@@ -209,6 +210,7 @@ export default function TodayView(): JSX.Element {
   const [showVariantPanel, setShowVariantPanel] = useState(false)
   const [termins, setTermins] = useState<Termin[]>([])
   const [recurringDue, setRecurringDue] = useState<Termin[]>([])
+  const [editingTermin, setEditingTermin] = useState<Termin | null>(null)
   const [areaFilter, setAreaFilter] = useState<string>('all')
   const [themeFilter, setThemeFilter] = useState<string>('all')
   const [openFilter, setOpenFilter] = useState<'area' | 'theme' | 'cat' | null>(null)
@@ -218,11 +220,8 @@ export default function TodayView(): JSX.Element {
   const [bottomBis, setBottomBis] = useState<string>(new Date().toISOString().slice(0, 10))
   const [prioSort, setPrioSort] = useState<{ key: 'Prio1' | 'Prio2'; dir: 'asc' | 'desc' } | null>({ key: 'Prio1', dir: 'asc' })
 
-  // suppress unused-variable warnings for state that exists but isn't rendered yet
-  void termins
-  void setTermins
-  void recurringDue
-  void setRecurringDue
+  const [showRecurringPanel, setShowRecurringPanel] = useState(false)
+  const [allRecurring, setAllRecurring] = useState<Row[]>([])
 
   const todayIso = new Date().toISOString().slice(0, 10)
   const isToday = selectedDate === todayIso
@@ -266,6 +265,11 @@ export default function TodayView(): JSX.Element {
   }, [viewMode, selectedDate, bottomVon, bottomBis])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    window.db.termin.getByDate(selectedDate).then((rows) => setTermins(rows as Termin[]))
+    window.db.recurring.isDueToday(selectedDate).then((rows) => setRecurringDue(rows as Termin[]))
+  }, [selectedDate])
 
   const handleToggleDone = async (id: number, current: number): Promise<void> => {
     const next = current === 1 ? 0 : 1
@@ -515,6 +519,68 @@ export default function TodayView(): JSX.Element {
             </div>
           </section>
 
+          {/* ── Termine + Wiederkehrend ────────────────────────────────── */}
+          {viewMode === 'today' && (termins.length > 0 || recurringDue.length > 0) && (
+            <section className="space-y-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-primary/60">event</span>
+                  <span className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wider">Termine</span>
+                </div>
+              </div>
+              {termins.map((tr) => (
+                <div key={tr.id as number}
+                  onDoubleClick={() => setEditingTermin(tr)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/6 border border-primary/15 cursor-pointer hover:bg-primary/10 transition-colors">
+                  <span className="material-symbols-outlined text-[14px] text-primary/50 flex-shrink-0">schedule</span>
+                  {tr.time_start ? (
+                    <span className="text-xs font-mono text-primary/80 font-medium flex-shrink-0 w-20">
+                      {String(tr.time_start)}{tr.time_end ? `–${String(tr.time_end)}` : ''}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-on-surface-variant/50 flex-shrink-0 w-20">Ganztägig</span>
+                  )}
+                  <span className="text-sm text-on-surface truncate flex-1">{String(tr.title ?? '')}</span>
+                  {tr.location && (
+                    <span className="text-xs text-on-surface-variant/50 truncate max-w-[120px]">{String(tr.location)}</span>
+                  )}
+                </div>
+              ))}
+              {recurringDue.map((r) => (
+                <div key={r.id as number}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-tertiary/6 border border-tertiary/15">
+                  <span className="material-symbols-outlined text-[14px] text-tertiary/60 flex-shrink-0">repeat</span>
+                  {r.time_start ? (
+                    <span className="text-xs font-mono text-tertiary/80 font-medium flex-shrink-0 w-20">
+                      {String(r.time_start)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-on-surface-variant/50 flex-shrink-0 w-20">Wiederk.</span>
+                  )}
+                  <span className="text-sm text-on-surface truncate flex-1">{String(r.title ?? '')}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-tertiary/10 text-tertiary flex-shrink-0">
+                    {String(r.freq ?? 'tägl.')}
+                  </span>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Wiederkehrend-Button (immer sichtbar in today-Modus) */}
+          {viewMode === 'today' && (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => {
+                  setShowRecurringPanel(true)
+                  window.db.recurring.getAll().then(setAllRecurring)
+                }}
+                className="flex items-center gap-1 text-xs text-on-surface-variant/50 hover:text-on-surface-variant transition-colors">
+                <span className="material-symbols-outlined text-[14px]">repeat</span>
+                Wiederkehrend verwalten
+              </button>
+            </div>
+          )}
+
           {/* Stats bar */}
           <div className="text-body-md text-on-surface-variant/60">
             <span>{t('today.doneCount', { done: doneCount, total: totalCount })}</span>
@@ -628,6 +694,172 @@ export default function TodayView(): JSX.Element {
           }}
         />
       )}
+
+      {showRecurringPanel && (
+        <RecurringPanel
+          items={allRecurring}
+          onClose={() => setShowRecurringPanel(false)}
+          onCreated={async (data) => {
+            await window.db.recurring.create(data)
+            const rows = await window.db.recurring.getAll()
+            setAllRecurring(rows)
+            window.db.recurring.isDueToday(selectedDate).then((r) => setRecurringDue(r as Termin[]))
+          }}
+          onDeleted={async (id) => {
+            await window.db.recurring.delete(id)
+            setAllRecurring((prev) => prev.filter((r) => (r.id as number) !== id))
+            setRecurringDue((prev) => prev.filter((r) => (r.id as number) !== id))
+          }}
+        />
+      )}
+
+      {editingTermin && (
+        <TerminModal
+          date={new Date(String(editingTermin.termin_date))}
+          termin={editingTermin}
+          onSave={async (data) => {
+            const { id, ...fields } = data
+            await window.db.termin.update(id as number, fields)
+            setEditingTermin(null)
+            window.db.termin.getByDate(selectedDate).then((rows) => setTermins(rows as Termin[]))
+          }}
+          onClose={() => setEditingTermin(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── RecurringPanel ──────────────────────────────────────────────────────────
+function RecurringPanel({ items, onClose, onCreated, onDeleted }: {
+  items: Row[]
+  onClose: () => void
+  onCreated: (data: Row) => Promise<void>
+  onDeleted: (id: number) => Promise<void>
+}): JSX.Element {
+  const FREQ_LABELS: Record<string, string> = {
+    daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich', yearly: 'Jährlich'
+  }
+  const DAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+  const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+  const [title, setTitle] = useState('')
+  const [freq, setFreq] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily')
+  const [byday, setByday] = useState('MO')
+  const [bymonthday, setBymonthday] = useState(1)
+  const [bymonth, setBymonth] = useState(1)
+  const [timeStart, setTimeStart] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const inp = 'w-full text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface'
+
+  const handleCreate = async (): Promise<void> => {
+    if (!title.trim()) return
+    setSaving(true)
+    await onCreated({
+      title: title.trim(),
+      freq,
+      interval_val: 1,
+      byday: freq === 'weekly' ? byday : null,
+      bymonthday: (freq === 'monthly' || freq === 'yearly') ? bymonthday : null,
+      bymonth: freq === 'yearly' ? bymonth : null,
+      time_start: timeStart || null,
+      notes: null,
+      active: 1
+    })
+    setTitle('')
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-surface-container-high rounded-2xl border border-outline-variant/40 shadow-2xl w-[480px] flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-outline-variant/40 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-tertiary text-[18px]">repeat</span>
+            <span className="text-sm font-semibold text-on-surface">Wiederkehrende Aufgaben</span>
+          </div>
+          <button onClick={onClose} className="text-on-surface-variant/60 hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {items.length === 0 ? (
+            <p className="text-xs text-on-surface-variant/50 text-center py-4">Noch keine wiederkehrenden Aufgaben</p>
+          ) : items.map((r) => (
+            <div key={r.id as number}
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-surface-container border border-outline-variant/20">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-on-surface truncate">{String(r.title ?? '')}</p>
+                <p className="text-xs text-on-surface-variant/50">
+                  {FREQ_LABELS[String(r.freq ?? '')] ?? String(r.freq ?? '')}
+                  {r.time_start ? ` · ${String(r.time_start)}` : ''}
+                </p>
+              </div>
+              <button onClick={() => onDeleted(r.id as number)}
+                className="text-on-surface-variant/40 hover:text-error transition-colors flex-shrink-0">
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-5 py-4 border-t border-outline-variant/40 flex-shrink-0 space-y-3">
+          <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wider">Neu anlegen</p>
+          <input className={inp} value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="Titel der Aufgabe" />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-on-surface-variant/60 mb-1 block">Wiederholung</label>
+              <select className={inp} value={freq}
+                onChange={(e) => setFreq(e.target.value as typeof freq)}>
+                <option value="daily">Täglich</option>
+                <option value="weekly">Wöchentlich</option>
+                <option value="monthly">Monatlich</option>
+                <option value="yearly">Jährlich</option>
+              </select>
+            </div>
+            <div className="w-24">
+              <label className="text-xs text-on-surface-variant/60 mb-1 block">Uhrzeit</label>
+              <input type="time" className={inp} value={timeStart} onChange={(e) => setTimeStart(e.target.value)} />
+            </div>
+          </div>
+          {freq === 'weekly' && (
+            <div>
+              <label className="text-xs text-on-surface-variant/60 mb-1 block">Wochentag</label>
+              <div className="flex gap-1">
+                {DAYS.map((d, i) => (
+                  <button key={d} onClick={() => setByday(d)}
+                    className={`flex-1 py-1 rounded text-xs font-medium transition-colors ${byday === d ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+                    {DAY_LABELS[i]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {(freq === 'monthly' || freq === 'yearly') && (
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-xs text-on-surface-variant/60 mb-1 block">Tag</label>
+                <input type="number" min={1} max={31} className={inp} value={bymonthday}
+                  onChange={(e) => setBymonthday(Number(e.target.value))} />
+              </div>
+              {freq === 'yearly' && (
+                <div className="flex-1">
+                  <label className="text-xs text-on-surface-variant/60 mb-1 block">Monat</label>
+                  <input type="number" min={1} max={12} className={inp} value={bymonth}
+                    onChange={(e) => setBymonth(Number(e.target.value))} />
+                </div>
+              )}
+            </div>
+          )}
+          <button onClick={handleCreate} disabled={saving || !title.trim()}
+            className="w-full py-1.5 rounded-lg bg-primary text-on-primary text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-opacity">
+            {saving ? 'Speichern…' : 'Anlegen'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

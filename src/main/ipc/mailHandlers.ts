@@ -1,8 +1,10 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
 import { getDb } from '../db/database'
 import nodemailer from 'nodemailer'
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
+import fs from 'fs'
+import path from 'path'
 
 function getSetting(key: string): string {
   const row = getDb().prepare('SELECT value FROM TSettings WHERE key = ?').get(key) as { value: string } | undefined
@@ -155,12 +157,25 @@ ipcMain.handle('mail:get', async (_e, id: number) => {
       const html = parsed.html || ''
       const text = parsed.text || ''
       const snippet = text.slice(0, 200).replace(/\s+/g, ' ')
+      const hasAttach = (parsed.attachments?.length ?? 0) > 0 ? 1 : 0
 
-      db.prepare('UPDATE TMailReceive SET body_html = ?, body_text = ?, snippet = ? WHERE id = ?')
-        .run(html || null, text || null, snippet, id)
+      db.prepare('UPDATE TMailReceive SET body_html = ?, body_text = ?, snippet = ?, has_attachment = ? WHERE id = ?')
+        .run(html || null, text || null, snippet, hasAttach, id)
+
+      if (hasAttach) {
+        const insertAttach = db.prepare(
+          'INSERT OR IGNORE INTO TMailAttachment (mail_id, filename, content_type, size, data) VALUES (?, ?, ?, ?, ?)'
+        )
+        const existing = db.prepare('SELECT COUNT(*) as cnt FROM TMailAttachment WHERE mail_id = ?').get(id) as { cnt: number }
+        if (existing.cnt === 0) {
+          for (const att of parsed.attachments ?? []) {
+            insertAttach.run(id, att.filename ?? 'Anhang', att.contentType ?? 'application/octet-stream', att.size ?? att.content?.length ?? 0, att.content)
+          }
+        }
+      }
 
       await client.logout()
-      return { ...row, body_html: html, body_text: text, snippet }
+      return { ...row, body_html: html, body_text: text, snippet, has_attachment: hasAttach }
     }
     await client.logout()
   } catch {
@@ -190,6 +205,30 @@ ipcMain.handle('mail:markRead', async (_e, id: number) => {
       try { await client.logout() } catch {}
     }
   }
+  return { ok: true }
+})
+
+// List attachments for a message
+ipcMain.handle('mail:attachment:list', (_e, mailId: number) => {
+  return getDb()
+    .prepare('SELECT id, filename, content_type, size FROM TMailAttachment WHERE mail_id = ? ORDER BY id')
+    .all(mailId)
+})
+
+// Download attachment — show save dialog, write file
+ipcMain.handle('mail:attachment:download', async (_e, attachmentId: number) => {
+  const row = getDb()
+    .prepare('SELECT filename, content_type, data FROM TMailAttachment WHERE id = ?')
+    .get(attachmentId) as { filename: string; content_type: string; data: Buffer } | undefined
+  if (!row) return { ok: false, error: 'Anhang nicht gefunden' }
+
+  const result = await dialog.showSaveDialog({
+    defaultPath: path.basename(row.filename ?? 'Anhang'),
+    filters: [{ name: 'Alle Dateien', extensions: ['*'] }]
+  })
+  if (result.canceled || !result.filePath) return { canceled: true, ok: false }
+
+  fs.writeFileSync(result.filePath, row.data)
   return { ok: true }
 })
 

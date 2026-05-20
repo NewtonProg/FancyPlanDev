@@ -1,4 +1,40 @@
-# Current Task — Phase 9: Deployment + Konzeptklärungen
+# Current Task — Lizenzierung + Features abgeschlossen
+
+## Stand: 2026-05-20
+
+## Implementiert (diese Session)
+- [x] **F9-04** ✅ Aktivitäts-Timer UI (4 Timer-Karten in FNowModal Tab "Timer", Start/Stop/Reset, Live-Elapsed)
+- [x] **F8-04** ✅ JSON Import/Export (Vollsicherung aller 25 Tabellen, ImportView.tsx)
+- [x] **F6-05** ✅ Mail-Anhänge (TMailAttachment, BLOB-Speicherung, Download-Button mit Save-Dialog)
+- [x] **L11-01** ✅ Lemon Squeezy Lizenzierung — licenseHandlers.ts, LicenseModal.tsx, useLicense.ts
+- [x] **L11-01a** ✅ 60-Tage-Trial + Sperrbildschirm bei trialExpired
+- [x] **L11-01b** ✅ Hintergrundvalidierung beim App-Start (silent, lokaler Cache bei Netzwerkfehler)
+
+## Lemon Squeezy Setup (abgeschlossen)
+- Store-ID: 310134
+- Variant-IDs: 1536198 (monatl. €19) + 1536243 (jährl. €180) → **vip**
+- Variant-ID: 1536293 (0€ Free) → **standard**
+- MAIN_VITE_LS_VIP_VARIANT_IDS=1536198,1536243 in .env gesetzt
+
+## Architektur TTermin (einheitliche Schnittstelle)
+- **TTermin** = einzige Quelle für alle Termine in der App (Kalender, FToday, FNowModal)
+- **window.db.termin.***: getByDate, getByDateRange, getByAct, create, update, delete, upsertFromSync
+- CalendarView Day-Panel liest aus TTermin; manuelle Termine → TTermin (source='manual')
+- CalDAV + Google Sync → schreibt automatisch in TTermin (non-allDay Events)
+- FToday liest TTermin für selectedDate; TRecurring isDueToday() für Wiederholungen
+- FNowModal Tab "Termine": verknüpfte TTermin-Einträge über act_id
+
+## Architektur TTermin (einheitliche Schnittstelle)
+- **TTermin** = einzige Quelle für alle Termine in der App (Kalender, FToday, FNowModal)
+- **window.db.termin.***: getByDate, getByDateRange, getByAct, create, update, delete, upsertFromSync
+- CalendarView Day-Panel liest aus TTermin; manuelle Termine → TTermin (source='manual')
+- CalDAV + Google Sync → schreibt automatisch in TTermin (non-allDay Events)
+- FToday liest TTermin für selectedDate; TRecurring isDueToday() für Wiederholungen
+- FNowModal Tab "Termine": verknüpfte TTermin-Einträge über act_id
+
+---
+
+# Vorherige Session — Phase 9: Deployment + Konzeptklärungen
 
 ## Stand: 2026-05-07 (aktualisiert)
 
@@ -41,8 +77,8 @@
 - [ ] **F7-06: Google Calendar live testen** — echte Google Credentials erforderlich
 
 ## Offen — Priorität Mittel
-- [ ] F6-05: Mail-Anhänge (IMAP BODYSTRUCTURE, Download-Button)
-- [ ] F2-02d: "Zugeordnet"-Tab in FNowModal (TTel-Lookup, wartet auf Customizing-Konzept)
+- [x] F6-05: Mail-Anhänge (IMAP BODYSTRUCTURE, Download-Button) ✅
+- [x] F2-02d: "Zugeordnet"-Tab in FNowModal (TTel-Lookup, Kostenstelle/Auftrag/Projekt) ✅
 - [ ] F9-01: Design-System finalisieren (Icons, Farben)
 - [ ] F9-02: Responsive Breakpoints
 - [ ] F9-04: Aktivitäts-Timer UI (Timer1–4 Felder bereits in Schema)

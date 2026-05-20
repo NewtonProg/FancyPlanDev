@@ -55,7 +55,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F2-02a | Aktivität als erledigt markieren setzt "Heute" automatisch zurück | Sdone=1 → SToday=0 in handleToggleDone | Hoch | ✅ |
 | F2-02b | Tagesansicht nach Aufgaben / Infos / Alles filtern | SInfo-Flag, Toggle-Buttons in TodayView | Hoch | ✅ |
 | F2-02c | Baumknoten einer Aktivität per Picker zuweisen | PSPName-Feld mit ↗-Button → TreePickerModal (Doppelklick oder Button) | Mittel | ✅ |
-| F2-02d | "Zugeordnet"-Tab: Person, Abteilung, PSP-Nr dynamisch | Wartet auf Customizing-Konzept (TTel-Lookup) | Mittel | 🔲 |
+| F2-02d | "Zugeordnet"-Tab: Person, Abteilung, PSP-Nr dynamisch | TActTel (Ansprechpartner), FdlgTelModal-Picker; CostCtrName/OrderName/OrderNr/ProjektName als Freitext; Abtlg+Team aus TTel | Mittel | ✅ |
 | F2-02e | Änderungen an einer Aktivität protokollieren | TAct_Log — jede Feldänderung bei SDetailStat=1 | Mittel | ✅ |
 | F2-02f | Protokolle löschen (alle oder gezielt pro Aktivität) | deleteByAct + deleteAll IPC-Handler | Niedrig | ✅ |
 | F2-03 | Periodenplanung (Woche/Monat vorausplanen) | zurückgestellt — Ersatz durch Planvarianten (F2-05) | Mittel | 🚫 |
@@ -111,7 +111,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F6-02 | Posteingang anzeigen: Liste + E-Mail-Inhalt lesen | MailView.tsx — Inbox-Liste links, Detail/iframe rechts | Hoch | ✅ |
 | F6-03 | E-Mail verfassen und senden | ComposePanel: An, CC, Betreff, Body → nodemailer SMTP | Hoch | ✅ |
 | F6-04 | Neue Nachrichten vom IMAP-Server abrufen (Sync) | imapflow: fetch envelope, Body on-demand via mailparser | Hoch | ✅ |
-| F6-05 | E-Mail-Anhänge herunterladen | IMAP BODYSTRUCTURE — noch nicht implementiert | Mittel | 🔲 |
+| F6-05 | E-Mail-Anhänge herunterladen | mailHandlers.ts: simpleParser liest Anhänge, speichert als BLOB in TMailAttachment; mail:attachment:list + mail:attachment:download (dialog.showSaveDialog); MailView.tsx: 📎-Icon in MailItem, Anhang-Buttons in MailDetail | Mittel | ✅ |
 | F6-06 | IMAP/SMTP-Zugangsdaten in der App konfigurieren | SettingsView.tsx — Gmail/Outlook-Preset, Test-Button | Hoch | ✅ |
 
 ---
@@ -140,11 +140,11 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
-| F7-07 | TTermin — Tabelle + IPC-Handler | Schema: TTermin (id, title, date, time_start, time_end, calendar_uid, calendar_source, act_id); terminHandlers.ts: CRUD + getByDate(date) + getByAct(actId); Preload-Bridge | Hoch | 🔲 |
-| F7-08 | FToday — heutige Termine anzeigen | FToday liest TTermin für today via getByDate(); zeigt Uhrzeit + Titel kompakt; nur wenn Einträge vorhanden; oberhalb der Aufgabenliste | Mittel | 🔲 |
-| F7-09 | FNowModal — Tab "Termine" (Aktivitäts-Bezug) | Neuer Tab in FNowModal: Liste verknüpfter TTermin-Einträge (Datum, Uhrzeit, Betreff); verknüpfen/trennen per act_id | Mittel | 🔲 |
-| F7-10 | Kalender-Sync schreibt in TTermin | CalDAV + Google Sync: eingehende Events → TTermin anlegen/updaten (calendar_uid als Dedup-Key); periodische Termine werden durch Kalender-RRULE expandiert | Hoch | 🔲 |
-| F7-11 | TRecurring — periodische FancyPlan-Aufgaben | Schema: TRecurring (id, title, recurrence_type: daily/weekly/monthly/yearly, recurrence_value, act_id nullable, last_shown); isDueToday()-Funktion; FToday zeigt fällige Einträge; Erfassung/Löschen direkt in FToday | Mittel | 🔲 |
+| F7-07 | TTermin — Tabelle + IPC-Handler | Schema: TTermin (id, title, termin_date, time_start, time_end, location, notes, source, cal_uid, act_id); terminHandlers.ts: CRUD + getByDate + getByDateRange + getByAct + upsertFromSync; Preload-Bridge; env.d.ts | Hoch | ✅ |
+| F7-08 | FToday — heutige Termine anzeigen | TodayView lädt window.db.termin.getByDate(selectedDate); kompakte Zeile mit Uhrzeit+Titel+Ort; nur in today-Modus; oberhalb Aufgabenliste | Mittel | ✅ |
+| F7-09 | FNowModal — Tab "Termine" (Aktivitäts-Bezug) | Tab "Termine" in FNowModal: zeigt verknüpfte TTermin-Einträge (getByAct); Datum-Picker + Suchen zum Verknüpfen neuer Termine; Trennen per link_off-Button | Mittel | ✅ |
+| F7-10 | Kalender-Sync schreibt in TTermin | CalDAV (calendarHandlers.ts) + Google (googleCalHandlers.ts): non-allDay Events → TTermin via ON CONFLICT(cal_uid); source='caldav'/'gcal' | Hoch | ✅ |
+| F7-11 | TRecurring — periodische FancyPlan-Aufgaben | Schema: TRecurring (freq: daily/weekly/monthly/yearly, byday, bymonthday, bymonth, time_start); isDueToday()-Funktion; TodayView zeigt fällige Einträge; RecurringPanel (Modal) für CRUD direkt in FToday | Mittel | ✅ |
 
 ---
 
@@ -155,7 +155,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F8-01 | Access-Datenbank (.accdb) importieren | ImportView.tsx — Datei auswählen, mdb-reader liest Tabellen, SQLite-Insert | Hoch | ✅ |
 | F8-02 | Aktivitäten als CSV exportieren (Excel-kompatibel) | "↓ CSV"-Button in ActivitiesView; BOM-Header; dialog.showSaveDialog | Mittel | ✅ |
 | F8-03 | Bestehende Bestandsdaten migrieren | Abgedeckt durch F8-01 (Access → SQLite per mdb-reader) | Hoch | ✅ |
-| F8-04 | JSON-Import/Export | Noch nicht implementiert | Niedrig | 🔲 |
+| F8-04 | JSON-Import/Export (Vollsicherung) | jsonHandlers.ts: json:export schreibt alle 25 Tabellen als JSON (version+timestamp); json:import liest JSON, validiert, INSERT OR REPLACE in Transaktion; ImportView.tsx: eigene Sektionen Export+Import mit Zeilenzähler | Niedrig | ✅ |
 
 ---
 
@@ -166,7 +166,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F9-01 | Design-System finalisieren (Icons, Farben, endgültig) | Tailwind-Theme — bewusst zurückgestellt; wird nach funktionalem Abschluss aller Features gemacht; blockiert nicht F9-05 | Mittel | 🔲 |
 | F9-02 | Layout skaliert mit der Fenstergröße | Desktop-PC-App — keine mobilen Breakpoints geplant; Windows-DPI-Skalierung (125%/150%/200%) läuft automatisch über Electron/Chromium; Mindestauflösung ca. 1440×900 | Niedrig | 🚫 |
 | F9-03 | Render-Fehler in einer View stürzen die App nicht ab | React ErrorBoundary pro View; zeigt Fehlertext + Reset-Button | Mittel | ✅ |
-| F9-04 | Aktivitäts-Timer starten und stoppen | Timer1–4-Felder in TAct vorhanden; UI noch nicht implementiert | Niedrig | 🔲 |
+| F9-04 | Aktivitäts-Timer starten und stoppen | FNowModal.tsx Tab "Timer": 4 Timer-Karten; Start/Stop speichert sofort via window.db.act.update (TimerNActive/Stamp/Beg/BegFirst/sngDur); Live-Elapsed via setInterval(1 s) + tick-State; formatDur() zeigt h/m/s | Niedrig | ✅ |
 | F9-05 | Windows-Installer (.exe) bauen | electron-builder --win (NSIS); Output: `dist\FancyPlan Setup 0.1.0.exe`; Standard-Electron-Icon (kein icon.ico); Voraussetzung: Windows Developer Mode aktiv (Symlink-Rechte); 4 typografische Anführungszeichen in de.json gefixt (JSON-Parse-Fehler) | Hoch | ✅ |
 | F9-06 | macOS-Build (.dmg) | electron-builder --mac | Mittel | 🔲 |
 | F9-07 | Linux-Build (.AppImage) | electron-builder --linux | Mittel | 🔲 |
@@ -219,9 +219,9 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
-| L11-01 | Lizenzschlüssel eingeben — FdlgLicenseInput | Dialog: Textfeld für Schlüssel, Buttons "Lizenz-anfordern" + OK; Lemon Squeezy API gibt Variant zurück → bestimmt Tier (free/standard/vip); speichert `license_key` (AES-verschlüsselt) + `license_tier` + `license_validated_at` in TSettings; unterstützt Einmalzahlung + Abo | Hoch | 🔲 |
-| L11-01a | Free-Tier — 60-Tage-Trial, danach gesperrt | Beim Start: kein Schlüssel → `license_tier = free`; `trial_start` (Erststart-Datum) in TSettings; nach 60 Tagen: App zeigt Sperrbildschirm mit Upgrade-Hinweis, keine Nutzung mehr möglich; während Trial: Mail, Kalender, Customizing, FMyData gesperrt | Hoch | 🔲 |
-| L11-01b | Lizenz-Hintergrundvalidierung beim App-Start | Main Process prüft Lemon Squeezy API silent; bei Abo: `license_valid_until` prüfen; bei Ablauf: Grace-Period 30 Tage dann Downgrade auf Free; bei Einmalzahlung: unbegrenzt gültig nach einmaliger Validierung | Hoch | 🔲 |
+| L11-01 | Lizenzschlüssel eingeben — LicenseModal | licenseHandlers.ts: license:get/activate/validate/reset; Lemon Squeezy public /v1/licenses/activate + /validate (kein Admin-Key im App); variant_id → tier (standard/vip via MAIN_VITE_LS_VIP_VARIANT_IDS); speichert license_key, instance_id, tier, validated_at in TSettings; LicenseModal.tsx: Eingabe + Aktivierung; Sidebar "Lizenz"-Button; App.tsx integriert | Hoch | ✅ |
+| L11-01a | Free-Tier — 60-Tage-Trial, danach Sperrbildschirm | trial_start in TSettings gesetzt beim ersten license:get; trialExpired = !key AND trialDays >= 60; useLicense.ts gibt trialExpired zurück; App.tsx zeigt LicenseModal (forceOpen=true) wenn trialExpired | Hoch | ✅ |
+| L11-01b | Lizenz-Hintergrundvalidierung beim App-Start | useLicense.ts ruft window.db.license.validate() im useEffect; aktualisiert tier in TSettings; bei Netzwerkfehler bleibt gespeicherter Tier erhalten (Grace-Period durch lokalen Cache) | Hoch | ✅ |
 | L11-02 | FCM — Einstellungs-Hub | FCMView mit 3 Hub-Buttons: → FCMBtn (Schaltflächen-Steuerung), → Formular-Steuerung (Platzhalter), → Werte (Platzhalter); Bottom-Tabs: Profile (CRUD eigener Profile), Anwendung (= globale App-Settings / SettingsView), System (Admin-Funktionen, Platzhalter), Hilfe (Doku zu FCM, öffnet DE_FCM_Customizing.docx); nur bei VIP-Lizenz | Hoch | ✅ |
 | L11-02a | FCM Tab "Profile" — eigene Arbeitsprofile anlegen | User legt eigene Profile an (z.B. "Reisen", "Business", "Privat"); CRUD-Liste in FCMView; Tabelle TFCMProfile (id, form_name, profile_name); Profile stehen dann in FCMBtn als Dropdown zur Verfügung | Hoch | ✅ |
 | L11-03 | FCMBtn — Profil-basierte Schaltflächensteuerung für komplexe Formulare | Gilt NUR für komplexe Formulare (FAct, FTreeEdit — nicht einfache Listen). Split-View: links Aktives-Profil-Liste (Nr, Profil, Bezeichnung, Methode), rechts Ziel-Formular-Profil (Formular, letztes Profil, Profil, Abfrage, Bereich, Thema, Kategorie). Dropdowns: Aktives Formular + Profil. Buttons: neu, Profil, Kopieren, Design, speichern. Tabellen: TFCMBtn, TFCMProfile | Hoch | ✅ |
@@ -233,7 +233,7 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 | L11-05b | **[Stufe 2]** Hilfe benutzerkonfigurierbar — Anwender verknüpft eigene Hilfedateien via FCMBtn | Vertriebsargument VIP: User kann den Hilfe-Button pro Formular über FCMBtn überschreiben oder ergänzen — eigene .docx, Firmen-Wiki-URL, oder eigenes Hilfe-Formular hinterlegen (Hyper-Link oder Pic-Path in FCMbtnDetail); ermöglicht vollständig eigene Betriebsdokumentation ohne Programmierung; nur VIP-Lizenz | Niedrig | 🔲 |
 | L11-06 | Aktivität versenden — Dispatch an Mobile-App via Firebase Firestore | TAct-Datensatz in Firestore schreiben (source: desktop, status: dispatched); Mobile-App empfängt und kann Erledigt-Status zurückschreiben | Mittel | 🔲 |
 | L11-07 | Firestore-Sync — Status-Updates von Mobile-App empfangen | Listener auf Firestore-Collection; eingehende Statusänderungen (z.B. Sdone=1) in lokale TAct übernehmen | Mittel | 🔲 |
-| L11-08 | FCMStatus — Automatische Feldpflege bei Status-Wechsel (FAct / FNow / FToday) | Gilt für Formulare FAct, FNow, FToday: sobald der Anwender einen Status einträgt und das Feld verlässt (onBlur), ruft `applyFCMStatus()` die TFCMStatus-Regel für diesen Status ab und befüllt abhängige Felder automatisch. **TFCMStatus** (40 Felder): Status, StatusGrp, Aktion, Points, relevant, Kategorie, UserExit, SortNr; katFind/katReplace (Kategorie-Substitution, Semikolon-Paare); p1–p3 je Lt/Eq/Gt mit LtVal/LtSet/LtNoop, EqVal/EqSet/EqNoop, GtVal/GtSet/GtNoop (numerische Schwellwert-Regeln für Prio1-3); setIstVon/setIstBis/setPlanVon/setPlanBis (Datums-Flags); setInfo; titelText. **FCMStatusView.tsx** (3-Spalten-Layout): Links — scrollbare Status-Liste; Mitte — Eigenschaften-Formular; Rechts — Automatik-Konfiguration (PrioSection 1–3, Kategorie-Substitution, Datumscheckboxen, Info, TitelText). **Runtime**: `applyFCMStatus(status)` in FNowModal.tsx auf onBlur des Status-Feldes. Live-Test steht aus | Hoch | ⏳ |
+| L11-08 | FCMStatus — Automatische Feldpflege bei Status-Wechsel (FAct / FNow / FToday) | Gilt für Formulare FAct, FNow, FToday: sobald der Anwender einen Status einträgt und das Feld verlässt (onBlur), ruft `applyFCMStatus()` die TFCMStatus-Regel für diesen Status ab und befüllt abhängige Felder automatisch. **TFCMStatus** (40 Felder): Status, StatusGrp, Aktion, Points, relevant, Kategorie, UserExit, SortNr; katFind/katReplace (Kategorie-Substitution, Semikolon-Paare); p1–p3 je Lt/Eq/Gt mit LtVal/LtSet/LtNoop, EqVal/EqSet/EqNoop, GtVal/GtSet/GtNoop (numerische Schwellwert-Regeln für Prio1-3); setIstVon/setIstBis/setPlanVon/setPlanBis (Datums-Flags); setInfo; titelText. **FCMStatusView.tsx** (3-Spalten-Layout): Links — scrollbare Status-Liste; Mitte — Eigenschaften-Formular; Rechts — Automatik-Konfiguration (PrioSection 1–3, Kategorie-Substitution, Datumscheckboxen, Info, TitelText). **Runtime**: `applyFCMStatus(status)` in FNowModal.tsx auf onBlur des Status-Feldes. | Hoch | ✅ |
 
 ---
 

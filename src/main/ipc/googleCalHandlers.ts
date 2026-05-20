@@ -46,10 +46,10 @@ ipcMain.handle('gcal:auth:status', () => ({
 
 ipcMain.handle('gcal:auth:connect', () =>
   new Promise<{ ok?: boolean; email?: string; error?: string }>((resolve) => {
-    const clientId = getSetting('gcal_client_id')
-    const clientSecret = getSetting('gcal_client_secret')
+    const clientId = getSetting('gcal_client_id') || import.meta.env.MAIN_VITE_GCAL_CLIENT_ID
+    const clientSecret = getSetting('gcal_client_secret') || import.meta.env.MAIN_VITE_GCAL_CLIENT_SECRET
     if (!clientId || !clientSecret) {
-      return resolve({ error: 'Client ID und Client Secret zuerst speichern' })
+      return resolve({ error: 'Keine Google-Credentials konfiguriert' })
     }
 
     const server = http.createServer()
@@ -161,12 +161,22 @@ ipcMain.handle('gcal:sync', async () => {
         synced_at   = CURRENT_TIMESTAMP
     `)
 
+    const terminUpsert = db.prepare(`
+      INSERT INTO TTermin (act_id, title, termin_date, time_start, time_end, location, notes, source, cal_uid)
+      VALUES (NULL, @title, @termin_date, @time_start, @time_end, @location, @notes, 'gcal', @cal_uid)
+      ON CONFLICT(cal_uid) DO UPDATE SET
+        title=excluded.title, termin_date=excluded.termin_date,
+        time_start=excluded.time_start, time_end=excluded.time_end,
+        location=excluded.location, notes=excluded.notes
+    `)
+
     let count = 0
     for (const event of events) {
       if (!event.id) continue
       const allDay = !event.start?.dateTime
+      const calUid = `gcal:${event.id}`
       upsert.run({
-        cal_uid:     `gcal:${event.id}`,
+        cal_uid:     calUid,
         summary:     event.summary ?? '',
         description: event.description ?? null,
         location:    event.location ?? null,
@@ -174,6 +184,20 @@ ipcMain.handle('gcal:sync', async () => {
         dtend:       event.end?.dateTime   ?? event.end?.date   ?? '',
         all_day:     allDay ? 1 : 0
       })
+      if (!allDay && event.start?.dateTime) {
+        const start = new Date(event.start.dateTime)
+        const end   = event.end?.dateTime ? new Date(event.end.dateTime) : start
+        const pad2  = (n: number): string => String(n).padStart(2, '0')
+        terminUpsert.run({
+          title:       event.summary ?? '',
+          termin_date: start.toISOString().slice(0, 10),
+          time_start:  `${pad2(start.getHours())}:${pad2(start.getMinutes())}`,
+          time_end:    `${pad2(end.getHours())}:${pad2(end.getMinutes())}`,
+          location:    event.location ?? null,
+          notes:       event.description ?? null,
+          cal_uid:     calUid
+        })
+      }
       count++
     }
 

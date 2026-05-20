@@ -7,12 +7,8 @@ interface FCMStatusEntry {
   id: number
   Status: string
   StatusGrp: string
-  Aktion?: string
-  Points?: number
   relevant?: number
   Kategorie?: string
-  UserExit?: string
-  SortNr?: number
   katFind?: string
   katReplace?: string
   p1LtVal?: number | null; p1LtSet?: number | null; p1LtNoop?: number
@@ -29,19 +25,16 @@ interface FCMStatusEntry {
   setPlanVon?: number
   setPlanBis?: number
   setInfo?: number
-  titelText?: string
+  text1?: string
+  text2?: string
 }
 
 const emptyForm = (): FCMStatusEntry => ({
   id: 0,
   Status: '',
   StatusGrp: 'All',
-  Aktion: '',
-  Points: 0,
   relevant: 1,
   Kategorie: '',
-  UserExit: '',
-  SortNr: 0,
   katFind: '',
   katReplace: '',
   p1LtVal: null, p1LtSet: null, p1LtNoop: 1,
@@ -58,7 +51,8 @@ const emptyForm = (): FCMStatusEntry => ({
   setPlanVon: 0,
   setPlanBis: 0,
   setInfo: 0,
-  titelText: ''
+  text1: '',
+  text2: ''
 })
 
 const inputCls = 'w-full text-sm border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface'
@@ -241,23 +235,11 @@ export default function FCMStatusView({ onBack }: { onBack: () => void }): JSX.E
             <Row2 label={t('fcmst.statusGrp')}>
               <input className={inputCls} value={form.StatusGrp ?? ''} onChange={e => set('StatusGrp', e.target.value)} />
             </Row2>
-            <Row2 label={t('fcmst.aktion')}>
-              <input className={inputCls} value={form.Aktion ?? ''} onChange={e => set('Aktion', e.target.value)} />
-            </Row2>
-            <Row2 label={t('fcmst.points')}>
-              <input type="number" className={numCls} value={form.Points ?? 0} onChange={e => set('Points', Number(e.target.value))} />
-            </Row2>
             <Row2 label={t('fcmst.relevant')}>
               <input type="checkbox" className="w-4 h-4" checked={Number(form.relevant) === 1} onChange={e => set('relevant', e.target.checked ? 1 : 0)} />
             </Row2>
             <Row2 label={t('fcmst.kategorie')}>
               <input className={inputCls} value={form.Kategorie ?? ''} onChange={e => set('Kategorie', e.target.value)} />
-            </Row2>
-            <Row2 label={t('fcmst.userExit')}>
-              <input className={inputCls} value={form.UserExit ?? ''} onChange={e => set('UserExit', e.target.value)} />
-            </Row2>
-            <Row2 label={t('fcmst.sortNr')}>
-              <input type="number" className={numCls} value={form.SortNr ?? 0} onChange={e => set('SortNr', Number(e.target.value))} />
             </Row2>
           </Section>
         </div>
@@ -306,8 +288,10 @@ export default function FCMStatusView({ onBack }: { onBack: () => void }): JSX.E
           </Section>
 
           <Section title={t('fcmst.secTitel')}>
-            <label className={labelCls}>{t('fcmst.titelText')}</label>
-            <input className={inputCls} value={form.titelText ?? ''} onChange={e => set('titelText', e.target.value)} placeholder="Text wird an Titel angehängt" />
+            <label className={labelCls}>{t('fcmst.text1')}</label>
+            <input className={`${inputCls} mb-2`} value={form.text1 ?? ''} onChange={e => set('text1', e.target.value)} placeholder={t('fcmst.textPlaceholder')} />
+            <label className={labelCls}>{t('fcmst.text2')}</label>
+            <input className={inputCls} value={form.text2 ?? ''} onChange={e => set('text2', e.target.value)} placeholder={t('fcmst.textPlaceholder')} />
           </Section>
 
         </div>

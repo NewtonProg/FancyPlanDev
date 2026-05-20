@@ -36,6 +36,7 @@ function MailItem({ mail, active, onClick }: { mail: Mail; active: boolean; onCl
         <span className={`flex-1 text-sm truncate ${unread ? 'font-semibold text-on-surface' : 'text-on-surface'}`}>
           {String(mail.from_name || mail.from_addr || '—')}
         </span>
+        {mail.has_attachment ? <span className="text-on-surface-variant/50 text-xs flex-shrink-0 mt-0.5">📎</span> : null}
         <span className="text-xs text-on-surface-variant/40 flex-shrink-0 mt-0.5">{fmtDate(mail.date_received as string)}</span>
       </div>
       <p className={`text-xs truncate mb-0.5 ml-3 ${unread ? 'font-medium text-on-surface' : 'text-on-surface-variant'}`}>
@@ -117,8 +118,31 @@ function ComposePanel({ fromEmail, onClose }: { fromEmail: string; onClose: () =
   )
 }
 
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 function MailDetail({ mail, detail }: { mail: Mail; detail: Mail | null }): JSX.Element {
   const { t } = useTranslation()
+  const [attachments, setAttachments] = useState<Mail[]>([])
+  const [downloading, setDownloading] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (detail && Number(detail.has_attachment)) {
+      window.db.mail.getAttachments(mail.id as number).then(setAttachments)
+    } else {
+      setAttachments([])
+    }
+  }, [detail, mail.id])
+
+  const handleDownload = async (attId: number): Promise<void> => {
+    setDownloading(attId)
+    await window.db.mail.downloadAttachment(attId)
+    setDownloading(null)
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-outline-variant/40 flex-shrink-0">
@@ -136,6 +160,23 @@ function MailDetail({ mail, detail }: { mail: Mail; detail: Mail | null }): JSX.
           </p>
           <p className="text-on-surface-variant/60">{fmtDateFull(mail.date_received as string)}</p>
         </div>
+        {attachments.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {attachments.map((att) => (
+              <button
+                key={att.id as number}
+                onClick={() => handleDownload(att.id as number)}
+                disabled={downloading === (att.id as number)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-outline-variant text-xs text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 transition-colors"
+              >
+                <span>📎</span>
+                <span className="max-w-[160px] truncate">{String(att.filename ?? 'Anhang')}</span>
+                <span className="text-on-surface-variant/50">{fmtSize(Number(att.size ?? 0))}</span>
+                {downloading === (att.id as number) && <span>…</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-hidden">
         {!detail ? (

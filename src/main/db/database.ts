@@ -153,6 +153,17 @@ export function initDb(): void {
     migrateWeb()
   }
 
+  const tfcmCols = (db.prepare('PRAGMA table_info(TFCMStatus)').all() as { name: string }[]).map(c => c.name)
+  if (!tfcmCols.includes('text1')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN text1 TEXT')
+  if (!tfcmCols.includes('text2')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN text2 TEXT')
+
+  const tterminCols = (db.prepare('PRAGMA table_info(TTermin)').all() as { name: string }[]).map(c => c.name)
+  if (!tterminCols.includes('meet_url'))     db.exec('ALTER TABLE TTermin ADD COLUMN meet_url TEXT')
+  if (!tterminCols.includes('meet_comment')) db.exec('ALTER TABLE TTermin ADD COLUMN meet_comment TEXT')
+  if (!tterminCols.includes('meet_key'))     db.exec('ALTER TABLE TTermin ADD COLUMN meet_key TEXT')
+  if (!tterminCols.includes('meet_phone'))   db.exec('ALTER TABLE TTermin ADD COLUMN meet_phone TEXT')
+  if (!tterminCols.includes('cat'))          db.exec('ALTER TABLE TTermin ADD COLUMN cat TEXT')
+
   const row = db.prepare("SELECT value FROM db_meta WHERE key = 'schema_version'").get() as
     | { value: string }
     | undefined

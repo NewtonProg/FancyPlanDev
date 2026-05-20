@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLicense } from './hooks/useLicense'
 import ErrorBoundary from './components/ErrorBoundary'
+import { LicenseModal } from './components/LicenseModal'
 import FNowModal from './views/FNowModal'
 import ImportView from './views/ImportView'
 import TodayView from './views/TodayView'
@@ -20,8 +21,9 @@ type NavView = 'today' | 'priorities' | 'activities' | 'contacts' | 'tree' | 'ma
 
 function App(): JSX.Element {
   const { t } = useTranslation()
-  const { isVip } = useLicense()
+  const { isVip, trialExpired, reload: reloadLicense } = useLicense()
   const [activeView, setActiveView] = useState<NavView>('today')
+  const [showLicense, setShowLicense] = useState(false)
   const [subViewLabel, setSubViewLabel] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(true)
   const [openContactId, setOpenContactId] = useState<number | null>(null)
@@ -111,6 +113,12 @@ function App(): JSX.Element {
               >
                 {t('nav.settings')}
               </button>
+              <button
+                onClick={() => setShowLicense(true)}
+                className="sidebar-item text-left"
+              >
+                Lizenz
+              </button>
               {isVip && (
                 <button
                   onClick={() => setActiveView('fcm')}
@@ -177,6 +185,16 @@ function App(): JSX.Element {
           onClose={() => setGlobalActId(null)}
           onSaved={() => setGlobalActId(null)}
         />
+      )}
+
+      {/* Trial abgelaufen — blockierendes Modal */}
+      {trialExpired && (
+        <LicenseModal forceOpen onActivated={reloadLicense} />
+      )}
+
+      {/* Lizenz-Dialog manuell geöffnet */}
+      {showLicense && !trialExpired && (
+        <LicenseModal onClose={() => setShowLicense(false)} onActivated={() => { reloadLicense(); setShowLicense(false) }} />
       )}
     </div>
   )

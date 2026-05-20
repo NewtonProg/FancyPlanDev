@@ -545,7 +545,8 @@ CREATE TABLE IF NOT EXISTS TFCMStatus (
   setPlanVon  INTEGER DEFAULT 0,
   setPlanBis  INTEGER DEFAULT 0,
   setInfo     INTEGER DEFAULT 0,
-  titelText   TEXT,
+  text1       TEXT,
+  text2       TEXT,
   created_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_tfcmstatus_status ON TFCMStatus(Status);
@@ -600,6 +601,18 @@ CREATE TABLE IF NOT EXISTS TMailReceive (
 );
 CREATE INDEX IF NOT EXISTS idx_tmailrecv_date ON TMailReceive(date_received);
 CREATE INDEX IF NOT EXISTS idx_tmailrecv_read ON TMailReceive(is_read);
+
+-- ── TMailAttachment — Mail-Anhänge (BLOB gespeichert) ────────────────────
+
+CREATE TABLE IF NOT EXISTS TMailAttachment (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  mail_id      INTEGER NOT NULL REFERENCES TMailReceive(id) ON DELETE CASCADE,
+  filename     TEXT,
+  content_type TEXT,
+  size         INTEGER,
+  data         BLOB
+);
+CREATE INDEX IF NOT EXISTS idx_tmailattach_mail ON TMailAttachment(mail_id);
 
 -- ── TCalendar — lokaler Kalender-Cache (CalDAV) ───────────────────────────
 
@@ -680,6 +693,11 @@ CREATE TABLE IF NOT EXISTS TTermin (
   time_end     TEXT,
   location     TEXT,
   notes        TEXT,
+  meet_url     TEXT,
+  meet_comment TEXT,
+  meet_key     TEXT,
+  meet_phone   TEXT,
+  cat          TEXT,
   source       TEXT DEFAULT 'manual',
   cal_uid      TEXT UNIQUE,
   created_at   TEXT DEFAULT CURRENT_TIMESTAMP

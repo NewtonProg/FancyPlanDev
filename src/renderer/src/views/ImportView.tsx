@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type ImportState = 'idle' | 'running' | 'done' | 'error'
+type JsonState = 'idle' | 'running' | 'done' | 'error'
 
 type ImportResult = {
   canceled?: boolean
@@ -14,6 +15,11 @@ export default function ImportView(): JSX.Element {
   const { t } = useTranslation()
   const [state, setState] = useState<ImportState>('idle')
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [jsonExState, setJsonExState] = useState<JsonState>('idle')
+  const [jsonExMsg, setJsonExMsg] = useState<string | null>(null)
+  const [jsonImState, setJsonImState] = useState<JsonState>('idle')
+  const [jsonImCounts, setJsonImCounts] = useState<Record<string, number> | null>(null)
+  const [jsonImError, setJsonImError] = useState<string | null>(null)
 
   async function handleImport(): Promise<void> {
     setState('running')
@@ -100,6 +106,75 @@ export default function ImportView(): JSX.Element {
           ))}
         </div>
       )}
+
+      {/* ── JSON Export ────────────────────────────────────────────────── */}
+      <div className="rounded-apple bg-surface-container-low shadow-apple-sm p-6 mb-4 mt-8">
+        <h3 className="text-base font-semibold text-on-surface mb-1">JSON-Export</h3>
+        <p className="text-xs text-on-surface-variant/60 mb-4">
+          Alle Daten als JSON-Datei speichern (Vollsicherung, lesbar, versioniert).
+        </p>
+        <button
+          onClick={async () => {
+            setJsonExState('running'); setJsonExMsg(null)
+            const r = await window.db.export.jsonExport()
+            if (r.canceled) { setJsonExState('idle'); return }
+            if (r.ok) { setJsonExState('done'); setJsonExMsg(`${r.total?.toLocaleString('de')} Datensätze exportiert → ${r.path}`) }
+            else { setJsonExState('error'); setJsonExMsg(r.error ?? 'Fehler') }
+          }}
+          disabled={jsonExState === 'running'}
+          className="px-4 py-2 rounded-apple-sm bg-apple-blue text-white text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+        >
+          {jsonExState === 'running' ? 'Exportiert…' : '↓ JSON exportieren'}
+        </button>
+        {jsonExMsg && (
+          <p className={`text-xs mt-3 ${jsonExState === 'error' ? 'text-error' : 'text-secondary-fixed-dim'}`}>
+            {jsonExMsg}
+          </p>
+        )}
+      </div>
+
+      {/* ── JSON Import ────────────────────────────────────────────────── */}
+      <div className="rounded-apple bg-surface-container-low shadow-apple-sm p-6 mb-4">
+        <h3 className="text-base font-semibold text-on-surface mb-1">JSON-Import</h3>
+        <p className="text-xs text-on-surface-variant/60 mb-1">
+          Zuvor exportierte JSON-Datei einlesen. Bestehende Datensätze werden überschrieben (INSERT OR REPLACE).
+        </p>
+        <p className="text-xs text-error/80 mb-4">⚠ Vorher eine Sicherung erstellen.</p>
+        <button
+          onClick={async () => {
+            setJsonImState('running'); setJsonImCounts(null); setJsonImError(null)
+            const r = await window.db.export.jsonImport()
+            if (r.canceled) { setJsonImState('idle'); return }
+            if (r.ok) { setJsonImState('done'); setJsonImCounts(r.counts ?? {}) }
+            else { setJsonImState('error'); setJsonImError(r.error ?? 'Fehler') }
+          }}
+          disabled={jsonImState === 'running'}
+          className="px-4 py-2 rounded-apple-sm bg-apple-blue text-white text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+        >
+          {jsonImState === 'running' ? 'Importiert…' : '↑ JSON importieren'}
+        </button>
+
+        {jsonImState === 'done' && jsonImCounts && (
+          <div className="mt-4 border border-secondary-container/30 bg-secondary-container/10 rounded-lg p-4">
+            <p className="text-sm font-medium text-secondary-fixed-dim mb-2">
+              Import abgeschlossen — {Object.values(jsonImCounts).reduce((a, b) => a + b, 0).toLocaleString('de')} Datensätze
+            </p>
+            <table className="w-full text-xs">
+              <tbody>
+                {Object.entries(jsonImCounts).map(([tbl, cnt]) => (
+                  <tr key={tbl} className="border-t border-secondary-container/20">
+                    <td className="py-0.5 text-secondary-fixed-dim">{tbl}</td>
+                    <td className="py-0.5 text-right text-secondary-fixed-dim">{cnt.toLocaleString('de')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {jsonImState === 'error' && (
+          <p className="text-xs text-error mt-3">{jsonImError}</p>
+        )}
+      </div>
     </div>
   )
 }

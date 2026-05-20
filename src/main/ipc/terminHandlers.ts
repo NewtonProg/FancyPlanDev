@@ -5,6 +5,10 @@ ipcMain.handle('termin:getByDate', (_e, date: string) =>
   getDb().prepare('SELECT * FROM TTermin WHERE termin_date = ? ORDER BY time_start ASC').all(date)
 )
 
+ipcMain.handle('termin:getByDateRange', (_e, from: string, to: string) =>
+  getDb().prepare('SELECT * FROM TTermin WHERE termin_date BETWEEN ? AND ? ORDER BY termin_date ASC, time_start ASC').all(from, to)
+)
+
 ipcMain.handle('termin:getByAct', (_e, actId: number) =>
   getDb().prepare('SELECT * FROM TTermin WHERE act_id = ? ORDER BY termin_date ASC, time_start ASC').all(actId)
 )
@@ -12,8 +16,8 @@ ipcMain.handle('termin:getByAct', (_e, actId: number) =>
 ipcMain.handle('termin:create', (_e, data: Record<string, unknown>) => {
   const db = getDb()
   const stmt = db.prepare(`
-    INSERT INTO TTermin (act_id, title, termin_date, time_start, time_end, location, notes, source, cal_uid)
-    VALUES (@act_id, @title, @termin_date, @time_start, @time_end, @location, @notes, @source, @cal_uid)
+    INSERT INTO TTermin (act_id, title, termin_date, time_start, time_end, location, notes, meet_url, meet_comment, meet_key, meet_phone, cat, source, cal_uid)
+    VALUES (@act_id, @title, @termin_date, @time_start, @time_end, @location, @notes, @meet_url, @meet_comment, @meet_key, @meet_phone, @cat, @source, @cal_uid)
   `)
   const res = stmt.run({
     act_id: data.act_id ?? null,
@@ -23,6 +27,11 @@ ipcMain.handle('termin:create', (_e, data: Record<string, unknown>) => {
     time_end: data.time_end ?? null,
     location: data.location ?? null,
     notes: data.notes ?? null,
+    meet_url: data.meet_url ?? null,
+    meet_comment: data.meet_comment ?? null,
+    meet_key: data.meet_key ?? null,
+    meet_phone: data.meet_phone ?? null,
+    cat: data.cat ?? null,
     source: data.source ?? 'manual',
     cal_uid: data.cal_uid ?? null
   })

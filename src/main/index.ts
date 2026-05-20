@@ -16,6 +16,8 @@ import './ipc/fcmHandlers'
 import './ipc/terminHandlers'
 import './ipc/recurringHandlers'
 import './ipc/backupHandlers'
+import './ipc/jsonHandlers'
+import './ipc/licenseHandlers'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

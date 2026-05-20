@@ -9,7 +9,7 @@ import LinkPanel from '../components/LinkPanel'
 
 type Act = Record<string, unknown>
 type Row = Record<string, unknown>
-type Tab = 'status' | 'kontakt' | 'links' | 'control' | 'info' | 'zugeordnet'
+type Tab = 'status' | 'kontakt' | 'links' | 'control' | 'info' | 'zugeordnet' | 'termine' | 'timer'
 type NavEntry = { id: number; title: string; form: Act; logs: Row[]; linkedActTitle: string }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
@@ -88,7 +88,10 @@ export default function FNowModal({
   const [linkedActTitle, setLinkedActTitle]  = useState('')
   const [linkedTels,     setLinkedTels]      = useState<Row[]>([])
   const [showTelPicker,  setShowTelPicker]   = useState(false)
-  const [catContacts,   setCatContacts]     = useState<Row[]>([])
+  const [catContacts,    setCatContacts]    = useState<Row[]>([])
+  const [actTermins,     setActTermins]     = useState<Row[]>([])
+  const [linkDate,       setLinkDate]       = useState(new Date().toISOString().slice(0, 10))
+  const [linkDateTermins, setLinkDateTermins] = useState<Row[]>([])
 
   const skipDbLoad = useRef(false)
 
@@ -161,8 +164,38 @@ export default function FNowModal({
     window.db.tel.getByCat(String(form.Cat)).then(rows => setCatContacts(rows as Row[]))
   }, [tab, form.Cat])
 
+  useEffect(() => {
+    if (tab === 'termine') {
+      window.db.termin.getByAct(currentId).then(rows => setActTermins(rows))
+    }
+  }, [tab, currentId])
+
+  const loadLinkDateTermins = async (date: string): Promise<void> => {
+    const rows = await window.db.termin.getByDate(date)
+    setLinkDateTermins(rows)
+  }
+
+  const handleLinkTermin = async (terminId: number): Promise<void> => {
+    await window.db.termin.update(terminId, { act_id: currentId })
+    const rows = await window.db.termin.getByAct(currentId)
+    setActTermins(rows)
+    setLinkDateTermins([])
+  }
+
+  const handleUnlinkTermin = async (terminId: number): Promise<void> => {
+    await window.db.termin.update(terminId, { act_id: null })
+    setActTermins(prev => prev.filter(t => (t.id as number) !== terminId))
+  }
+
   const set = (key: string, value: unknown): void =>
     setForm((prev) => ({ ...prev, [key]: value }))
+
+  function prependDate(field: 'Ltxt1' | 'Ltxt2'): void {
+    const d = new Date()
+    const dateStr = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
+    const cur = String(form[field] ?? '')
+    set(field, cur ? dateStr + '<br>' + cur : dateStr)
+  }
 
   // ── Bereich→Thema filtering ──────────────────────────────────────────────
   const selectedArea  = areas.find(a => String(a.AreaName) === String(form.AreaName))
@@ -228,7 +261,9 @@ export default function FNowModal({
       if (cfg.setPlanVon) next.Pl1Beg  = today
       if (cfg.setPlanBis) next.Pl1End  = today
       if (cfg.setInfo)    next.binInfo = 1
-      // titelText absichtlich NICHT übernommen (User-Anforderung)
+      // Text1 / Text2 setzen wenn in FCMStatus eingetragen
+      if (cfg.text1 && String(cfg.text1).trim()) next.Ltxt1 = String(cfg.text1)
+      if (cfg.text2 && String(cfg.text2).trim()) next.Ltxt2 = String(cfg.text2)
       return next
     })
   }
@@ -287,8 +322,80 @@ export default function FNowModal({
     { id: 'links',      label: t('fnow.tabLinks')    },
     { id: 'control',    label: t('fnow.tabControl')  },
     { id: 'info',       label: t('fnow.tabInfo')     },
-    { id: 'zugeordnet', label: t('fnow.tabAssigned') }
+    { id: 'zugeordnet', label: t('fnow.tabAssigned') },
+    { id: 'termine',    label: t('fnow.tabTermine')  },
+    { id: 'timer',      label: 'Timer'               }
   ]
+
+  // ── Timer helpers ────────────────────────────────────────────────────────
+  const [tick, setTick] = useState(0)
+  const anyActive = [1,2,3,4].some(n => Number(form[`Timer${n}Active`]) === 1)
+  useEffect(() => {
+    if (!anyActive) return
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [anyActive])
+
+  function timerElapsedSec(n: number, _tick?: number): number {
+    void _tick
+    if (Number(form[`Timer${n}Active`]) !== 1) return 0
+    const stamp = String(form[`Timer${n}Stamp`] ?? '')
+    if (!stamp) return 0
+    return Math.max(0, Math.floor((Date.now() - new Date(stamp).getTime()) / 1000))
+  }
+
+  function formatDur(totalHours: number, extraSec = 0): string {
+    const totalSec = Math.round(totalHours * 3600) + extraSec
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}m`
+    return `${m}m ${s.toString().padStart(2,'0')}s`
+  }
+
+  async function startTimer(n: number): Promise<void> {
+    const now = new Date().toISOString()
+    const begFirstKey = `Timer${n}BegFirst`
+    const updates: Record<string, unknown> = {
+      [`Timer${n}Active`]: 1,
+      [`Timer${n}Stamp`]:  now,
+      [`Timer${n}Beg`]:    now,
+      [`Timer${n}BegToday`]: now,
+    }
+    if (!form[begFirstKey]) updates[begFirstKey] = now
+    setForm(prev => ({ ...prev, ...updates }))
+    await window.db.act.update(currentId, updates)
+  }
+
+  async function stopTimer(n: number): Promise<void> {
+    const now = new Date().toISOString()
+    const elapsed = timerElapsedSec(n) / 3600
+    const prev = parseFloat(String(form[`Timer${n}sngDur`] ?? 0)) || 0
+    const total = prev + elapsed
+    const updates: Record<string, unknown> = {
+      [`Timer${n}Active`]:      0,
+      [`Timer${n}End`]:         now,
+      [`Timer${n}EndToday`]:    now,
+      [`Timer${n}sngDur`]:      total,
+      [`Timer${n}Dur`]:         formatDur(total),
+      [`Timer${n}sngDurToday`]: elapsed,
+      [`Timer${n}DurToday`]:    formatDur(elapsed),
+    }
+    setForm(prev2 => ({ ...prev2, ...updates }))
+    await window.db.act.update(currentId, updates)
+  }
+
+  async function resetTimer(n: number): Promise<void> {
+    const updates: Record<string, unknown> = {
+      [`Timer${n}Active`]: 0, [`Timer${n}Stamp`]: null,
+      [`Timer${n}Beg`]: null, [`Timer${n}BegFirst`]: null, [`Timer${n}BegToday`]: null,
+      [`Timer${n}End`]: null, [`Timer${n}EndToday`]: null,
+      [`Timer${n}sngDur`]: 0, [`Timer${n}Dur`]: null,
+      [`Timer${n}sngDurToday`]: 0, [`Timer${n}DurToday`]: null,
+    }
+    setForm(prev => ({ ...prev, ...updates }))
+    await window.db.act.update(currentId, updates)
+  }
 
   // ── Prio helper ─────────────────────────────────────────────────────────
   function PrioSelect({ level, rows }: { level: 1 | 2; rows: Row[] }): JSX.Element {
@@ -397,7 +504,7 @@ export default function FNowModal({
 
             {/* Text 1 — Rich Text */}
             <div>
-              <label className="block text-xs text-on-surface-variant/60 mb-1">{t('fnow.text1Label')}</label>
+              <label className="block text-xs text-on-surface-variant/60 mb-1 cursor-pointer select-none" title="Doppelklick: Datum einfügen" onDoubleClick={() => prependDate('Ltxt1')}>{t('fnow.text1Label')}</label>
               <RichEditor
                 value={String(form.Ltxt1 ?? '')}
                 onChange={(html) => set('Ltxt1', html)}
@@ -408,7 +515,7 @@ export default function FNowModal({
 
             {/* Text 2 — Rich Text */}
             <div>
-              <label className="block text-xs text-on-surface-variant/60 mb-1">{t('fnow.text2Label')}</label>
+              <label className="block text-xs text-on-surface-variant/60 mb-1 cursor-pointer select-none" title="Doppelklick: Datum einfügen" onDoubleClick={() => prependDate('Ltxt2')}>{t('fnow.text2Label')}</label>
               <RichEditor
                 value={String(form.Ltxt2 ?? '')}
                 onChange={(html) => set('Ltxt2', html)}
@@ -877,6 +984,142 @@ export default function FNowModal({
                   )}
                 </div>
               )}
+
+              {/* ── Termine-Tab ──────────────────────────────────── */}
+              {tab === 'termine' && (
+                <div className="flex flex-col gap-4">
+
+                  {/* Verknüpfte Termine */}
+                  <div>
+                    <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
+                      {t('fnow.terminLinked')}
+                    </p>
+                    {actTermins.length === 0 ? (
+                      <p className="text-xs text-on-surface-variant/50">{t('fnow.terminNone')}</p>
+                    ) : actTermins.map((tr) => (
+                      <div key={tr.id as number}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-surface-container border border-outline-variant/20 mb-1.5">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-on-surface truncate font-medium">{String(tr.title ?? '')}</p>
+                          <p className="text-xs text-on-surface-variant/60">
+                            {String(tr.termin_date ?? '')}
+                            {tr.time_start ? ` · ${String(tr.time_start)}${tr.time_end ? `–${String(tr.time_end)}` : ''}` : ''}
+                          </p>
+                        </div>
+                        <button onClick={() => handleUnlinkTermin(tr.id as number)}
+                          className="text-on-surface-variant/40 hover:text-error transition-colors flex-shrink-0"
+                          title={t('fnow.terminUnlink')}>
+                          <span className="material-symbols-outlined text-[16px]">link_off</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Termin verknüpfen */}
+                  <div className="border-t border-outline-variant/20 pt-3">
+                    <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-2">
+                      {t('fnow.terminLink')}
+                    </p>
+                    <div className="flex gap-2 mb-2">
+                      <input type="date" value={linkDate}
+                        onChange={(e) => setLinkDate(e.target.value)}
+                        className="flex-1 text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-1.5 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40" />
+                      <button onClick={() => loadLinkDateTermins(linkDate)}
+                        className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm hover:bg-primary/20 transition-colors">
+                        {t('fnow.terminSearch')}
+                      </button>
+                    </div>
+                    {linkDateTermins.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {linkDateTermins.map((tr) => (
+                          <button key={tr.id as number}
+                            onClick={() => handleLinkTermin(tr.id as number)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-high border border-outline-variant/20 text-left hover:border-primary/30 hover:bg-primary/5 transition-colors">
+                            <span className="material-symbols-outlined text-[14px] text-primary/50">add_link</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-on-surface truncate">{String(tr.title ?? '')}</p>
+                              <p className="text-xs text-on-surface-variant/60">
+                                {tr.time_start ? `${String(tr.time_start)}${tr.time_end ? `–${String(tr.time_end)}` : ''}` : 'Ganztägig'}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {linkDateTermins.length === 0 && linkDate && (
+                      <p className="text-xs text-on-surface-variant/50">{t('fnow.terminDateEmpty')}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Timer-Tab ────────────────────────────────────── */}
+              {tab === 'timer' && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-on-surface-variant/50 mb-1">
+                    Zeitmessung pro Aktivität — bis zu 4 unabhängige Timer.
+                  </p>
+                  {/* tick drives re-renders for live elapsed display */}
+                  {[1,2,3,4].map((n) => {
+                    const active = Number(form[`Timer${n}Active`]) === 1
+                    const totalHours = parseFloat(String(form[`Timer${n}sngDur`] ?? 0)) || 0
+                    const elapsedSec = active ? timerElapsedSec(n, tick) : 0
+                    const begFirst = String(form[`Timer${n}BegFirst`] ?? '')
+                    return (
+                      <div key={n} className={`rounded-xl border px-4 py-3 flex flex-col gap-2 transition-colors ${
+                        active ? 'border-primary/40 bg-primary/6' : 'border-outline-variant/20 bg-surface-container-low'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          {active && (
+                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+                          )}
+                          <span className="text-sm font-semibold text-on-surface flex-1">Timer {n}</span>
+                          {totalHours > 0 && (
+                            <span className="text-xs text-on-surface-variant/60 font-mono">
+                              Gesamt: {formatDur(totalHours, elapsedSec)}
+                            </span>
+                          )}
+                          {active && elapsedSec > 0 && (
+                            <span className="text-xs font-mono text-primary">
+                              +{formatDur(0, elapsedSec)}
+                            </span>
+                          )}
+                        </div>
+
+                        {begFirst && (
+                          <p className="text-[10px] text-on-surface-variant/40">
+                            Erststart: {new Date(begFirst).toLocaleString('de-DE')}
+                          </p>
+                        )}
+
+                        <div className="flex gap-2 mt-1">
+                          <button
+                            onClick={() => active ? stopTimer(n) : startTimer(n)}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              active
+                                ? 'bg-error/15 text-error hover:bg-error/25'
+                                : 'bg-primary/15 text-primary hover:bg-primary/25'
+                            }`}>
+                            <span className="material-symbols-outlined text-[14px]">
+                              {active ? 'stop' : 'play_arrow'}
+                            </span>
+                            {active ? 'Stopp' : 'Start'}
+                          </button>
+                          {(totalHours > 0 || active) && (
+                            <button
+                              onClick={() => resetTimer(n)}
+                              title="Zurücksetzen"
+                              className="px-2.5 py-1.5 rounded-lg text-xs text-on-surface-variant/40 hover:text-error hover:bg-error/10 transition-colors">
+                              <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
