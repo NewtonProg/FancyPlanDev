@@ -35,17 +35,19 @@
     "username": "Benutzername / E-Mail",
     "password": "App-Passwort",
     "preset": "Preset:",
-    "entries": "{{count}} Einträge"
+    "entries": "{{count}} Einträge",
+    "help": "Hilfe"
   },
   "nav": {
     "today": "Heute",
     "priorities": "Prioritäten",
     "activities": "Aktivitäten",
     "contacts": "Kontakte",
-    "tree": "Baumstruktur",
+    "tree": "Tree",
     "mail": "Mail",
     "calendar": "Kalender",
     "acquis": "Akquisition",
+    "mydata": "Meine Daten",
     "import": "Daten importieren",
     "settings": "Einstellungen",
     "fcm": "Customizing (VIP)",
@@ -161,10 +163,12 @@
     "tabAddress": "Adresse",
     "tabContact": "Kontakt",
     "tabWeb": "Web",
-    "tabActivities": "Aktivitäten"
+    "tabActivities": "Aktivitäten",
+    "filterLabel": "Filter",
+    "filterClear": "Filter löschen"
   },
   "tree": {
-    "title": "Baumstruktur",
+    "title": "Tree",
     "addRoot": "Root-Knoten hinzufügen",
     "noNodes": "Noch keine Knoten. + drücken um zu beginnen.",
     "selectNode": "Knoten auswählen",
@@ -620,7 +624,11 @@
     "noLinks": "Keine Links",
     "save": "Speichern",
     "edit": "Bearbeiten",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "passwordPh": "Passwort (optional)",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "copyPassword": "Passwort kopieren"
   },
   "treepicker": {
     "title": "Baumknoten auswählen",

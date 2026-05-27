@@ -151,7 +151,7 @@
 
   /* Dark-theme inputs */
   .input-field {
-    @apply rounded-lg px-3 py-1.5 text-sm focus:outline-none;
+    @apply w-full rounded-lg px-3 py-1.5 text-sm focus:outline-none;
     background-color: rgb(var(--fp-surface-container));
     border: 1px solid rgb(var(--fp-outline-variant));
     color: rgb(var(--fp-on-surface));

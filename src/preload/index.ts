@@ -45,7 +45,7 @@ const dbApi = {
     delete:  (id: number)                                 => ipcRenderer.invoke('db:cat:delete', id)
   },
   prio: {
-    getAll:  (level: 1 | 2 | 3)                                              => ipcRenderer.invoke('db:prio:getAll', level),
+    getAll:  (level: 1 | 2 | 3, formName?: string)                           => ipcRenderer.invoke('db:prio:getAll', level, formName),
     create:  (level: 1 | 2 | 3, data: Record<string, unknown>)               => ipcRenderer.invoke('db:prio:create', level, data),
     update:  (level: 1 | 2 | 3, id: number, data: Record<string, unknown>)   => ipcRenderer.invoke('db:prio:update', level, id, data),
     delete:  (level: 1 | 2 | 3, id: number)                                  => ipcRenderer.invoke('db:prio:delete', level, id)
@@ -132,7 +132,8 @@ const dbApi = {
     create:      (data: Record<string, unknown>)         => ipcRenderer.invoke('db:links:create', data),
     update:      (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('db:links:update', id, data),
     delete:      (id: number)                            => ipcRenderer.invoke('db:links:delete', id),
-    open:        (url: string, linkType: string)         => ipcRenderer.invoke('db:links:open', url, linkType)
+    open:        (url: string, linkType: string)         => ipcRenderer.invoke('db:links:open', url, linkType),
+    pickPath:    ()                                      => ipcRenderer.invoke('db:links:pickPath')
   },
   planvariant: {
     getAll:    ()                                    => ipcRenderer.invoke('db:planvariant:getAll'),
@@ -210,13 +211,47 @@ const dbApi = {
     }
   },
   backup: {
-    create: () => ipcRenderer.invoke('db:backup:create')
+    create:        ()               => ipcRenderer.invoke('db:backup:create'),
+    export:        ()               => ipcRenderer.invoke('app:backup:export')
+  },
+  mydata: {
+    isSetup:        ()                                                              => ipcRenderer.invoke('mydata:isSetup'),
+    setup:          (password: string)                                              => ipcRenderer.invoke('mydata:setup', password),
+    unlock:         (password: string)                                              => ipcRenderer.invoke('mydata:unlock', password),
+    lock:           ()                                                              => ipcRenderer.invoke('mydata:lock'),
+    isUnlocked:     ()                                                              => ipcRenderer.invoke('mydata:isUnlocked'),
+    getAll:         ()                                                              => ipcRenderer.invoke('mydata:getAll'),
+    create:         (data: { category: string; label: string; fields: Record<string, string> }) => ipcRenderer.invoke('mydata:create', data),
+    update:         (id: number, data: { label?: string; category?: string; fields?: Record<string, string> }) => ipcRenderer.invoke('mydata:update', id, data),
+    delete:         (id: number)                                                    => ipcRenderer.invoke('mydata:delete', id),
+    changePassword: (oldPwd: string, newPwd: string)                               => ipcRenderer.invoke('mydata:changePassword', oldPwd, newPwd),
+    reset:          ()                                                              => ipcRenderer.invoke('mydata:reset'),
+  },
+  dbConfig: {
+    getPath:      ()               => ipcRenderer.invoke('app:db-path:get'),
+    browsePath:   ()               => ipcRenderer.invoke('app:db-path:browse'),
+    setPath:      (p: string)      => ipcRenderer.invoke('app:db-path:set', p),
+    copyAndSet:   (p: string)      => ipcRenderer.invoke('app:db-path:copy-and-set', p),
+    relaunch:     ()               => ipcRenderer.invoke('app:relaunch'),
   },
   license: {
     get:      ()                    => ipcRenderer.invoke('license:get'),
     activate: (key: string)         => ipcRenderer.invoke('license:activate', key),
     validate: ()                    => ipcRenderer.invoke('license:validate'),
     reset:    ()                    => ipcRenderer.invoke('license:reset')
+  },
+  help: {
+    open: (key: string, lang?: string) => ipcRenderer.invoke('help:open', key, lang)
+  },
+  update: {
+    check:   () => ipcRenderer.invoke('update:check'),
+    status:  () => ipcRenderer.invoke('update:status'),
+    install: () => ipcRenderer.invoke('update:install'),
+    onEvent: (cb: (e: unknown) => void): (() => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: unknown): void => cb(data)
+      ipcRenderer.on('update:event', handler)
+      return () => ipcRenderer.removeListener('update:event', handler)
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { ipcMain, shell } from 'electron'
+import { ipcMain, shell, dialog } from 'electron'
 import { dbAll, dbRun } from '../db/database'
 
 ipcMain.handle('db:links:getByEntity', (_e, entityType: string, entityId: number) =>
@@ -9,14 +9,14 @@ ipcMain.handle('db:links:getByEntity', (_e, entityType: string, entityId: number
 )
 
 ipcMain.handle('db:links:create', (_e, data: Record<string, unknown>) => {
-  const { entity_type, entity_id, link_type, url, label } = data
+  const { entity_type, entity_id, link_type, url, label, password } = data
   const maxSeq = (dbAll(
     'SELECT MAX(seq) as m FROM TLinks WHERE entity_type = ? AND entity_id = ?',
     [entity_type, entity_id]
   ) as { m: number | null }[])[0]?.m ?? -1
   const result = dbRun(
-    'INSERT INTO TLinks (entity_type, entity_id, link_type, url, label, seq) VALUES (?, ?, ?, ?, ?, ?)',
-    [entity_type, entity_id, link_type ?? 'web', url, label ?? null, maxSeq + 1]
+    'INSERT INTO TLinks (entity_type, entity_id, link_type, url, label, password, seq) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [entity_type, entity_id, link_type ?? 'web', url, label ?? null, password ?? null, maxSeq + 1]
   )
   return { id: result.lastInsertRowid }
 })
@@ -30,6 +30,12 @@ ipcMain.handle('db:links:update', (_e, id: number, data: Record<string, unknown>
 ipcMain.handle('db:links:delete', (_e, id: number) => {
   dbRun('DELETE FROM TLinks WHERE id = ?', [id])
   return { ok: true }
+})
+
+ipcMain.handle('db:links:pickPath', async () => {
+  const result = await dialog.showOpenDialog({ properties: ['openFile', 'openDirectory'] })
+  if (result.canceled || result.filePaths.length === 0) return { path: null }
+  return { path: result.filePaths[0] }
 })
 
 ipcMain.handle('db:links:open', (_e, url: string, linkType: string) => {

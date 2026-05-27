@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 const FORM_OPTIONS = [
   { value: '*',        label: 'Alle Formulare' },
   { value: 'FAct',     label: 'Aktivitäten' },
-  { value: 'FTreeEdit', label: 'Baumstruktur' },
+  { value: 'FAcquis',  label: 'Akquisition' },
+  { value: 'FTreeEdit', label: 'Tree' },
 ]
 
 function FormSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }): JSX.Element {
@@ -177,24 +178,20 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
   const prioField = `Prio${level}` as const
   const txtField  = `Prio${level}Txt` as const
 
-  const [rows, setRows]         = useState<Row[]>([])
-  const [formName, setFormName] = useState('*')
-  const [profile, setProfile]   = useState('*')
-  const [newPrio, setNewPrio]   = useState('')
-  const [newTxt, setNewTxt]     = useState('')
-  const [editId, setEditId]     = useState<number | null>(null)
-  const [editPrio, setEditPrio] = useState('')
-  const [editTxt, setEditTxt]   = useState('')
+  const [rows, setRows]               = useState<Row[]>([])
+  const [formName, setFormName]       = useState('*')
+  const [newPrio, setNewPrio]         = useState('')
+  const [newTxt, setNewTxt]           = useState('')
+  const [editId, setEditId]           = useState<number | null>(null)
+  const [editPrio, setEditPrio]       = useState('')
+  const [editTxt, setEditTxt]         = useState('')
+  const [editFormName, setEditFormName] = useState('*')
 
   const load = useCallback(async () => {
     const all = (await window.db.prio.getAll(level)) as Row[]
     const fn = formName === '*' ? '' : formName
-    const pr = profile  === '*' ? '' : profile
-    setRows(all.filter(r =>
-      (fn ? r.IDFormName === fn : true) &&
-      (pr ? r.IDProfile  === pr : true)
-    ))
-  }, [level, formName, profile])
+    setRows(fn ? all.filter(r => r.IDFormName === fn) : all)
+  }, [level, formName])
 
   useEffect(() => { load() }, [load])
 
@@ -203,7 +200,6 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
     if (!newPrio || isNaN(p)) return
     await window.db.prio.create(level, {
       IDFormName: formName === '*' ? '' : formName,
-      IDProfile:  profile  === '*' ? '' : profile,
       [prioField]: p,
       [txtField]:  newTxt
     })
@@ -214,7 +210,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
   async function handleSave(id: number) {
     const p = parseInt(editPrio)
     if (isNaN(p)) return
-    await window.db.prio.update(level, id, { [prioField]: p, [txtField]: editTxt })
+    await window.db.prio.update(level, id, { [prioField]: p, [txtField]: editTxt, IDFormName: editFormName === '*' ? '' : editFormName })
     setEditId(null)
     load()
   }
@@ -226,17 +222,9 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
         <h2 className="text-base font-semibold text-on-surface">{t('fcmval.prio')} {level}</h2>
       </div>
       <div className="p-5 overflow-auto flex-1 flex flex-col gap-4 max-w-xl">
-        <div className="flex gap-3 text-sm">
-          <label className="flex items-center gap-1 text-on-surface-variant">
-            {t('fcmval.formName')}:
-            <input value={formName} onChange={e => setFormName(e.target.value)}
-              className="input-field w-28 ml-1" placeholder="* = alle" />
-          </label>
-          <label className="flex items-center gap-1 text-on-surface-variant">
-            {t('fcmval.profile')}:
-            <input value={profile} onChange={e => setProfile(e.target.value)}
-              className="input-field w-24 ml-1" placeholder="* = alle" />
-          </label>
+        <div className="flex gap-3 text-sm items-center">
+          <span className="text-on-surface-variant">{t('fcmval.formName')}:</span>
+          <FormSelect value={formName} onChange={setFormName} className="w-36" />
         </div>
         <div className="flex gap-2">
           <input value={newPrio} onChange={e => setNewPrio(e.target.value)} type="number"
@@ -251,8 +239,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
             <tr className="text-left border-b border-outline-variant/40">
               <th className="pb-2 font-medium text-on-surface-variant w-16">Nr.</th>
               <th className="pb-2 font-medium text-on-surface-variant">{t('fcmval.prioTxt')}</th>
-              <th className="pb-2 font-medium text-on-surface-variant w-24">{t('fcmval.formName')}</th>
-              <th className="pb-2 font-medium text-on-surface-variant w-20">{t('fcmval.profile')}</th>
+              <th className="pb-2 font-medium text-on-surface-variant w-32">{t('fcmval.formName')}</th>
               <th className="pb-2 w-28" />
             </tr>
           </thead>
@@ -271,8 +258,11 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
                         className="input-field w-full" autoFocus />
                     : <span className="text-on-surface">{String(r[txtField] ?? '')}</span>}
                 </td>
-                <td className="py-1.5 text-xs text-on-surface-variant/60">{String(r.IDFormName ?? '*')}</td>
-                <td className="py-1.5 text-xs text-on-surface-variant/60">{String(r.IDProfile ?? '*')}</td>
+                <td className="py-1.5">
+                  {editId === r.id
+                    ? <FormSelect value={editFormName} onChange={setEditFormName} className="w-full text-xs" />
+                    : <span className="text-on-surface-variant text-xs">{FORM_OPTIONS.find(o => o.value === String(r.IDFormName || '*'))?.label ?? String(r.IDFormName ?? '*')}</span>}
+                </td>
                 <td className="py-1.5 text-right">
                   {editId === r.id ? (
                     <div className="flex gap-1 justify-end">
@@ -281,7 +271,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
                     </div>
                   ) : (
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => { setEditId(r.id); setEditPrio(String(r[prioField] ?? '')); setEditTxt(String(r[txtField] ?? '')) }}
+                      <button onClick={() => { setEditId(r.id); setEditPrio(String(r[prioField] ?? '')); setEditTxt(String(r[txtField] ?? '')); setEditFormName(String(r.IDFormName || '*')) }}
                         className="btn-secondary text-xs py-0.5 px-2">{t('fcmval.edit')}</button>
                       <button onClick={async () => { await window.db.prio.delete(level, r.id); load() }}
                         className="btn-secondary text-xs py-0.5 px-2 text-error hover:bg-error-container/10">{t('fcmval.del')}</button>
@@ -291,7 +281,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={5} className="py-6 text-center text-on-surface-variant/60 text-xs">{t('fcmval.empty')}</td></tr>
+              <tr><td colSpan={4} className="py-6 text-center text-on-surface-variant/60 text-xs">{t('fcmval.empty')}</td></tr>
             )}
           </tbody>
         </table>

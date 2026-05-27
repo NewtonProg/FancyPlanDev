@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import FNowModal from './FNowModal'
 
@@ -40,20 +40,33 @@ function rowBg(act: Act, idx: number): string {
   return idx % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/60'
 }
 
-type AreaFilter = string
 type TypeFilter = 'all' | 'actions' | 'infos'
 type DateFilter = 'all' | 'ab-heute' | 'bis-heute'
+type SortCol = 'Prio1' | 'Prio2' | 'Title' | 'Pl1Beg' | 'remaining' | 'Pl1End' | 'Status'
 
 export default function PrioritiesView(): JSX.Element {
   const { t } = useTranslation()
   const [acts, setActs] = useState<Act[]>([])
-  const [areas, setAreas] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [areaFilter, setAreaFilter] = useState<AreaFilter>('all')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [showArchiv, setShowArchiv] = useState(false)
+
+  const saved = useRef<Record<string, unknown> | null>(null)
+  if (saved.current === null) {
+    try { saved.current = JSON.parse(localStorage.getItem('prio_filters') ?? '{}') } catch { saved.current = {} }
+  }
+  const s = saved.current!
+
+  const [catFilter, setCatFilter] = useState<string>((s.catFilter as string) ?? 'all')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>((s.typeFilter as TypeFilter) ?? 'all')
+  const [dateFilter, setDateFilter] = useState<DateFilter>((s.dateFilter as DateFilter) ?? 'all')
+  const [showArchiv, setShowArchiv] = useState<boolean>((s.showArchiv as boolean) ?? false)
   const [openActId, setOpenActId] = useState<number | null>(null)
+  const [sortCol, setSortCol] = useState<SortCol | null>((s.sortCol as SortCol) ?? null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>((s.sortDir as 'asc' | 'desc') ?? 'asc')
+  const [statusFilter, setStatusFilter] = useState<string | null>((s.statusFilter as string) ?? null)
+
+  useEffect(() => {
+    localStorage.setItem('prio_filters', JSON.stringify({ catFilter, typeFilter, dateFilter, showArchiv, sortCol, sortDir, statusFilter }))
+  }, [catFilter, typeFilter, dateFilter, showArchiv, sortCol, sortDir, statusFilter])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -62,9 +75,6 @@ export default function PrioritiesView(): JSX.Element {
       if (!showArchiv) filter.Sdone = 0
       const rows = await window.db.act.getAll(filter)
       setActs(rows)
-      const uniqueAreas = [...new Set(rows.map((r) => String(r.AreaName ?? '')))]
-        .filter(Boolean).sort()
-      setAreas(uniqueAreas)
     } finally {
       setLoading(false)
     }
@@ -72,8 +82,7 @@ export default function PrioritiesView(): JSX.Element {
 
   useEffect(() => { load() }, [load])
 
-  const visible = acts.filter((a) => {
-    if (areaFilter !== 'all' && a.AreaName !== areaFilter) return false
+  const preFiltered = acts.filter((a) => {
     if (typeFilter === 'actions' && Number(a.SInfo) === 1) return false
     if (typeFilter === 'infos' && Number(a.SInfo) !== 1) return false
     if (dateFilter === 'ab-heute') {
@@ -84,8 +93,51 @@ export default function PrioritiesView(): JSX.Element {
       const end = String(a.Pl1End ?? '').slice(0, 10)
       if (end && end > todayIso) return false
     }
+    if (statusFilter && String(a.Status ?? '') !== statusFilter) return false
     return true
   })
+
+  const availableCats = [...new Set(
+    preFiltered.flatMap((a) => String(a.Cat || '').split(/[;:]/).map((s) => s.trim()).filter(Boolean))
+  )].sort()
+
+  const visible = catFilter === 'all'
+    ? preFiltered
+    : preFiltered.filter((a) =>
+        String(a.Cat || '').split(/[;:]/).map((s) => s.trim()).includes(catFilter)
+      )
+
+  function handleSort(col: SortCol): void {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
+
+  const sortedVisible = sortCol === null ? visible : [...visible].sort((a, b) => {
+    let av: number | string
+    let bv: number | string
+    if (sortCol === 'Prio1' || sortCol === 'Prio2') {
+      av = a[sortCol] != null && a[sortCol] !== '' ? Number(a[sortCol]) : 99999
+      bv = b[sortCol] != null && b[sortCol] !== '' ? Number(b[sortCol]) : 99999
+    } else if (sortCol === 'remaining') {
+      av = a.Pl1End ? new Date(String(a.Pl1End).slice(0, 10)).getTime() : Infinity
+      bv = b.Pl1End ? new Date(String(b.Pl1End).slice(0, 10)).getTime() : Infinity
+    } else {
+      av = String(a[sortCol] ?? '')
+      bv = String(b[sortCol] ?? '')
+    }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1
+    if (av > bv) return sortDir === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const Th = ({ col, label, className }: { col: SortCol; label: string; className?: string }): JSX.Element => (
+    <th
+      className={`px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none hover:text-on-surface transition-colors ${className ?? ''}`}
+      onClick={() => handleSort(col)}
+    >
+      {label}{sortCol === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+    </th>
+  )
 
   const tabBtn = (active: boolean, onClick: () => void, label: string): JSX.Element => (
     <button
@@ -117,17 +169,17 @@ export default function PrioritiesView(): JSX.Element {
           <table className="w-full text-sm border-collapse">
             <thead className="sticky top-0 bg-surface-container-low border-b border-outline-variant z-10">
               <tr>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-12">{t('prio.colPrio1')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-12">{t('prio.colPrio2')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">{t('prio.colTitle')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-24">{t('prio.colFrom')}</th>
-                <th className="text-right px-3 py-2 text-xs font-semibold text-on-surface-variant w-16">{t('prio.colUntil')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-24">{t('prio.colPlanTo')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-32">{t('prio.colStatus')}</th>
+                <Th col="Prio1"     label={t('prio.colPrio1')} className="text-left w-12" />
+                <Th col="Prio2"     label={t('prio.colPrio2')} className="text-left w-12" />
+                <Th col="Title"     label={t('prio.colTitle')} className="text-left" />
+                <Th col="Pl1Beg"    label={t('prio.colFrom')}  className="text-left w-24" />
+                <Th col="remaining" label={t('prio.colUntil')} className="text-right w-16" />
+                <Th col="Pl1End"    label={t('prio.colPlanTo')} className="text-left w-24" />
+                <Th col="Status"    label={t('prio.colStatus')} className="text-left w-32" />
               </tr>
             </thead>
             <tbody>
-              {visible.map((act, idx) => (
+              {sortedVisible.map((act, idx) => (
                 <tr
                   key={act.id as number}
                   className={`border-b border-outline-variant/40 cursor-pointer hover:bg-primary/5 transition-colors ${rowBg(act, idx)}`}
@@ -162,7 +214,11 @@ export default function PrioritiesView(): JSX.Element {
                   </td>
                   <td className="px-3 py-1.5">
                     {act.Status ? (
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusColor(act.Status)}`}>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-xs font-medium cursor-pointer ${statusColor(act.Status)} ${statusFilter === String(act.Status) ? 'ring-1 ring-current' : ''}`}
+                        onDoubleClick={(e) => { e.stopPropagation(); setStatusFilter(statusFilter === String(act.Status) ? null : String(act.Status)) }}
+                        title="Doppelklick: nach Status filtern"
+                      >
                         {String(act.Status)}
                       </span>
                     ) : ''}
@@ -175,9 +231,9 @@ export default function PrioritiesView(): JSX.Element {
       </div>
 
       <div className="border-t border-outline-variant bg-surface-container-low px-4 py-2 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-1">
-          {tabBtn(areaFilter === 'all', () => setAreaFilter('all'), t('common.all'))}
-          {areas.slice(0, 5).map((a) => tabBtn(areaFilter === a, () => setAreaFilter(a), a))}
+        <div className="flex items-center gap-1 flex-wrap">
+          {tabBtn(catFilter === 'all', () => setCatFilter('all'), t('common.all'))}
+          {availableCats.map((c) => tabBtn(catFilter === c, () => setCatFilter(catFilter === c ? 'all' : c), c))}
         </div>
 
         <div className="w-px h-5 bg-outline-variant/40" />
@@ -193,8 +249,20 @@ export default function PrioritiesView(): JSX.Element {
         <div className="flex items-center gap-1">
           {tabBtn(dateFilter === 'ab-heute', () => setDateFilter(dateFilter === 'ab-heute' ? 'all' : 'ab-heute'), t('prio.fromToday'))}
           {tabBtn(dateFilter === 'bis-heute', () => setDateFilter(dateFilter === 'bis-heute' ? 'all' : 'bis-heute'), t('prio.untilToday'))}
-          {tabBtn(false, () => { setDateFilter('all'); setAreaFilter('all'); setTypeFilter('all') }, t('prio.reset'))}
+          {tabBtn(false, () => { setDateFilter('all'); setCatFilter('all'); setTypeFilter('all'); setStatusFilter(null) }, t('prio.reset'))}
         </div>
+
+        {statusFilter && (
+          <>
+            <div className="w-px h-5 bg-outline-variant/40" />
+            <button
+              onClick={() => setStatusFilter(null)}
+              className={`px-2 py-0.5 text-xs rounded-md border border-current flex items-center gap-1 ${statusColor(statusFilter)}`}
+            >
+              {statusFilter} ✕
+            </button>
+          </>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
           <button

@@ -40,7 +40,7 @@ function buildAuthedClient() {
 }
 
 ipcMain.handle('gcal:auth:status', () => ({
-  configured: !!(getSetting('gcal_client_id') && getSetting('gcal_access_token')),
+  configured: !!(getSetting('gcal_client_id') && (getSetting('gcal_access_token') || getSetting('gcal_refresh_token'))),
   email: getSetting('gcal_email') ?? ''
 }))
 
@@ -51,6 +51,8 @@ ipcMain.handle('gcal:auth:connect', () =>
     if (!clientId || !clientSecret) {
       return resolve({ error: 'Keine Google-Credentials konfiguriert' })
     }
+    if (clientId)     setSetting('gcal_client_id',     clientId)
+    if (clientSecret) setSetting('gcal_client_secret', clientSecret)
 
     const server = http.createServer()
     let resolved = false
@@ -97,9 +99,12 @@ ipcMain.handle('gcal:auth:connect', () =>
 
         try {
           const { tokens } = await oauth2Client.getToken(code)
-          setSetting('gcal_access_token', tokens.access_token ?? null)
-          setSetting('gcal_refresh_token', tokens.refresh_token ?? null)
-          setSetting('gcal_token_expiry', tokens.expiry_date ? String(tokens.expiry_date) : null)
+          if (!tokens.access_token && !tokens.refresh_token) {
+            return done({ error: 'Kein Token erhalten — bitte erneut verbinden' })
+          }
+          if (tokens.access_token) setSetting('gcal_access_token', tokens.access_token)
+          if (tokens.refresh_token) setSetting('gcal_refresh_token', tokens.refresh_token)
+          if (tokens.expiry_date)   setSetting('gcal_token_expiry', String(tokens.expiry_date))
 
           oauth2Client.setCredentials(tokens)
           const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
@@ -126,7 +131,7 @@ ipcMain.handle('gcal:auth:disconnect', () => {
 })
 
 ipcMain.handle('gcal:sync', async () => {
-  if (!getSetting('gcal_client_id') || !getSetting('gcal_access_token')) {
+  if (!getSetting('gcal_client_id') || (!getSetting('gcal_access_token') && !getSetting('gcal_refresh_token'))) {
     return { error: 'Google Calendar nicht konfiguriert' }
   }
 
@@ -135,11 +140,12 @@ ipcMain.handle('gcal:sync', async () => {
     const calendar = google.calendar({ version: 'v3', auth })
 
     const now = new Date()
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const future = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
 
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: now.toISOString(),
+      timeMin: startOfDay.toISOString(),
       timeMax: future.toISOString(),
       singleEvents: true,
       orderBy: 'startTime',

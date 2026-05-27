@@ -60,11 +60,13 @@ function addDays(date: string, days: number): string {
 export default function FNowModal({
   actId,
   onClose,
-  onSaved
+  onSaved,
+  formName = 'FAct'
 }: {
   actId: number
   onClose: () => void
   onSaved: (act: Act) => void
+  formName?: string
 }): JSX.Element {
   const { t } = useTranslation()
 
@@ -125,8 +127,8 @@ export default function FNowModal({
       window.db.actlog.getByAct(currentId),
       window.db.status.getAll('FAct'),
       window.db.cat.getAll('FAct'),
-      window.db.prio.getAll(1),
-      window.db.prio.getAll(2)
+      window.db.prio.getAll(1, formName),
+      window.db.prio.getAll(2, formName)
     ]).then(([act, ar, th, at, lg, st, ct, p1, p2]) => {
       if (cancelled) return
       if (act) {
@@ -294,6 +296,15 @@ export default function FNowModal({
     onClose()
   }
 
+  // ── Timer helpers ────────────────────────────────────────────────────────
+  const [tick, setTick] = useState(0)
+  const anyActive = [1,2,3,4].some(n => Number(form[`Timer${n}Active`]) === 1)
+  useEffect(() => {
+    if (!anyActive) return
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [anyActive])
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-container">
@@ -326,15 +337,6 @@ export default function FNowModal({
     { id: 'termine',    label: t('fnow.tabTermine')  },
     { id: 'timer',      label: 'Timer'               }
   ]
-
-  // ── Timer helpers ────────────────────────────────────────────────────────
-  const [tick, setTick] = useState(0)
-  const anyActive = [1,2,3,4].some(n => Number(form[`Timer${n}Active`]) === 1)
-  useEffect(() => {
-    if (!anyActive) return
-    const id = setInterval(() => setTick(t => t + 1), 1000)
-    return () => clearInterval(id)
-  }, [anyActive])
 
   function timerElapsedSec(n: number, _tick?: number): number {
     void _tick
@@ -473,6 +475,13 @@ export default function FNowModal({
             className="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:bg-surface-container-high"
           >
             {t('fnow.cancel')}
+          </button>
+          <button
+            onClick={() => window.db.help.open('fnow')}
+            title={t('common.help')}
+            className="w-8 h-8 flex items-center justify-center rounded-full border border-outline-variant/50 text-on-surface-variant/50 hover:border-primary/40 hover:text-primary text-sm transition-colors"
+          >
+            ?
           </button>
         </div>
 

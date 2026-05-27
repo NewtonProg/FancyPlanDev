@@ -40,7 +40,7 @@ type SrcCfg = { accent: string; badge: string; icon: string; label: string; dot:
 function srcCfg(src: string): SrcCfg {
   if (src === 'gcal')   return { accent: 'border-l-tertiary',           badge: 'text-tertiary',            icon: 'language',      label: 'GOOGLE',  dot: 'bg-tertiary',            glow: 'shadow-tertiary/10',            hex: '#7965af' }
   if (src === 'caldav') return { accent: 'border-l-secondary-fixed-dim', badge: 'text-secondary-fixed-dim', icon: 'cloud_sync',    label: 'CALDAV',  dot: 'bg-secondary-fixed-dim', glow: 'shadow-secondary-fixed-dim/10', hex: '#4db6ac' }
-  return                        { accent: 'border-l-primary',            badge: 'text-primary',             icon: 'edit_calendar', label: 'MANUELL', dot: 'bg-primary',             glow: 'shadow-primary/10',             hex: '#6750A4' }
+  return                        { accent: 'border-l-primary',            badge: 'text-primary',             icon: 'edit_calendar', label: 'FancyPlan', dot: 'bg-primary',             glow: 'shadow-primary/10',             hex: '#6750A4' }
 }
 
 function calDotColor(ev: CalEvent): string {
@@ -785,7 +785,8 @@ export default function CalendarView(): JSX.Element {
     if (!r1.error) count += r1.count
     if (gcalAuth?.configured) {
       const r2 = await window.db.gcal.sync()
-      if (!r2.error) count += (r2.count ?? 0)
+      if (r2.error) { setSyncing(false); setSyncMsg(`Google Sync Fehler: ${r2.error}`); setTimeout(() => setSyncMsg(''), 8000); loadCalEvents(); loadMonthTermins(); loadViewTermins(); return }
+      count += (r2.count ?? 0)
     }
     setSyncing(false)
     setSyncMsg(`${count} Termine synchronisiert`)
@@ -1040,14 +1041,21 @@ export default function CalendarView(): JSX.Element {
                             setGcalError(null)
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             const res = await window.db.gcal.connect() as any
-                            if (res.ok) { setGcalAuth({ configured: true, email: res.email ?? '' }); setGcalOpen(false) }
-                            else setGcalError(res.error ?? 'Verbindung fehlgeschlagen')
+                            if (res.ok) {
+                              setGcalAuth({ configured: true, email: res.email ?? '' })
+                              setGcalOpen(false)
+                              const r2 = await window.db.gcal.sync()
+                              if (!r2.error) { loadCalEvents(); loadMonthTermins(); loadViewTermins() }
+                              else setGcalError(`Sync-Fehler: ${r2.error}`)
+                            } else {
+                              setGcalError(res.error ?? 'Verbindung fehlgeschlagen')
+                            }
                             setGcalBusy(false)
                           }} className="text-xs py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg font-semibold transition-colors disabled:opacity-40 w-full">
                             {gcalBusy ? 'Verbindet…' : 'Mit Google verbinden'}
                           </button>
                           {gcalError && (
-                            <p className="text-[10px] text-error leading-tight mt-1">{gcalError}</p>
+                            <p className="text-[10px] text-error leading-tight mt-1 break-all">{gcalError}</p>
                           )}
                         </>
                       )}

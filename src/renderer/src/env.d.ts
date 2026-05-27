@@ -141,6 +141,7 @@ interface DbApi {
     update:      (id: number, data: Row)                 => Promise<{ ok: boolean }>
     delete:      (id: number)                            => Promise<{ ok: boolean }>
     open:        (url: string, linkType: string)         => Promise<{ ok: boolean }>
+    pickPath:    ()                                      => Promise<{ path: string | null }>
   }
   planvariant: {
     getAll:   ()                               => Promise<Row[]>
@@ -217,7 +218,13 @@ interface DbApi {
       open: (filename: string) => Promise<{ ok: boolean }>
     }
   }
+  help: {
+    open: (key: string, lang?: string) => Promise<void>
+  }
 }
+
+type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+type UpdateEvent = { status: UpdateStatus; version?: string; progress?: number; message?: string }
 
 type LicenseInfo = {
   key: string | null
@@ -233,11 +240,24 @@ declare global {
       backup: {
         create: () => Promise<string>
       }
+      dbConfig: {
+        getPath:    () => Promise<string>
+        browsePath: () => Promise<string | null>
+        setPath:    (p: string) => Promise<{ ok: boolean }>
+        copyAndSet: (p: string) => Promise<{ ok: boolean; error?: string }>
+        relaunch:   () => Promise<void>
+      }
       license: {
         get:      () => Promise<LicenseInfo>
         activate: (key: string) => Promise<{ ok: boolean; tier?: string; error?: string }>
         validate: () => Promise<{ ok: boolean; tier?: string; reason?: string }>
         reset:    () => Promise<{ ok: boolean }>
+      }
+      update: {
+        check:   () => Promise<UpdateEvent>
+        status:  () => Promise<UpdateEvent>
+        install: () => Promise<void>
+        onEvent: (cb: (e: UpdateEvent) => void) => () => void
       }
     }
   }

@@ -18,6 +18,9 @@ import './ipc/recurringHandlers'
 import './ipc/backupHandlers'
 import './ipc/jsonHandlers'
 import './ipc/licenseHandlers'
+import './ipc/myDataHandlers'
+import './ipc/helpHandlers'
+import { scheduleUpdateCheck } from './ipc/updateHandlers'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -62,6 +65,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  scheduleUpdateCheck()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

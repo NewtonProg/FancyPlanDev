@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import FdlgCatModal from '../components/FdlgCatModal'
 import LinkPanel from '../components/LinkPanel'
+import BtkSelector, { BtkLevel1, BtkItem, BtkLevel3, BtkSelection } from '../components/BtkSelector'
 
 type Tel = Record<string, unknown>
 type Row = Record<string, unknown>
@@ -611,14 +612,18 @@ function ContactDetail({
   )
 }
 
-export default function ContactsView({ initialTelId, onContactOpened, returnActId, onNavigateBack }: { initialTelId?: number; onContactOpened?: () => void; returnActId?: number; onNavigateBack?: () => void }): JSX.Element {
+export default function ContactsView({ initialTelId, onContactOpened, returnActId, returnLabel, onNavigateBack }: { initialTelId?: number; onContactOpened?: () => void; returnActId?: number; returnLabel?: string; onNavigateBack?: () => void }): JSX.Element {
   const { t } = useTranslation()
   const [contacts, setContacts] = useState<Tel[]>([])
   const [selected, setSelected] = useState<Tel | null>(null)
   const [search, setSearch] = useState('')
   const [alphaFilter, setAlphaFilter] = useState('')
+  const [btkSel, setBtkSel] = useState<BtkSelection>({ level1: null, level2: null, level3: null })
   const [loading, setLoading] = useState(false)
   const [cats, setCats] = useState<Row[]>([])
+  const [areas, setAreas] = useState<Row[]>([])
+  const [themes, setThemes] = useState<Row[]>([])
+  const [areaTheme, setAreaTheme] = useState<Row[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -631,7 +636,14 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
   }, [])
 
   useEffect(() => {
-    window.db.cat.getAll('FTel').then((rows) => setCats(rows as Row[]))
+    Promise.all([
+      window.db.area.getAll(),
+      window.db.theme.getAll(),
+      window.db.areatheme.getAll(),
+      window.db.cat.getAll('FTel')
+    ]).then(([ar, th, at, ct]: [Row[], Row[], Row[], Row[]]) => {
+      setAreas(ar); setThemes(th); setAreaTheme(at); setCats(ct)
+    })
   }, [])
 
   useEffect(() => {
@@ -648,12 +660,41 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [search, load])
 
-  const visible = alphaFilter
-    ? contacts.filter((c) => {
+  const level1Items = useMemo<BtkLevel1[]>(() => {
+    const globalThemeIds = themes.filter((t) => Number(t.IDArea) === 0).map((t) => Number(t.id))
+    return areas.map((a) => ({
+      id: Number(a.id), name: String(a.AreaName),
+      childIds: [
+        ...new Set([
+          ...areaTheme.filter((at) => Number(at.IDArea) === Number(a.id)).map((at) => Number(at.IDTheme)),
+          ...themes.filter((t) => Number(t.IDArea) === Number(a.id)).map((t) => Number(t.id)),
+          ...globalThemeIds
+        ])
+      ]
+    }))
+  }, [areas, areaTheme, themes])
+
+  const level2Items = useMemo<BtkItem[]>(() =>
+    themes.map((t) => ({ id: Number(t.id), name: String(t.ThemeName) })), [themes])
+
+  const level3Items = useMemo<BtkLevel3[]>(() =>
+    cats.filter((c) => c.Cat).map((c) => ({
+      id: Number(c.id), name: String(c.Cat), parentId: Number(c.IDTheme ?? 0)
+    })), [cats])
+
+  const visible = useMemo(() => {
+    return contacts.filter((c) => {
+      if (alphaFilter) {
         const first = String(c.SurName ?? c.FirstName ?? c.Company ?? '').trim()[0]?.toUpperCase()
-        return first === alphaFilter
-      })
-    : contacts
+        if (first !== alphaFilter) return false
+      }
+      if (btkSel.level3) {
+        const tokens = String(c.Cat ?? '').split(/[;:]/).map((s) => s.trim())
+        if (!tokens.includes(btkSel.level3.name)) return false
+      }
+      return true
+    })
+  }, [contacts, alphaFilter, btkSel])
 
   const handleSaved = (updated: Tel): void => {
     setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
@@ -679,13 +720,13 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
   return (
     <div className="flex flex-col h-full bg-background">
 
-      {returnActId && (
+      {onNavigateBack && (
         <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-primary/10 border-b border-primary/20 text-sm text-primary">
           <button
             onClick={onNavigateBack}
             className="flex items-center gap-1.5 hover:text-primary/70 transition-colors font-medium">
             <span className="material-symbols-outlined text-base leading-none">arrow_back</span>
-            {t('contacts.backToActivity')}
+            {returnLabel ?? t('contacts.backToActivity')}
           </button>
         </div>
       )}
@@ -735,7 +776,16 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
                   ‹
                 </button>
               </div>
-              <p className="text-xs text-on-surface-variant/50">{t('contacts.count', { count: visible.length })}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs text-on-surface-variant/50">{t('contacts.count', { count: visible.length })}</p>
+                {btkSel.level3 && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary border border-primary/20 max-w-[120px]">
+                    <span className="truncate">{btkSel.level3.name}</span>
+                    <button onClick={() => setBtkSel({ level1: null, level2: null, level3: null })}
+                      className="hover:text-error flex-shrink-0 leading-none">✕</button>
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Alphabetischer Filter */}
@@ -751,6 +801,33 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
                   {l}
                 </button>
               ))}
+            </div>
+
+            {/* Kategorie-Filter (BtkSelector) */}
+            <div className="px-2 py-2 border-b border-outline-variant/40">
+              <div className="flex items-center justify-between px-1 mb-1.5">
+                <p className="text-[10px] font-semibold text-on-surface-variant/60 uppercase tracking-wide">
+                  {t('contacts.filterLabel')}
+                </p>
+                <span className="text-[10px] text-on-surface-variant/50 tabular-nums">
+                  {btkSel.level3 ? `${visible.length} / ${contacts.length}` : contacts.length}
+                </span>
+              </div>
+              <BtkSelector
+                level1Items={level1Items}
+                level2Items={level2Items}
+                level3Items={level3Items}
+                value={btkSel}
+                showAllWhenEmpty
+                onChange={setBtkSel}
+              />
+              {btkSel.level3 && (
+                <button
+                  onClick={() => setBtkSel({ level1: null, level2: null, level3: null })}
+                  className="mt-2 w-full text-xs text-on-surface-variant/50 hover:text-error py-1 border border-outline-variant/40 rounded-lg transition-colors">
+                  {t('contacts.filterClear')}
+                </button>
+              )}
             </div>
 
             {/* Kontaktliste */}

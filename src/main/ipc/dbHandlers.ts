@@ -267,9 +267,20 @@ ipcMain.handle('db:cat:delete', (_event, id: number) => {
   return { ok: true }
 })
 
-ipcMain.handle('db:prio:getAll', (_event, level: 1 | 2 | 3 = 1) => {
+ipcMain.handle('db:prio:getAll', (_event, level: 1 | 2 | 3 = 1, formName?: string) => {
   const table = `TPrio${level}`
-  return dbAll(`SELECT * FROM ${table} ORDER BY Prio${level} ASC`)
+  const col = `Prio${level}`
+  if (formName) {
+    return dbAll(
+      `SELECT * FROM ${table} WHERE IDFormName = ?
+       UNION ALL
+       SELECT * FROM ${table} WHERE (IDFormName IS NULL OR IDFormName = '' OR IDFormName = '*')
+         AND NOT EXISTS (SELECT 1 FROM ${table} WHERE IDFormName = ?)
+       ORDER BY ${col} ASC`,
+      [formName, formName]
+    )
+  }
+  return dbAll(`SELECT * FROM ${table} ORDER BY ${col} ASC`)
 })
 ipcMain.handle('db:prio:create', (_event, level: 1 | 2 | 3, data: Row) => {
   const table = `TPrio${level}`

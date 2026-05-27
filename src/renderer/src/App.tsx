@@ -4,7 +4,6 @@ import { useLicense } from './hooks/useLicense'
 import ErrorBoundary from './components/ErrorBoundary'
 import { LicenseModal } from './components/LicenseModal'
 import FNowModal from './views/FNowModal'
-import ImportView from './views/ImportView'
 import TodayView from './views/TodayView'
 import PrioritiesView from './views/PrioritiesView'
 import ActivitiesView from './views/ActivitiesView'
@@ -14,10 +13,10 @@ import MailView from './views/MailView'
 import CalendarView from './views/CalendarView'
 import SettingsView from './views/SettingsView'
 import AcquisitionView from './views/AcquisitionView'
+import FMyDataView from './views/FMyDataView'
 import FCMView from './views/FCMView'
-import TestCatSelectView from './views/TestCatSelectView'
 
-type NavView = 'today' | 'priorities' | 'activities' | 'contacts' | 'tree' | 'mail' | 'calendar' | 'acquis' | 'import' | 'settings' | 'fcm' | 'test-cat'
+type NavView = 'today' | 'priorities' | 'activities' | 'contacts' | 'tree' | 'mail' | 'calendar' | 'acquis' | 'mydata' | 'settings' | 'fcm'
 
 function App(): JSX.Element {
   const { t } = useTranslation()
@@ -26,9 +25,12 @@ function App(): JSX.Element {
   const [showLicense, setShowLicense] = useState(false)
   const [subViewLabel, setSubViewLabel] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [openContactId, setOpenContactId] = useState<number | null>(null)
   const [returnActId,   setReturnActId]   = useState<number | null>(null)
   const [globalActId,   setGlobalActId]   = useState<number | null>(null)
+  const [returnView,    setReturnView]    = useState<NavView | null>(null)
+  const [acquisFrom,    setAcquisFrom]    = useState<NavView>('today')
   useEffect(() => { setSubViewLabel(null) }, [activeView])
 
   useEffect(() => {
@@ -50,11 +52,11 @@ function App(): JSX.Element {
     { id: 'tree',       label: t('nav.tree') },
     { id: 'mail',       label: t('nav.mail') },
     { id: 'calendar',   label: t('nav.calendar') },
-    { id: 'acquis',     label: t('nav.acquis') }
+    { id: 'acquis',     label: t('nav.acquis') },
+    { id: 'mydata',     label: t('nav.mydata') }
   ]
 
   const allViewLabels: Partial<Record<NavView, string>> = {
-    import:   t('nav.import'),
     settings: t('nav.settings'),
     fcm:      t('nav.fcm'),
   }
@@ -93,7 +95,10 @@ function App(): JSX.Element {
               {navItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveView(item.id)}
+                  onClick={() => {
+                    if (item.id === 'acquis' && activeView !== 'acquis') setAcquisFrom(activeView)
+                    setActiveView(item.id)
+                  }}
                   className={`sidebar-item${activeView === item.id ? ' active' : ''}`}
                 >
                   {item.label}
@@ -102,37 +107,25 @@ function App(): JSX.Element {
             </nav>
             <div className="border-t border-outline-variant/40 pt-2 mt-2 flex flex-col gap-0.5">
               <button
-                onClick={() => setActiveView('import')}
-                className={`sidebar-item${activeView === 'import' ? ' active' : ''}`}
+                onClick={() => {
+                  setActiveView('settings')
+                  setSettingsOpen((o) => !o)
+                }}
+                className={`sidebar-item${activeView === 'settings' || activeView === 'fcm' ? ' active' : ''}`}
               >
-                {t('nav.import')}
+                <span className="flex-1 text-left">{t('nav.settings')}</span>
+                <span className="material-symbols-outlined text-[14px] opacity-60">
+                  {settingsOpen ? 'expand_less' : 'expand_more'}
+                </span>
               </button>
-              <button
-                onClick={() => setActiveView('settings')}
-                className={`sidebar-item${activeView === 'settings' ? ' active' : ''}`}
-              >
-                {t('nav.settings')}
-              </button>
-              <button
-                onClick={() => setShowLicense(true)}
-                className="sidebar-item text-left"
-              >
-                Lizenz
-              </button>
-              {isVip && (
+              {settingsOpen && (
                 <button
                   onClick={() => setActiveView('fcm')}
-                  className={`sidebar-item${activeView === 'fcm' ? ' active' : ''}`}
+                  className={`sidebar-item pl-7 text-xs${activeView === 'fcm' ? ' active' : ''}`}
                 >
                   {t('nav.fcm')}
                 </button>
               )}
-              <button
-                onClick={() => setActiveView('test-cat')}
-                className={`sidebar-item${activeView === 'test-cat' ? ' active' : ''}`}
-              >
-                Test KatSel
-              </button>
             </div>
           </>
         )}
@@ -140,10 +133,8 @@ function App(): JSX.Element {
 
       <main className="flex-1 overflow-hidden bg-background">
         <ErrorBoundary key={activeView} label={t('nav.viewError', { label: activeLabel })}>
-        {activeView === 'import' ? (
-          <ImportView />
-        ) : activeView === 'settings' ? (
-          <SettingsView />
+        {activeView === 'settings' ? (
+          <SettingsView onLicense={() => setShowLicense(true)} />
         ) : activeView === 'today' ? (
           <TodayView />
         ) : activeView === 'priorities' ? (
@@ -155,7 +146,11 @@ function App(): JSX.Element {
             initialTelId={openContactId ?? undefined}
             onContactOpened={() => setOpenContactId(null)}
             returnActId={returnActId ?? undefined}
-            onNavigateBack={() => { setGlobalActId(returnActId); setReturnActId(null) }}
+            returnLabel={returnView === 'acquis' ? t('nav.acquis') : undefined}
+            onNavigateBack={() => {
+              if (returnView) { setActiveView(returnView); setReturnView(null) }
+              else { setGlobalActId(returnActId); setReturnActId(null) }
+            }}
           />
         ) : activeView === 'tree' ? (
           <TreeView />
@@ -164,17 +159,15 @@ function App(): JSX.Element {
         ) : activeView === 'calendar' ? (
           <CalendarView />
         ) : activeView === 'acquis' ? (
-          <AcquisitionView />
+          <AcquisitionView
+            onBack={() => setActiveView(acquisFrom)}
+            onOpenContact={(id) => { setOpenContactId(id); setReturnView('acquis'); setActiveView('contacts') }}
+          />
+        ) : activeView === 'mydata' ? (
+          <FMyDataView />
         ) : activeView === 'fcm' ? (
-          isVip ? <FCMView onLabelChange={setSubViewLabel} /> : (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-on-surface-variant">
-              <span className="text-4xl">🔒</span>
-              <p className="text-lg font-medium">{t('fcm.locked')}</p>
-              <p className="text-sm">{t('fcm.lockedHint')}</p>
-            </div>
-          )
-        ) : activeView === 'test-cat' ? (
-          <TestCatSelectView />
+          // TODO GoLive: VIP-Gate wieder aktivieren (isVip ? <FCMView> : locked-Message)
+          <FCMView onLabelChange={setSubViewLabel} />
         ) : null}
         </ErrorBoundary>
       </main>

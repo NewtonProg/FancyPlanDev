@@ -467,6 +467,7 @@ CREATE TABLE IF NOT EXISTS TLinks (
   link_type   TEXT NOT NULL DEFAULT 'web',
   url         TEXT NOT NULL,
   label       TEXT,
+  password    TEXT,
   seq         INTEGER DEFAULT 0,
   created_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -720,6 +721,18 @@ CREATE TABLE IF NOT EXISTS TRecurring (
   notes        TEXT,
   active       INTEGER DEFAULT 1,
   created_at   TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ── TMyData — Verschlüsselte persönliche Daten ───────────────────────────────
+
+CREATE TABLE IF NOT EXISTS TMyData (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  category   TEXT NOT NULL DEFAULT 'other',
+  label      TEXT NOT NULL DEFAULT '',
+  value_enc  TEXT,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ── TActTel — Verknüpfung Aktivität ↔ Kontakt (m:n) ─────────────────────────

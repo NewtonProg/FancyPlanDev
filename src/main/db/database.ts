@@ -6,18 +6,37 @@ import { SCHEMA_SQL, SCHEMA_VERSION } from './schema'
 
 let db: Database.Database | null = null
 
+// ── Config file (userData/fancyplan-config.json) ──────────────────────────
+// Stored outside the DB so it can be read before initDb() runs.
+
+function configFilePath(): string {
+  return path.join(app.getPath('userData'), 'fancyplan-config.json')
+}
+
+function readConfig(): Record<string, string> {
+  try { return JSON.parse(fs.readFileSync(configFilePath(), 'utf-8')) } catch { return {} }
+}
+
+export function writeConfig(data: Record<string, string>): void {
+  fs.writeFileSync(configFilePath(), JSON.stringify({ ...readConfig(), ...data }, null, 2))
+}
+
+export function getDbPath(): string {
+  return readConfig().dbPath ?? path.join(app.getPath('userData'), 'fancyplan.db')
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function getDb(): Database.Database {
   if (!db) throw new Error('Database not initialized. Call initDb() first.')
   return db
 }
 
 export function initDb(): void {
-  const userDataPath = app.getPath('userData')
-  if (!fs.existsSync(userDataPath)) {
-    fs.mkdirSync(userDataPath, { recursive: true })
-  }
+  const dbPath = getDbPath()
+  const dir = path.dirname(dbPath)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 
-  const dbPath = path.join(userDataPath, 'fancyplan.db')
   db = new Database(dbPath)
 
   db.exec(SCHEMA_SQL)
@@ -163,6 +182,11 @@ export function initDb(): void {
   if (!tterminCols.includes('meet_key'))     db.exec('ALTER TABLE TTermin ADD COLUMN meet_key TEXT')
   if (!tterminCols.includes('meet_phone'))   db.exec('ALTER TABLE TTermin ADD COLUMN meet_phone TEXT')
   if (!tterminCols.includes('cat'))          db.exec('ALTER TABLE TTermin ADD COLUMN cat TEXT')
+  if (!tterminCols.includes('cal_uid'))      db.exec('ALTER TABLE TTermin ADD COLUMN cal_uid TEXT')
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ttermin_cal_uid ON TTermin(cal_uid) WHERE cal_uid IS NOT NULL')
+
+  const tlinksCols = (db.prepare('PRAGMA table_info(TLinks)').all() as { name: string }[]).map(c => c.name)
+  if (!tlinksCols.includes('password')) db.exec('ALTER TABLE TLinks ADD COLUMN password TEXT')
 
   const row = db.prepare("SELECT value FROM db_meta WHERE key = 'schema_version'").get() as
     | { value: string }
@@ -181,12 +205,11 @@ export function closeDb(): void {
 }
 
 export function backupDb(): string {
-  const userDataPath = app.getPath('userData')
-  const backupDir = path.join(userDataPath, 'backups')
+  const backupDir = path.join(app.getPath('userData'), 'backups')
   if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true })
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const destPath = path.join(backupDir, `fancyplan_${ts}.db`)
-  fs.copyFileSync(path.join(userDataPath, 'fancyplan.db'), destPath)
+  fs.copyFileSync(getDbPath(), destPath)
   const files = fs.readdirSync(backupDir)
     .filter((f) => f.startsWith('fancyplan_') && f.endsWith('.db'))
     .sort()

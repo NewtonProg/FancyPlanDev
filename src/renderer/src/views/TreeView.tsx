@@ -176,7 +176,9 @@ export default function TreeView(): JSX.Element {
   const [ctx, setCtx] = useState<ContextState>(null)
   const [openActId, setOpenActId] = useState<number | null>(null)
   const renameRef = useRef<HTMLInputElement>(null)
+  const addRef = useRef<HTMLInputElement>(null)
   const [renaming, setRenaming] = useState<{ id: number; value: string } | null>(null)
+  const [adding, setAdding] = useState<{ parentId: number | null; value: string } | null>(null)
   const [dragId, setDragId] = useState<number | null>(null)
   const [dragOverId, setDragOverId] = useState<number | null>(null)
   const [undoStack, setUndoStack] = useState<Array<{ nodeId: number; oldParentId: number | null }>>([])
@@ -217,13 +219,18 @@ export default function TreeView(): JSX.Element {
     setCtx({ x: e.clientX, y: e.clientY, node })
   }
 
+  const handleAddSubmit = async (): Promise<void> => {
+    if (!adding || !adding.value.trim()) { setAdding(null); return }
+    await window.db.tree.create(adding.parentId, adding.value.trim())
+    if (adding.parentId !== null) setExpanded((prev) => new Set([...prev, adding.parentId!]))
+    setAdding(null)
+    await loadTree()
+  }
+
   const handleAction = async (action: string, node: TreeNode): Promise<void> => {
     if (action === 'addChild') {
-      const name = prompt(t('tree.promptNewNode'))
-      if (!name?.trim()) return
-      await window.db.tree.create(node.id, name.trim())
-      setExpanded((prev) => new Set([...prev, node.id]))
-      await loadTree()
+      setAdding({ parentId: node.id, value: '' })
+      setTimeout(() => addRef.current?.focus(), 50)
     } else if (action === 'rename') {
       setRenaming({ id: node.id, value: node.name })
       setTimeout(() => renameRef.current?.select(), 50)
@@ -272,11 +279,9 @@ export default function TreeView(): JSX.Element {
     }
   }
 
-  const handleAddRoot = async (): Promise<void> => {
-    const name = prompt(t('tree.promptRootNode'))
-    if (!name?.trim()) return
-    await window.db.tree.create(null, name.trim())
-    await loadTree()
+  const handleAddRoot = (): void => {
+    setAdding({ parentId: null, value: '' })
+    setTimeout(() => addRef.current?.focus(), 50)
   }
 
   return (
@@ -299,7 +304,7 @@ export default function TreeView(): JSX.Element {
           <div className="px-3 py-1 text-xs text-secondary-fixed-dim bg-secondary-container/10 border-b border-green-100">{checkpointMsg}</div>
         )}
         <div className="flex-1 overflow-y-auto p-2">
-          {tree.length === 0 ? (
+          {tree.length === 0 && adding === null ? (
             <p className="text-xs text-on-surface-variant/60 p-2">{t('tree.noNodes')}</p>
           ) : tree.map((node) => (
             <TreeNodeItem key={node.id} node={node} activeId={activeNode?.id ?? null}
@@ -307,6 +312,23 @@ export default function TreeView(): JSX.Element {
               onToggle={handleToggle} onSelect={handleSelect} onContext={handleContext}
               onDragStart={setDragId} onDragOver={setDragOverId} onDrop={handleDrop} />
           ))}
+          {adding !== null && (
+            <div className="flex items-center gap-1 py-1 pr-2 rounded-lg"
+              style={{ paddingLeft: adding.parentId !== null ? 12 + ((flat.find(n => n.id === adding.parentId)?.level ?? 0) + 1) * 16 : 12 }}>
+              <span className="w-4 text-center text-xs flex-shrink-0 text-on-surface-variant/60">·</span>
+              <input
+                ref={addRef}
+                className="flex-1 text-sm bg-transparent border-b border-primary/60 outline-none text-on-surface"
+                value={adding.value}
+                onChange={(e) => setAdding({ ...adding, value: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddSubmit()
+                  if (e.key === 'Escape') setAdding(null)
+                }}
+                onBlur={handleAddSubmit}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -388,7 +410,7 @@ export default function TreeView(): JSX.Element {
       <ContextMenu ctx={ctx} onAction={handleAction} onClose={() => setCtx(null)} />
 
       {openActId !== null && (
-        <FNowModal actId={openActId} onClose={() => setOpenActId(null)}
+        <FNowModal actId={openActId} onClose={() => setOpenActId(null)} formName="FTreeEdit"
           onSaved={(updated) => {
             setActs((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
             setOpenActId(null)

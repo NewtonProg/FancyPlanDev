@@ -75,12 +75,12 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 
 ---
 
-## Phase 4 — Baumstruktur-Navigation
+## Phase 4 — Tree-Navigation
 
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
-| F4-01 | Hierarchischen Projektbaum (PSP) anzeigen | TreeView.tsx — Collapse/Expand, Kontextmenü | Hoch | ✅ |
-| F4-02 | Baumknoten erstellen, umbenennen, löschen | Inline-Rename, Kontextmenü, + Root-Button | Hoch | ✅ |
+| F4-01 | Hierarchischen Projektbaum (PSP) anzeigen | TreeView.tsx — Collapse/Expand, Kontextmenü; Nav-Label "Tree" | Hoch | ✅ |
+| F4-02 | Baumknoten erstellen, umbenennen, löschen | Inline-Input (kein prompt()); Inline-Rename, Kontextmenü, + Root-Button | Hoch | ✅ |
 | F4-03 | Knoten per Drag & Drop in einen anderen Knoten verschieben | HTML5 draggable; tree.move IPC; blauer Drag-Over-Rahmen | Mittel | ✅ |
 | F4-04 | Aktivitäten eines Knotens als Liste und Gantt-Timeline anzeigen | TAct-Lookup über PSPName; Timeline-Balken (Pl1/Pl2) | Mittel | ✅ |
 | F4-05 | Knoten kann auf einen anderen Teilbaum verweisen (Cross-Ref) | IDTreeRef-Feld; Klick springt zum referenzierten Knoten | Mittel | ✅ |
@@ -94,12 +94,15 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F5-01 | Kontakte suchen (Name, Firma, E-Mail) | ContactsView.tsx — Suchfeld + Alphabet-Filter | Hoch | ✅ |
 | F5-02 | Kontakt-Detailansicht anzeigen und bearbeiten | Zweispaltig: Adresse/Firma links, Telefon/E-Mail/Web rechts | Hoch | ✅ |
 | F5-02a | Links (Web, Mail, Datei, Social) pro Kontakt oder Baumknoten verwalten | TLinks-Tabelle (entity_type+id); LinkPanel.tsx; Klick öffnet extern | Hoch | ✅ |
+| F5-02c | Datei-/Ordnerpfad per Explorer-Dialog im LinkPanel wählen | Doppelklick auf URL-Feld bei Typ Datei/Netzwerk öffnet Electrons dialog.showOpenDialog (openFile+openDirectory); Pfad wird ins Feld übernommen; db:links:pickPath IPC-Handler; LinkPanel.tsx | Mittel | ✅ |
 | F5-02b | Vollständige Kontakt-Detailansicht (alle Felder aus FTel-1 + FTel-2) | Alle 99 TTel-Felder in ContactsView; Checkboxes für IMAP/Sender | Mittel | ✅ |
 | F5-03 | Aktivitäten suchen (Volltext über alle Felder) | ActivitiesView.tsx — Suchfeld, Bereich-Filter, Erledigt-Filter | Hoch | ✅ |
 | F5-04 | Aktivitäten-Liste mit Prio, Status, Datum | Tabelle mit Doppelklick → FNowModal | Hoch | ✅ |
 | F5-06 | Kompakte Aktivitätsliste (FactLst1) — Listenansicht mit Einzelklick | ActivitiesView.tsx — Toggle ⊟ Tabelle / ☰ Liste; Einzelklick → FNowModal | Hoch | ✅ |
 | F5-05 | Akquisition-Modul: Firmen + Kontakte per Copy-Paste erfassen, BCC-Mailliste generieren | AcquisitionView.tsx — Alphabet-Navigation, Firmenauswahl, Schnell-Email-Erfassung, Detail-Editor (EMail, WWW, Mobil, Tel, Land, Gruppe, Prio, Quelle, Notizen); Detail-Panel rechts | Niedrig | ✅ |
 | F5-05a | Mail-Liste generieren: alle Adressen der Firma dedupliziert in Clipboard kopieren (BCC-ready, Semikolon-getrennt); Toast zeigt Anzahl kopierter Adressen | AcquisitionView.tsx — handleBccCopy, Set-Deduplizierung, Toast-State | Niedrig | ✅ |
+| F5-05b | Bugfix: Prioritäten-Filter form-exklusiv — hat ein Form eigene Einträge in TPrio1/2/3, werden nur diese angezeigt (kein Mix mit "Alle Formulare"); Fallback auf Alle Formulare nur wenn kein formspezifischer Eintrag existiert | dbHandlers.ts — db:prio:getAll UNION ALL mit NOT EXISTS-Guard | Niedrig | ✅ |
+| F5-07 | Kontakte nach Kategorie filtern (BtkSelector: Bereich→Thema→Kategorie) | ContactsView.tsx — BtkSelector in Sidebar; Cat-Token-Split (";"/":"); Filter-Chip + Zähler "gefiltert / gesamt" | Mittel | ✅ |
 
 ---
 
@@ -125,7 +128,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F7-03 | Neuen Termin erstellen (Titel, Datum, Zeit, Ort, Notiz) | NewEventModal → lokal + CalDAV-Push | Mittel | ✅ |
 | F7-04 | Termine vom CalDAV-Server synchronisieren | tsdav fetchCalendarObjects → node-ical parse → TCalendar SQLite-Cache | Mittel | ✅ |
 | F7-05 | Termin löschen | Lokal + CalDAV DELETE | Niedrig | ✅ |
-| F7-06 | Google Calendar verbinden (OAuth2, kein App-Review nötig) | googleCalHandlers.ts — loopback OAuth2-Server, googleapis, Sync in TCalendar (source=gcal); SettingsView: Client-ID/Secret + Verbinden-Flow | Hoch | ✅ |
+| F7-06 | Google Calendar verbinden (OAuth2, kein App-Review nötig) | googleCalHandlers.ts — loopback OAuth2-Server, googleapis, Sync in TCalendar (source=gcal); SettingsView: Client-ID/Secret + Verbinden-Flow; Live-Test ✅ 2026-05-21: 91 Termine synchronisiert; Bugs behoben: Client-ID-Persistenz, refresh_token-Auth, startOfDay-timeMin, TTermin-UNIQUE-Index | Hoch | ✅ |
 
 ### Architektur-Entscheidungen Terminplanung (beschlossen 2026-05-07)
 
@@ -170,7 +173,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F9-05 | Windows-Installer (.exe) bauen | electron-builder --win (NSIS); Output: `dist\FancyPlan Setup 0.1.0.exe`; Standard-Electron-Icon (kein icon.ico); Voraussetzung: Windows Developer Mode aktiv (Symlink-Rechte); 4 typografische Anführungszeichen in de.json gefixt (JSON-Parse-Fehler) | Hoch | ✅ |
 | F9-06 | macOS-Build (.dmg) | electron-builder --mac | Mittel | 🔲 |
 | F9-07 | Linux-Build (.AppImage) | electron-builder --linux | Mittel | 🔲 |
-| F9-08 | Corporate-Tauglichkeit: Installation + Betrieb ohne Admin-Rechte | NSIS perMachine:false (per-user Install nach %LOCALAPPDATA%) + Prüfung ob alle Runtime-Libraries admin-frei laufen (SQLite, Google API, IMAP etc.) — Status offen, da noch nicht alle Libraries bekannt; Laufzeit bereits admin-frei (nur %APPDATA%-Zugriff) | Niedrig | 🔲 |
+| F9-08 | Corporate-Tauglichkeit: Installation + Betrieb ohne Admin-Rechte | NSIS perMachine:false (per-user Install nach %LOCALAPPDATA%) + Prüfung ob alle Runtime-Libraries admin-frei laufen (SQLite, Google API, IMAP etc.) — Status offen, da noch nicht alle Libraries bekannt; Laufzeit bereits admin-frei (nur %APPDATA%-Zugriff) | Hoch | 🔲 |
 
 ---
 
@@ -183,11 +186,11 @@ Interner Schutzbedarf: Formular FMyData speichert sensible Nutzerdaten (Passwör
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
 | S10-01 | Zugangsdaten via keytar im OS-Credential-Store | Konzept noch offen — zurückgestellt bis Sicherheitskonzept steht | Hoch | 🚫 |
-| S10-02 | Konfigurierbarer DB-Pfad für Challenger-Integration | Einstellung in SettingsView: "Datenbankpfad"; App öffnet DB aus Challenger-verschlüsseltem Verzeichnis statt AppData-Default | Hoch | 🔲 |
+| S10-02 | Konfigurierbarer DB-Pfad für Challenger-Integration | Einstellung in SettingsView: "Datenbankpfad"; App öffnet DB aus Challenger-verschlüsseltem Verzeichnis statt AppData-Default | Hoch | ✅ |
 | S10-03 | Datenbank-Backup-Export — fancyplan.db an beliebigen Ort kopieren | "Backup erstellen"-Button in SettingsView; fs.copyFile zum user-gewählten Zielordner | Mittel | 🔲 |
-| S10-04 | FMyData — Formular für sensible persönliche Daten (Passwörter, Kontonummern) | Neue Tabelle TMyData; eigene View FMyDataView; Felder verschlüsselt gespeichert (field-level encryption oder separates SQLCipher-Volume) | Hoch | 🔲 |
+| S10-04 | FMyData — Formular für sensible persönliche Daten (Passwörter, Kontonummern) | Neue Tabelle TMyData; eigene View FMyDataView; Felder verschlüsselt gespeichert (field-level encryption oder separates SQLCipher-Volume) | Hoch | ✅ |
 | S10-05 | Hinweis in der App auf externe Challenger-Verschlüsselung (Doku) | ARCHITECTURE.md + Info-Text in SettingsView: welcher Pfad verschlüsselt werden soll | Hoch | ✅ |
-| S10-06 | Interne Feldverschlüsselung für TMyData | AES-256 auf Feldebene in Main Process; Schlüssel per App-Passwort abgeleitet (PBKDF2) | Hoch | 🔲 |
+| S10-06 | Interne Feldverschlüsselung für TMyData | AES-256 auf Feldebene in Main Process; Schlüssel per App-Passwort abgeleitet (PBKDF2) | Hoch | ✅ |
 
 ---
 
@@ -196,7 +199,7 @@ Interner Schutzbedarf: Formular FMyData speichert sensible Nutzerdaten (Passwör
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
 | I18-01 | Alle UI-Texte, Labels und Buttons übersetzbar (Deutsch default, weitere Sprachen per JSON ergänzbar) — **Stufe 1:** hartverdrahtet in de.json | react-i18next; src/renderer/src/i18n/index.ts; src/renderer/src/i18n/locales/de.json — alle Views und Komponenten auf useTranslation()/t()-Aufrufe umgestellt; ErrorBoundary via withTranslation() HOC | Hoch | ✅ |
-| I18-02 | **[Stufe 2]** Anwender kann Labels und Button-Texte über FCM/Customizing überschreiben — ohne Programmierung, direkt in der App | FCM-Modul (Phase 11): Übersetzungs-Overrides in TSettings oder eigener Tabelle TI18nOverride; App prüft zur Laufzeit ob Override vorhanden, sonst Fallback auf de.json; nur bei VIP-Lizenz | Mittel | 🔲 |
+| I18-02 | **[Stufe 2]** Anwender kann Labels und Button-Texte über FCM/Customizing überschreiben — ohne Programmierung, direkt in der App | FCM-Modul (Phase 11): Übersetzungs-Overrides in TSettings oder eigener Tabelle TI18nOverride; App prüft zur Laufzeit ob Override vorhanden, sonst Fallback auf de.json; nur bei VIP-Lizenz | Hoch | 🔲 |
 
 ---
 
@@ -248,3 +251,28 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 | F9-08 | Automatische DB-Sicherung beim App-Start | `backupDb()` in database.ts kopiert `fancyplan.db` mit Timestamp in `%APPDATA%/FancyPlan/backups/`; max. 7 Dateien (älteste wird automatisch gelöscht); Aufruf in main/index.ts nach `initDb()` | Hoch | ✅ |
 | F9-09 | Manueller Sicherungspunkt (Tree-Header) | 💾-Button im TreeView-Header → `window.db.backup.create()` → IPC → `backupDb()`; Bestätigungsmeldung 3 Sek. sichtbar | Hoch | ✅ |
 | F9-10 | Undo für Tree-Drag & Drop | `undoStack` State in TreeView; vor jedem Move wird `{nodeId, oldParentId}` gespeichert; ↩-Button erscheint orange wenn Stack > 0; Klick stellt letzten Zug wieder her (`tree.move` mit altem Parent); mehrfach rückgängig möglich | Hoch | ✅ |
+
+---
+
+## Phase 12 — App-Update
+
+Hintergrund: FancyPlan ist eine Electron-Desktop-App. Updates müssen ohne Store (z.B. Microsoft Store) und möglichst ohne Admin-Rechte möglich sein — passend zur Corporate-Anforderung (F9-08).
+
+**Strategie-Optionen:**
+
+| Option | Mechanismus | Admin-Rechte | Aufwand |
+|--------|------------|-------------|---------|
+| **A — electron-updater (empfohlen)** | `electron-builder` + `electron-updater`; App prüft GitHub Releases oder eigenen S3/Webserver auf neue Version; lädt `.exe` herunter und installiert per NSIS per-user (kein Admin) | Nein (per-user NSIS) | Gering |
+| **B — Manuell (Fallback)** | App zeigt "Neue Version X.Y.Z verfügbar" + Link zur Download-Seite; User lädt selbst herunter und installiert | Nein | Minimal |
+| **C — Microsoft Store / Winget** | Store-Paket oder winget-Manifest; Update automatisch via Store | Nein | Hoch |
+
+**Entscheidung (offen):** Option A (electron-updater) ist Best Practice für Electron-Apps. Update-Server: GitHub Releases (kostenlos, kein eigener Server nötig). Option B als Fallback wenn kein Auto-Update gewünscht.
+
+> **Reihenfolge:** Phase 12 wird als letztes aller Hoch-Prio-Punkte angegangen — erst wenn alle funktionalen Komponenten abgeschlossen sind.
+
+| ID | Was es tut | Implementierung | Prio | Status |
+|----|-----------|----------------|------|--------|
+| U12-01 | In-App Update-Prüfung — zeigt verfügbare Version | updateHandlers.ts: autoUpdater.checkForUpdates(); scheduleUpdateCheck() 5s nach App-Start; Events per IPC broadcast | Hoch | ✅ |
+| U12-02 | Automatischer Download + Installation im Hintergrund | autoDownload=true; autoInstallOnAppQuit=true; Fortschrittsbalken in SettingsView; "Jetzt installieren"-Button bei status=downloaded | Hoch | ✅ |
+| U12-03 | Update-Server konfigurieren | package.json build.publish: provider=github; owner/repo als Platzhalter — vor Go-Live eintragen; GH_TOKEN für Release-Upload nötig | Hoch | ✅ |
+| U12-04 | Fallback: Manueller Update-Hinweis in SettingsView | Sektion "App-Update" in SettingsView: Version, "Auf Updates prüfen"-Button, Status-Anzeige, Fortschrittsbalken | Mittel | ✅ |
