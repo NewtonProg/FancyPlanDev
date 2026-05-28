@@ -47,9 +47,9 @@ function MailItem({ mail, active, onClick }: { mail: Mail; active: boolean; onCl
   )
 }
 
-function ComposePanel({ fromEmail, onClose }: { fromEmail: string; onClose: () => void }): JSX.Element {
+export function ComposePanel({ fromEmail, onClose, initialTo = '', initialSubject = '' }: { fromEmail: string; onClose: () => void; initialTo?: string; initialSubject?: string }): JSX.Element {
   const { t } = useTranslation()
-  const [to, setTo] = useState('')
+  const [to, setTo] = useState(initialTo)
   const [cc, setCc] = useState('')
   const [showCc, setShowCc] = useState(false)
   const [subject, setSubject] = useState('')
@@ -124,7 +124,7 @@ function fmtSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function MailDetail({ mail, detail }: { mail: Mail; detail: Mail | null }): JSX.Element {
+function MailDetail({ mail, detail, onDelete }: { mail: Mail; detail: Mail | null; onDelete: () => void }): JSX.Element {
   const { t } = useTranslation()
   const [attachments, setAttachments] = useState<Mail[]>([])
   const [downloading, setDownloading] = useState<number | null>(null)
@@ -146,9 +146,15 @@ function MailDetail({ mail, detail }: { mail: Mail; detail: Mail | null }): JSX.
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-outline-variant/40 flex-shrink-0">
-        <h2 className="text-base font-semibold text-on-surface mb-2">
-          {String(mail.subject ?? t('mail.noSubject'))}
-        </h2>
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h2 className="text-base font-semibold text-on-surface flex-1">
+            {String(mail.subject ?? t('mail.noSubject'))}
+          </h2>
+          <button
+            onClick={async () => { await window.db.mail.delete(mail.id as number); onDelete() }}
+            className="flex-shrink-0 text-on-surface-variant/70 hover:text-error transition-colors text-sm px-2 py-1 rounded-lg hover:bg-error/10"
+            title="Löschen">🗑</button>
+        </div>
         <div className="flex flex-col gap-0.5 text-xs">
           <p className="text-on-surface-variant">
             <span className="text-on-surface-variant/60">{t('mail.fromLabel')} </span>
@@ -315,7 +321,7 @@ export default function MailView(): JSX.Element {
             {t('mail.selectMessage')}
           </div>
         ) : (
-          <MailDetail mail={selected} detail={detail} />
+          <MailDetail mail={selected} detail={detail} onDelete={() => { setSelected(null); setDetail(null); loadMessages(search || undefined) }} />
         )}
       </div>
     </div>

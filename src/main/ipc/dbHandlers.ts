@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { dbAll, dbGet, dbRun } from '../db/database'
+import { dbAll, dbGet, dbRun, getDb } from '../db/database'
 
 type Row = Record<string, unknown>
 
@@ -58,11 +58,19 @@ ipcMain.handle('db:act:getById', (_event, id: number) =>
 )
 
 ipcMain.handle('db:act:create', (_event, data: Row) => {
-  const cols = Object.keys(data)
+  type ColInfo = { name: string; notnull: number; dflt_value: string | null }
+  const colInfos = getDb().prepare('PRAGMA table_info(TAct)').all() as ColInfo[]
+  const merged: Row = { ...data }
+  for (const ci of colInfos) {
+    if (ci.notnull && ci.dflt_value === null && !(ci.name in merged) && ci.name !== 'id') {
+      merged[ci.name] = ''
+    }
+  }
+  const cols = Object.keys(merged)
   const placeholders = cols.map(() => '?').join(', ')
   const sql = `INSERT INTO TAct (${cols.join(', ')}, dateCreated) VALUES (${placeholders}, CURRENT_TIMESTAMP)`
-  const result = dbRun(sql, Object.values(data))
-  return { id: result.lastInsertRowid }
+  const result = dbRun(sql, Object.values(merged))
+  return { id: Number(result.lastInsertRowid) }
 })
 
 ipcMain.handle('db:act:update', (_event, id: number, data: Row) => {

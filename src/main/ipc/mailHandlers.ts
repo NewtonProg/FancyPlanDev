@@ -42,12 +42,13 @@ ipcMain.handle('mail:auth:status', () => {
 // Test IMAP connection
 ipcMain.handle('mail:config:test', async () => {
   const client = new ImapFlow(imapConfig())
+  client.on('error', () => {})
   try {
     await client.connect()
     await client.logout()
     return { ok: true }
   } catch (err) {
-    return { error: String(err) }
+    return { ok: false, error: String(err) }
   }
 })
 
@@ -58,6 +59,7 @@ ipcMain.handle('mail:sync', async () => {
 
   const db = getDb()
   const client = new ImapFlow(cfg)
+  client.on('error', () => {})
 
   try {
     await client.connect()
@@ -115,6 +117,14 @@ ipcMain.handle('mail:sync', async () => {
   }
 })
 
+// Delete message from local DB
+ipcMain.handle('mail:delete', (_e, id: number) => {
+  const db = getDb()
+  db.prepare('DELETE FROM TMailAttachment WHERE mail_id = ?').run(id)
+  db.prepare('DELETE FROM TMailReceive WHERE id = ?').run(id)
+  return { ok: true }
+})
+
 // List messages from local DB
 ipcMain.handle('mail:list', (_e, filter?: { search?: string; unreadOnly?: boolean }) => {
   const db = getDb()
@@ -147,6 +157,7 @@ ipcMain.handle('mail:get', async (_e, id: number) => {
   if (!uid) return row
 
   const client = new ImapFlow(imapConfig())
+  client.on('error', () => {})
   try {
     await client.connect()
     await client.mailboxOpen('INBOX')
@@ -196,6 +207,7 @@ ipcMain.handle('mail:markRead', async (_e, id: number) => {
   const uid = Number(parts[parts.length - 1])
   if (uid) {
     const client = new ImapFlow(imapConfig())
+    client.on('error', () => {})
     try {
       await client.connect()
       await client.mailboxOpen('INBOX')

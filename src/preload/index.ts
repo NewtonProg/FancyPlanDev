@@ -155,6 +155,7 @@ const dbApi = {
     get:                 (id: number)                        => ipcRenderer.invoke('mail:get', id),
     send:                (data: Record<string, unknown>)     => ipcRenderer.invoke('mail:send', data),
     markRead:            (id: number)                        => ipcRenderer.invoke('mail:markRead', id),
+    delete:              (id: number)                        => ipcRenderer.invoke('mail:delete', id),
     getAttachments:      (mailId: number)                    => ipcRenderer.invoke('mail:attachment:list', mailId),
     downloadAttachment:  (attachmentId: number)              => ipcRenderer.invoke('mail:attachment:download', attachmentId)
   },
@@ -212,7 +213,8 @@ const dbApi = {
   },
   backup: {
     create:        ()               => ipcRenderer.invoke('db:backup:create'),
-    export:        ()               => ipcRenderer.invoke('app:backup:export')
+    export:        ()               => ipcRenderer.invoke('app:backup:export'),
+    import:        ()               => ipcRenderer.invoke('app:backup:import')
   },
   mydata: {
     isSetup:        ()                                                              => ipcRenderer.invoke('mydata:isSetup'),
@@ -227,12 +229,16 @@ const dbApi = {
     changePassword: (oldPwd: string, newPwd: string)                               => ipcRenderer.invoke('mydata:changePassword', oldPwd, newPwd),
     reset:          ()                                                              => ipcRenderer.invoke('mydata:reset'),
   },
+  brand: {
+    browseLogo: () => ipcRenderer.invoke('brand:logo:browse')
+  },
   dbConfig: {
     getPath:      ()               => ipcRenderer.invoke('app:db-path:get'),
     browsePath:   ()               => ipcRenderer.invoke('app:db-path:browse'),
     setPath:      (p: string)      => ipcRenderer.invoke('app:db-path:set', p),
     copyAndSet:   (p: string)      => ipcRenderer.invoke('app:db-path:copy-and-set', p),
     relaunch:     ()               => ipcRenderer.invoke('app:relaunch'),
+    quit:         ()               => ipcRenderer.invoke('app:quit'),
   },
   license: {
     get:      ()                    => ipcRenderer.invoke('license:get'),

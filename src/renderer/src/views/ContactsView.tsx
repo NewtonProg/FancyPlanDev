@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import FdlgCatModal from '../components/FdlgCatModal'
 import LinkPanel from '../components/LinkPanel'
 import BtkSelector, { BtkLevel1, BtkItem, BtkLevel3, BtkSelection } from '../components/BtkSelector'
+import { ComposePanel } from './MailView'
 
 type Tel = Record<string, unknown>
 type Row = Record<string, unknown>
@@ -104,6 +105,12 @@ function ContactDetail({
 
   const [webs, setWebs] = useState<TelWeb[]>([])
   const [websExpanded, setWebsExpanded] = useState(false)
+  const [composeEmail, setComposeEmail] = useState<string | null>(null)
+  const [fromEmail, setFromEmail] = useState('')
+
+  useEffect(() => {
+    window.db.mail.authStatus().then((s: { email?: string }) => setFromEmail(s?.email ?? ''))
+  }, [])
 
   useEffect(() => {
     setForm({ ...contact })
@@ -275,6 +282,11 @@ function ContactDetail({
                     <input className={`${inpLight} flex-1`} value={e.EMail}
                       onChange={(ev) => updateEmail(ai, 'EMail', ev.target.value)}
                       placeholder={t('contacts.emailPh')} />
+                    {e.EMail.trim() && (
+                      <button onClick={() => setComposeEmail(e.EMail)}
+                        className="flex-shrink-0 text-on-surface-variant/40 hover:text-primary transition-colors text-xs px-1"
+                        title="Mail senden">✉</button>
+                    )}
                     <button onClick={() => removeEmail(ai)}
                       className="flex-shrink-0 text-error/50 hover:text-error transition-colors text-xs px-1">✕</button>
                   </div>
@@ -362,10 +374,15 @@ function ContactDetail({
   )
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col w-full max-w-2xl self-stretch bg-surface-container-low rounded-xl border border-outline-variant/30 shadow-lg overflow-hidden">
+      {composeEmail !== null && (
+        <div className="absolute inset-0 z-20 bg-surface-container overflow-hidden">
+          <ComposePanel fromEmail={fromEmail} initialTo={composeEmail} onClose={() => setComposeEmail(null)} />
+        </div>
+      )}
 
       {/* ── Header mit Avatar + Buttons ── */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-outline-variant/40 bg-surface-container-low flex-shrink-0">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-outline-variant/40 bg-surface-container flex-shrink-0">
         <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-semibold text-sm ${pal.bg} ${pal.text}`}>
           {initials(form.FirstName, form.SurName)}
         </div>
@@ -859,9 +876,9 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
       </div>
 
       {/* ── Rechte Detailansicht ── */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden flex justify-center p-6">
         {selected === null ? (
-          <div className="flex items-center justify-center h-full text-on-surface-variant/40 text-sm">
+          <div className="flex items-center justify-center w-full text-on-surface-variant/40 text-sm">
             {t('contacts.selectContact')}
           </div>
         ) : (

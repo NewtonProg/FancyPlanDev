@@ -188,6 +188,31 @@ export function initDb(): void {
   const tlinksCols = (db.prepare('PRAGMA table_info(TLinks)').all() as { name: string }[]).map(c => c.name)
   if (!tlinksCols.includes('password')) db.exec('ALTER TABLE TLinks ADD COLUMN password TEXT')
 
+  // Remove NOT NULL constraint from IDProfile in TPrio1/2/3 (profile no longer used as key)
+  for (const level of [1, 2, 3] as const) {
+    const tbl  = `TPrio${level}`
+    const iCol = `IDPrio${level}`
+    const pCol = `Prio${level}`
+    const tCol = `${pCol}Txt`
+    const info = db.prepare(`PRAGMA table_info(${tbl})`).all() as { name: string; notnull: number }[]
+    if (info.find(c => c.name === 'IDProfile')?.notnull === 1) {
+      db.exec(`
+        CREATE TABLE ${tbl}_mig (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          ${iCol}    INTEGER,
+          IDFormName TEXT NOT NULL,
+          IDProfile  TEXT DEFAULT '*',
+          Action     TEXT,
+          ${pCol}    INTEGER,
+          ${tCol}    TEXT
+        );
+        INSERT INTO ${tbl}_mig SELECT id, ${iCol}, IDFormName, COALESCE(IDProfile, '*'), Action, ${pCol}, ${tCol} FROM ${tbl};
+        DROP TABLE ${tbl};
+        ALTER TABLE ${tbl}_mig RENAME TO ${tbl};
+      `)
+    }
+  }
+
   const row = db.prepare("SELECT value FROM db_meta WHERE key = 'schema_version'").get() as
     | { value: string }
     | undefined

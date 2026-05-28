@@ -6,6 +6,7 @@ import FdlgActModal from '../components/FdlgActModal'
 import FdlgTelModal from '../components/FdlgTelModal'
 import RichEditor from '../components/RichEditor'
 import LinkPanel from '../components/LinkPanel'
+import { ComposePanel } from './MailView'
 
 type Act = Record<string, unknown>
 type Row = Record<string, unknown>
@@ -94,8 +95,14 @@ export default function FNowModal({
   const [actTermins,     setActTermins]     = useState<Row[]>([])
   const [linkDate,       setLinkDate]       = useState(new Date().toISOString().slice(0, 10))
   const [linkDateTermins, setLinkDateTermins] = useState<Row[]>([])
+  const [composeEmail,   setComposeEmail]   = useState<string | null>(null)
+  const [fromEmail,      setFromEmail]      = useState('')
 
   const skipDbLoad = useRef(false)
+
+  useEffect(() => {
+    window.db.mail.authStatus().then((s: { email?: string }) => setFromEmail(s?.email ?? ''))
+  }, [])
 
   function navigateTo(targetId: number): void {
     setNavStack(prev => [...prev, { id: currentId, title: String(form.Title ?? ''), form: { ...form }, logs, linkedActTitle }])
@@ -285,6 +292,12 @@ export default function FNowModal({
     setForm(prev => ({ ...prev, Pl1Beg: today, Pl1End: newTo }))
   }
 
+  // ── Plan bis Doppelklick: setzt Heute ───────────────────────────────────
+  function handlePlanBisDblClick(): void {
+    const today = new Date().toISOString().slice(0, 10)
+    setForm(prev => ({ ...prev, Pl1End: today }))
+  }
+
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     const { id, created_at, updated_at, ...data } = form
@@ -442,6 +455,11 @@ export default function FNowModal({
 
   return (
     <>
+      {composeEmail !== null && (
+        <div className="fixed inset-0 z-[60] bg-surface-container overflow-hidden">
+          <ComposePanel fromEmail={fromEmail} initialTo={composeEmail} onClose={() => setComposeEmail(null)} />
+        </div>
+      )}
       {/* Full-screen, no backdrop overlay */}
       <div className="fixed inset-0 z-50 flex flex-col bg-surface-container overflow-hidden">
 
@@ -596,6 +614,8 @@ export default function FNowModal({
                       className={inputCls}
                       value={toDateStr(form.Pl1End)}
                       onChange={(e) => set('Pl1End', e.target.value)}
+                      onDoubleClick={handlePlanBisDblClick}
+                      title="Doppelklick → Heute"
                     />
                   </Field>
 
@@ -729,6 +749,15 @@ export default function FNowModal({
                                 {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
                               </span>
                               {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
+                              <button
+                                onClick={async (ev) => {
+                                  ev.stopPropagation()
+                                  const mails = await window.db.ttelmail.getByTel(Number(c.id)) as { EMail: string; bFavorit: number }[]
+                                  const best = mails.find((m) => m.bFavorit === 1) ?? mails[0]
+                                  if (best?.EMail) setComposeEmail(best.EMail)
+                                }}
+                                className="text-on-surface-variant/40 hover:text-primary text-xs leading-none flex-shrink-0 transition-colors"
+                                title="Mail senden">✉</button>
                               <button
                                 onClick={async () => {
                                   await window.db.acttel.remove(currentId, Number(c.id))
@@ -881,6 +910,15 @@ export default function FNowModal({
                                 {[c.FirstName, c.SurName].filter(Boolean).join(' ') || String(c.Company ?? '—')}
                               </span>
                               {c.Company && <span className="text-xs text-on-surface-variant/50 truncate max-w-[100px]">{String(c.Company)}</span>}
+                              <button
+                                onClick={async (ev) => {
+                                  ev.stopPropagation()
+                                  const mails = await window.db.ttelmail.getByTel(Number(c.id)) as { EMail: string; bFavorit: number }[]
+                                  const best = mails.find((m) => m.bFavorit === 1) ?? mails[0]
+                                  if (best?.EMail) setComposeEmail(best.EMail)
+                                }}
+                                className="text-on-surface-variant/40 hover:text-primary text-xs leading-none flex-shrink-0 transition-colors"
+                                title="Mail senden">✉</button>
                               <button
                                 onClick={async () => {
                                   await window.db.acttel.remove(currentId, Number(c.id))

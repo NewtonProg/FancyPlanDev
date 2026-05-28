@@ -96,6 +96,7 @@
     "filterAll": "Alle",
     "table": "⊟ Tabelle",
     "list": "☰ Liste",
+    "new": "+ Neu",
     "csv": "↓ CSV",
     "entries": "{{count}} Einträge",
     "allAreas": "Alle Bereiche",
@@ -256,7 +257,7 @@
     "catPh": "z. B. Meeting, Privat, Arzt …",
     "today": "Heute",
     "sync": "↻ Sync",
-    "addEvent": "+ Termin",
+    "addEvent": "Termin",
     "configHint": "Einstellungen → CalDAV konfigurieren für Synchronisation",
     "noEvents": "Keine Termine",
     "eventsOne": "{{count}} Termin",
@@ -315,7 +316,13 @@
     "testing": "Teste…",
     "saved": "Gespeichert ✓",
     "connected": "Verbindung erfolgreich ✓",
-    "disconnected": "Verbindung getrennt"
+    "disconnected": "Verbindung getrennt",
+    "branding": "Branding / White-Label",
+    "brandingVipHint": "Branding ist nur mit VIP-Lizenz verfügbar.",
+    "brandingAppName": "App-Name (Titelleiste)",
+    "brandingLogo": "Logo auswählen",
+    "brandingCustom": "Eigenes Logo hochladen…",
+    "brandingRemoveCustom": "Entfernen"
   },
   "acquis": {
     "title": "Akquisition",

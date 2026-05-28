@@ -163,6 +163,7 @@ interface DbApi {
     get:                (id: number)   => Promise<Row | null>
     send:               (data: { to: string; subject: string; body: string; cc?: string }) => Promise<{ ok?: boolean; error?: string }>
     markRead:           (id: number)   => Promise<{ ok: boolean }>
+    delete:             (id: number)   => Promise<{ ok: boolean }>
     getAttachments:     (mailId: number) => Promise<Row[]>
     downloadAttachment: (attachmentId: number) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>
   }
@@ -239,6 +240,8 @@ declare global {
     db: DbApi & {
       backup: {
         create: () => Promise<string>
+        export: () => Promise<{ ok: boolean; path?: string }>
+        import: () => Promise<{ ok: boolean; canceled?: boolean; error?: string }>
       }
       dbConfig: {
         getPath:    () => Promise<string>
@@ -246,6 +249,7 @@ declare global {
         setPath:    (p: string) => Promise<{ ok: boolean }>
         copyAndSet: (p: string) => Promise<{ ok: boolean; error?: string }>
         relaunch:   () => Promise<void>
+        quit:       () => Promise<void>
       }
       license: {
         get:      () => Promise<LicenseInfo>
@@ -258,6 +262,9 @@ declare global {
         status:  () => Promise<UpdateEvent>
         install: () => Promise<void>
         onEvent: (cb: (e: UpdateEvent) => void) => () => void
+      }
+      brand: {
+        browseLogo: () => Promise<string | null>
       }
     }
   }

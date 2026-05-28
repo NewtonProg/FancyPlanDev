@@ -242,6 +242,18 @@ export default function ActivitiesView(): JSX.Element {
 
   const hasFilters = !!(btkSel.level1 || btkSel.level2 || btkSel.level3 || Object.values(colFilters).some(Boolean))
 
+  const handleNew = async (): Promise<void> => {
+    try {
+      const result = await window.db.act.create({ Title: '', Sdone: 0, Sdel: 0 })
+      const newId = Number(result.id)
+      console.log('[handleNew] created id=', newId, 'result=', result)
+      setOpenActId(newId)
+    } catch (err) {
+      console.error('[handleNew] failed:', err)
+      alert('Fehler beim Anlegen: ' + String(err))
+    }
+  }
+
   const handleExportCsv = async (): Promise<void> => {
     const fields = ['Title', 'AreaName', 'ThemeName', 'Cat', 'Status', 'Prio1', 'Prio2', 'ActBeg', 'dateFin', 'Pl1Beg', 'Pl1End', 'Com']
     const esc = (v: string): string => (v.includes(';') || v.includes('\n') || v.includes('"')) ? `"${v.replace(/"/g, '""')}"` : v
@@ -308,6 +320,10 @@ export default function ActivitiesView(): JSX.Element {
               </button>
             ))}
           </div>
+          <button onClick={handleNew}
+            className="px-3 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-primary/90 whitespace-nowrap font-medium">
+            {t('act.new')}
+          </button>
           <button onClick={handleExportCsv}
             className="px-3 py-1.5 text-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high whitespace-nowrap">
             {t('act.csv')}
@@ -408,7 +424,10 @@ export default function ActivitiesView(): JSX.Element {
       {openActId !== null && (
         <FNowModal actId={openActId} onClose={() => setOpenActId(null)}
           onSaved={(updated) => {
-            setActs((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+            setActs((prev) => {
+              const exists = prev.some((a) => a.id === updated.id)
+              return exists ? prev.map((a) => (a.id === updated.id ? updated : a)) : [updated, ...prev]
+            })
             setOpenActId(null)
           }} />
       )}

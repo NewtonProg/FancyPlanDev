@@ -7,6 +7,9 @@ import crypto from 'crypto'
 const VIP_VARIANT_IDS = (import.meta.env.MAIN_VITE_LS_VIP_VARIANT_IDS || '')
   .split(',').map((s: string) => s.trim()).filter(Boolean)
 
+const TEST_VARIANT_IDS = (import.meta.env.MAIN_VITE_LS_TEST_VARIANT_IDS || '')
+  .split(',').map((s: string) => s.trim()).filter(Boolean)
+
 function getSetting(key: string): string {
   const row = getDb().prepare('SELECT value FROM TSettings WHERE key = ?').get(key) as { value: string } | undefined
   return row?.value ?? ''
@@ -46,7 +49,9 @@ function lsPost(path: string, body: Record<string, string>): Promise<Record<stri
 }
 
 function tierFromVariantId(variantId: unknown): 'standard' | 'vip' {
-  if (VIP_VARIANT_IDS.length > 0 && VIP_VARIANT_IDS.includes(String(variantId))) return 'vip'
+  const id = String(variantId)
+  if (VIP_VARIANT_IDS.length > 0 && VIP_VARIANT_IDS.includes(id)) return 'vip'
+  if (TEST_VARIANT_IDS.length > 0 && TEST_VARIANT_IDS.includes(id)) return 'standard'
   return 'standard'
 }
 

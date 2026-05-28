@@ -48,7 +48,9 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
 | F2-01 | Tagesansicht: Aktivitäten des aktuellen Tages als Liste | TodayView.tsx — SToday-Filter, Datum-Navigation, Plandatum-Balken | Hoch | ✅ |
-| F2-02 | Aktivität öffnen und bearbeiten (Vollformular) | FNowModal.tsx — Tabs: Status, Control, Info, Protokoll | Hoch | ⏳ |
+| F2-02 | Aktivität öffnen und bearbeiten (Vollformular) | FNowModal.tsx — Tabs: Status, Zugeordnet, Kontakt, Links, Control, Info, Termine, Timer; Protokoll bleibt im Info-Tab | Hoch | ✅ |
+| F2-02j | Privat/Business-Unterscheidung erfolgt über Kategorie — kein eigener Button/Tab nötig; Anwender pflegt eigene Kategorien (z. B. "Privat", "Business") in FCMValue → Kategorie-Picker in FNowModal | Mittel | ✅ |
+| F2-02k | Zugeordnet-Tab vs. Kontakt-Tab: **Zugeordnet** = Person, die die Aufgabe übernimmt / delegiert bekommt (+ Kostenstelle, Auftrag, Projekt); **Kontakt** = Ansprechpartner für die Aufgabe (Abteilungsleiter, Teamlead, externe Kontakte) — beide Tabs nutzen TTel, dienen aber unterschiedlichen Zwecken | Mittel | ✅ |
 | F2-02g | Status-Dropdown themenabhängig — zeigt nur Status die zum gewählten Thema passen | TStatus.IDTheme: 0=alle Themen, sonst FK→TTheme.id; FNowModal filtert `visibleStatuses` reaktiv nach ThemeName→id; dbHandlers: `IDFormName=? OR IDFormName='*'`; StatusEditor in FCMValueView mit Thema-Dropdown beim Anlegen/Bearbeiten | Hoch | ✅ |
 | F2-02h | Kategorie-Picker FdlgCat — Mehrfachauswahl per Doppelklick | FdlgCatModal.tsx: alle TCat-Einträge als Chips gruppiert nach CatGrp; bereits im Feld enthaltene Kategorien (Colon-getrennt) erscheinen aktiv (blau); Klick togglet; OK schreibt `:` getrennten String zurück ins Cat-Feld | Hoch | ✅ |
 | F2-02i | HTML-Tags in migrierten Textfeldern bereinigt | stripHtml() in FNowModal: Com/Ltxt1/Ltxt2 werden beim Laden von `<font>`/`<div>`/`&nbsp;` bereinigt; ActivitiesView-Vorschau ebenfalls stripHtml | Mittel | ✅ |
@@ -61,6 +63,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F2-03 | Periodenplanung (Woche/Monat vorausplanen) | zurückgestellt — Ersatz durch Planvarianten (F2-05) | Mittel | 🚫 |
 | F2-04 | In der Tagesansicht vor/zurück durch Tage navigieren | Datum-Pfeile in TodayView, Datum-Filter auf ActBeg | Hoch | ✅ |
 | F2-05 | Wiederkehrende Tages-Sets als benannte Variante speichern | TPlanVariant + TPlanVariantItem; speichern + laden in TodayView | Hoch | ✅ |
+| I18-02 | **[Stufe 2]** Anwender kann Labels und Button-Texte über FCM/Customizing überschreiben — ohne Programmierung, direkt in der App | FCM-Modul (Phase 11): Übersetzungs-Overrides in TSettings oder eigener Tabelle TI18nOverride; App prüft zur Laufzeit ob Override vorhanden, sonst Fallback auf de.json; nur bei VIP-Lizenz | Hoch | 🔲 |
 
 ---
 
@@ -116,6 +119,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F6-04 | Neue Nachrichten vom IMAP-Server abrufen (Sync) | imapflow: fetch envelope, Body on-demand via mailparser | Hoch | ✅ |
 | F6-05 | E-Mail-Anhänge herunterladen | mailHandlers.ts: simpleParser liest Anhänge, speichert als BLOB in TMailAttachment; mail:attachment:list + mail:attachment:download (dialog.showSaveDialog); MailView.tsx: 📎-Icon in MailItem, Anhang-Buttons in MailDetail | Mittel | ✅ |
 | F6-06 | IMAP/SMTP-Zugangsdaten in der App konfigurieren | SettingsView.tsx — Gmail/Outlook-Preset, Test-Button | Hoch | ✅ |
+| F6-07 | Mail an Kontakt aus Aktivität oder Kontaktansicht vorausfüllen | ✉-Button in ContactsView (pro TTelEmail) + FNowModal (pro verknüpftem Kontakt); ComposePanel wird mit To-Adresse geöffnet | Mittel | ✅ |
 
 ---
 
@@ -166,14 +170,14 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
-| F9-01 | Design-System finalisieren (Icons, Farben, endgültig) | Tailwind-Theme — bewusst zurückgestellt; wird nach funktionalem Abschluss aller Features gemacht; blockiert nicht F9-05 | Mittel | 🔲 |
+| F9-01 | Design-System finalisieren (Icons, Farben, endgültig) | Midnight Executive Design-System auf alle Views/Komponenten angewendet; Token-Klassen, CSS-Vars, Theme-Switching | Mittel | ✅ |
 | F9-02 | Layout skaliert mit der Fenstergröße | Desktop-PC-App — keine mobilen Breakpoints geplant; Windows-DPI-Skalierung (125%/150%/200%) läuft automatisch über Electron/Chromium; Mindestauflösung ca. 1440×900 | Niedrig | 🚫 |
 | F9-03 | Render-Fehler in einer View stürzen die App nicht ab | React ErrorBoundary pro View; zeigt Fehlertext + Reset-Button | Mittel | ✅ |
 | F9-04 | Aktivitäts-Timer starten und stoppen | FNowModal.tsx Tab "Timer": 4 Timer-Karten; Start/Stop speichert sofort via window.db.act.update (TimerNActive/Stamp/Beg/BegFirst/sngDur); Live-Elapsed via setInterval(1 s) + tick-State; formatDur() zeigt h/m/s | Niedrig | ✅ |
 | F9-05 | Windows-Installer (.exe) bauen | electron-builder --win (NSIS); Output: `dist\FancyPlan Setup 0.1.0.exe`; Standard-Electron-Icon (kein icon.ico); Voraussetzung: Windows Developer Mode aktiv (Symlink-Rechte); 4 typografische Anführungszeichen in de.json gefixt (JSON-Parse-Fehler) | Hoch | ✅ |
 | F9-06 | macOS-Build (.dmg) | electron-builder --mac | Mittel | 🔲 |
 | F9-07 | Linux-Build (.AppImage) | electron-builder --linux | Mittel | 🔲 |
-| F9-08 | Corporate-Tauglichkeit: Installation + Betrieb ohne Admin-Rechte | NSIS perMachine:false (per-user Install nach %LOCALAPPDATA%) + Prüfung ob alle Runtime-Libraries admin-frei laufen (SQLite, Google API, IMAP etc.) — Status offen, da noch nicht alle Libraries bekannt; Laufzeit bereits admin-frei (nur %APPDATA%-Zugriff) | Hoch | 🔲 |
+| F9-08 | Corporate-Tauglichkeit: Installation + Betrieb ohne Admin-Rechte | NSIS-Block in package.json: perMachine:false, allowElevation:false, oneClick:false, Sprache de_DE → Installation nach %LOCALAPPDATA%\Programs\ ohne UAC; Runtime (SQLite, Google API, IMAP) nutzt nur %APPDATA% → vollständig admin-frei; Test: Windows-Standardbenutzer anlegen + Installer ausführen ✔️ live getestet. **VERKAUFSARGUMENT: FancyPlan läuft in gesperrten Unternehmensumgebungen ohne IT-Freigabe / Admin-Rechte — kein UAC-Prompt, kein Helpdesk-Ticket, kein Warten auf den IT-Admin.** | Hoch | ✅ |
 
 ---
 
@@ -187,7 +191,7 @@ Interner Schutzbedarf: Formular FMyData speichert sensible Nutzerdaten (Passwör
 |----|-----------|----------------|------|--------|
 | S10-01 | Zugangsdaten via keytar im OS-Credential-Store | Konzept noch offen — zurückgestellt bis Sicherheitskonzept steht | Hoch | 🚫 |
 | S10-02 | Konfigurierbarer DB-Pfad für Challenger-Integration | Einstellung in SettingsView: "Datenbankpfad"; App öffnet DB aus Challenger-verschlüsseltem Verzeichnis statt AppData-Default | Hoch | ✅ |
-| S10-03 | Datenbank-Backup-Export — fancyplan.db an beliebigen Ort kopieren | "Backup erstellen"-Button in SettingsView; fs.copyFile zum user-gewählten Zielordner | Mittel | 🔲 |
+| S10-03 | Datenbank-Backup-Export + Import — fancyplan.db an beliebigen Ort kopieren und wiederherstellen | settingsHandlers.ts: `app:backup:export` (dialog.showSaveDialog → fs.copyFileSync); `app:backup:import` (dialog.showOpenDialog → closeDb → fs.copyFileSync → app.quit); SettingsView: Button "Backup exportieren…" + "Backup importieren…" (Inline-Bestätigung + App-Beenden-Button nach Import) | Mittel | ✅ |
 | S10-04 | FMyData — Formular für sensible persönliche Daten (Passwörter, Kontonummern) | Neue Tabelle TMyData; eigene View FMyDataView; Felder verschlüsselt gespeichert (field-level encryption oder separates SQLCipher-Volume) | Hoch | ✅ |
 | S10-05 | Hinweis in der App auf externe Challenger-Verschlüsselung (Doku) | ARCHITECTURE.md + Info-Text in SettingsView: welcher Pfad verschlüsselt werden soll | Hoch | ✅ |
 | S10-06 | Interne Feldverschlüsselung für TMyData | AES-256 auf Feldebene in Main Process; Schlüssel per App-Passwort abgeleitet (PBKDF2) | Hoch | ✅ |
@@ -199,7 +203,6 @@ Interner Schutzbedarf: Formular FMyData speichert sensible Nutzerdaten (Passwör
 | ID | Was es tut | Implementierung | Prio | Status |
 |----|-----------|----------------|------|--------|
 | I18-01 | Alle UI-Texte, Labels und Buttons übersetzbar (Deutsch default, weitere Sprachen per JSON ergänzbar) — **Stufe 1:** hartverdrahtet in de.json | react-i18next; src/renderer/src/i18n/index.ts; src/renderer/src/i18n/locales/de.json — alle Views und Komponenten auf useTranslation()/t()-Aufrufe umgestellt; ErrorBoundary via withTranslation() HOC | Hoch | ✅ |
-| I18-02 | **[Stufe 2]** Anwender kann Labels und Button-Texte über FCM/Customizing überschreiben — ohne Programmierung, direkt in der App | FCM-Modul (Phase 11): Übersetzungs-Overrides in TSettings oder eigener Tabelle TI18nOverride; App prüft zur Laufzeit ob Override vorhanden, sonst Fallback auf de.json; nur bei VIP-Lizenz | Hoch | 🔲 |
 
 ---
 
@@ -232,10 +235,11 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 | L11-05 | Customizing-Schutz — FCM nur bei VIP-Lizenz sichtbar | useLicense-Hook liest `license_tier` aus TSettings; Sidebar-Eintrag + FCMView nur bei tier='vip'; Platzhalter-Default 'vip' bis L11-01 implementiert; Sperrbildschirm bei Standard/Free | Hoch | ✅ |
 | L11-05c | FCMValue — Werte bearbeiten (Hub + Sub-Editoren) | Hub-Seite mit 4-spaltigem Grid (wie FCMValue-Screenshot); aktivierbare Sub-Editoren: Bereiche (TArea), Themen (TTheme), Bereich-Thema Zuordnung (TAreaTheme), Prio 1/2/3 (TPrio1-3 pro Formular+Profil), Status zum Thema (TStatus), Kategorie zur Gruppe (TCat), Land (TLand), Gruppen 1-8 (TGroupValues); Kombinationsfelder als Platzhalter; neue DB-Tabellen TAreaTheme/TStatus/TLand/TGroupValues; FCMValueView.tsx, env.d.ts, dbHandlers.ts, preload; Live-Test ✅ Prio1/2/3 erreichbar | Hoch | ✅ |
 | L11-05d | FCMValue — Kontierungselemente (Kostenstellen, Aufträge, Projekte) | Expert-Feature (nicht Standard): Kostenstellen, Aufträge und Projekte als pflegbare Wertelisten (TKostenstelle, TAuftrag, TProjekt); erscheinen in FCMValue unter "Kontierungsobjekte" neben Land; können später Aktivitäten (FAct) zugeordnet werden für Abrechnung/Stundenmeldung. **Feldformate (wichtig für Abrechnung):** KS-Nr. alphanumerisch (TEXT, keine Einschränkung); Auftragsnummer alphanumerisch (TEXT, alle Zeichen erlaubt); Projektnummer beliebiges Format z.B. `Werk.123.456/789/xyz` (TEXT, kein Längenlimit — SQLite TEXT unbegrenzt, 20+ Stellen problemlos); alle Nummernfelder in UI als Freitext-Input ohne Validierung — vollständige Kompatibilität mit SAP/ERP-Nummernkreisen gewährleistet | Niedrig | ✅ |
-| L11-05a | **[Stufe 1]** Hilfe Built-in — hartverdrahteter Hilfe-Button pro Formular | Jedes Formular hat einen fest verdrahteten Hilfe-Button; öffnet die zugehörige .docx aus dem Help-Ordner via shell.openPath() (FAct → DE_FAct_Aktivität.docx, FCM → DE_FCM_Customizing.docx etc.); kein Customizing-Eintrag nötig; funktioniert auch ohne VIP-Lizenz | Mittel | 🔲 |
-| L11-05b | **[Stufe 2]** Hilfe benutzerkonfigurierbar — Anwender verknüpft eigene Hilfedateien via FCMBtn | Vertriebsargument VIP: User kann den Hilfe-Button pro Formular über FCMBtn überschreiben oder ergänzen — eigene .docx, Firmen-Wiki-URL, oder eigenes Hilfe-Formular hinterlegen (Hyper-Link oder Pic-Path in FCMbtnDetail); ermöglicht vollständig eigene Betriebsdokumentation ohne Programmierung; nur VIP-Lizenz | Niedrig | 🔲 |
-| L11-06 | Aktivität versenden — Dispatch an Mobile-App via Firebase Firestore | TAct-Datensatz in Firestore schreiben (source: desktop, status: dispatched); Mobile-App empfängt und kann Erledigt-Status zurückschreiben | Mittel | 🔲 |
-| L11-07 | Firestore-Sync — Status-Updates von Mobile-App empfangen | Listener auf Firestore-Collection; eingehende Statusänderungen (z.B. Sdone=1) in lokale TAct übernehmen | Mittel | 🔲 |
+| L11-05a | **[Stufe 2]** Hilfe Built-in — hartverdrahteter Hilfe-Button pro Formular | Jedes Formular hat einen fest verdrahteten Hilfe-Button; öffnet die zugehörige .docx aus dem Help-Ordner via shell.openPath(); funktioniert auch ohne VIP-Lizenz | Mittel | 🚫 |
+| L11-05b | **[Stufe 2]** Hilfe benutzerkonfigurierbar — Anwender verknüpft eigene Hilfedateien via FCMBtn | User kann Hilfe-Button pro Formular über FCMBtn überschreiben — eigene .docx, Firmen-Wiki-URL, oder eigenes Hilfe-Formular; nur VIP-Lizenz | Niedrig | 🚫 |
+| L11-06 | **[Stufe 2]** Aktivität versenden — Dispatch an Mobile-App via Firebase Firestore | TAct-Datensatz in Firestore schreiben (source: desktop, status: dispatched); Mobile-App empfängt und kann Erledigt-Status zurückschreiben | Mittel | 🚫 |
+| L11-07 | **[Stufe 2]** Firestore-Sync — Status-Updates von Mobile-App empfangen | Listener auf Firestore-Collection; eingehende Statusänderungen (z.B. Sdone=1) in lokale TAct übernehmen | Mittel | 🚫 |
+| L11-08a | **[Stufe 2]** MCP-Server + API-Zugang für FancyPlan | FancyPlan als MCP-Server exposieren (CRUD auf TAct/TTel/TTermin); API-Schlüssel-Verwaltung in TSettings; ermöglicht externe Tools (Claude, Automatisierungen) direkten Datenzugriff; nur VIP-Lizenz | Mittel | 🚫 |
 | L11-08 | FCMStatus — Automatische Feldpflege bei Status-Wechsel (FAct / FNow / FToday) | Gilt für Formulare FAct, FNow, FToday: sobald der Anwender einen Status einträgt und das Feld verlässt (onBlur), ruft `applyFCMStatus()` die TFCMStatus-Regel für diesen Status ab und befüllt abhängige Felder automatisch. **TFCMStatus** (40 Felder): Status, StatusGrp, Aktion, Points, relevant, Kategorie, UserExit, SortNr; katFind/katReplace (Kategorie-Substitution, Semikolon-Paare); p1–p3 je Lt/Eq/Gt mit LtVal/LtSet/LtNoop, EqVal/EqSet/EqNoop, GtVal/GtSet/GtNoop (numerische Schwellwert-Regeln für Prio1-3); setIstVon/setIstBis/setPlanVon/setPlanBis (Datums-Flags); setInfo; titelText. **FCMStatusView.tsx** (3-Spalten-Layout): Links — scrollbare Status-Liste; Mitte — Eigenschaften-Formular; Rechts — Automatik-Konfiguration (PrioSection 1–3, Kategorie-Substitution, Datumscheckboxen, Info, TitelText). **Runtime**: `applyFCMStatus(status)` in FNowModal.tsx auf onBlur des Status-Feldes. | Hoch | ✅ |
 
 ---
@@ -251,6 +255,7 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 | F9-08 | Automatische DB-Sicherung beim App-Start | `backupDb()` in database.ts kopiert `fancyplan.db` mit Timestamp in `%APPDATA%/FancyPlan/backups/`; max. 7 Dateien (älteste wird automatisch gelöscht); Aufruf in main/index.ts nach `initDb()` | Hoch | ✅ |
 | F9-09 | Manueller Sicherungspunkt (Tree-Header) | 💾-Button im TreeView-Header → `window.db.backup.create()` → IPC → `backupDb()`; Bestätigungsmeldung 3 Sek. sichtbar | Hoch | ✅ |
 | F9-10 | Undo für Tree-Drag & Drop | `undoStack` State in TreeView; vor jedem Move wird `{nodeId, oldParentId}` gespeichert; ↩-Button erscheint orange wenn Stack > 0; Klick stellt letzten Zug wieder her (`tree.move` mit altem Parent); mehrfach rückgängig möglich | Hoch | ✅ |
+| F9-11 | Persistentes Error-Log für Qualitätssicherung | electron-log (npm): schreibt `warn`+`error` automatisch in `%AppData%\FancyPlan\logs\main.log`; Renderer-Fehler werden ebenfalls erfasst; kein Admin-Recht erforderlich; Dev: volle Konsolenausgabe; Prod: nur Warnungen/Fehler; Grundlage für spätere gezielte Fehler-Nachverfolgung und QS | Mittel | ✅ |
 
 ---
 

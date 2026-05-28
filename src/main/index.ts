@@ -1,6 +1,11 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import log from 'electron-log/main'
+
+log.initialize()
+log.transports.file.level = 'warn'
+log.transports.console.level = is.dev ? 'debug' : false
 import { initDb, closeDb, backupDb } from './db/database'
 import './ipc/dbHandlers'
 import './ipc/migrationHandlers'
@@ -22,6 +27,18 @@ import './ipc/myDataHandlers'
 import './ipc/helpHandlers'
 import { scheduleUpdateCheck } from './ipc/updateHandlers'
 
+function resolveWindowIcon(): Electron.NativeImage | undefined {
+  try {
+    const iconPath = is.dev
+      ? join(app.getAppPath(), 'build', 'icon.ico')
+      : join(__dirname, '../../build', 'icon.ico')
+    const img = nativeImage.createFromPath(iconPath)
+    return img.isEmpty() ? undefined : img
+  } catch {
+    return undefined
+  }
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -30,6 +47,7 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    icon: resolveWindowIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

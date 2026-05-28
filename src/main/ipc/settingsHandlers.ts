@@ -1,6 +1,7 @@
 import { ipcMain, dialog } from 'electron'
 import fs from 'fs'
-import { getDb, getDbPath, writeConfig } from '../db/database'
+import path from 'path'
+import { getDb, getDbPath, writeConfig, closeDb } from '../db/database'
 
 function db() { return getDb() }
 
@@ -23,6 +24,21 @@ ipcMain.handle('settings:getAll', (_e, prefix?: string) => {
     ? db().prepare('SELECT key, value FROM TSettings WHERE key LIKE ?').all(`${prefix}%`) as { key: string; value: string }[]
     : db().prepare('SELECT key, value FROM TSettings').all() as { key: string; value: string }[]
   return Object.fromEntries(rows.map((r) => [r.key, r.value]))
+})
+
+// ── Branding ───────────────────────────────────────────────────────────────
+
+ipcMain.handle('brand:logo:browse', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Logo auswählen',
+    filters: [{ name: 'Bilder', extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp'] }],
+    properties: ['openFile']
+  })
+  if (result.canceled || !result.filePaths[0]) return null
+  const data = fs.readFileSync(result.filePaths[0])
+  const ext = path.extname(result.filePaths[0]).slice(1).toLowerCase()
+  const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'webp' ? 'image/webp' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
+  return `data:${mime};base64,${data.toString('base64')}`
 })
 
 // ── DB-Pfad ────────────────────────────────────────────────────────────────
@@ -59,6 +75,11 @@ ipcMain.handle('app:relaunch', () => {
   app.exit(0)
 })
 
+ipcMain.handle('app:quit', () => {
+  const { app } = require('electron')
+  app.quit()
+})
+
 // ── Backup exportieren ─────────────────────────────────────────────────────
 
 ipcMain.handle('app:backup:export', async () => {
@@ -71,4 +92,21 @@ ipcMain.handle('app:backup:export', async () => {
   if (result.canceled || !result.filePath) return { ok: false }
   fs.copyFileSync(getDbPath(), result.filePath)
   return { ok: true, path: result.filePath }
+})
+
+ipcMain.handle('app:backup:import', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Backup importieren',
+    filters: [{ name: 'SQLite Datenbank', extensions: ['db'] }],
+    properties: ['openFile']
+  })
+  if (result.canceled || !result.filePaths[0]) return { ok: false, canceled: true }
+  try {
+    const dest = getDbPath()
+    closeDb()
+    fs.copyFileSync(result.filePaths[0], dest)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
 })

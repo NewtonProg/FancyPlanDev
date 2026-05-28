@@ -433,13 +433,14 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
         </div>
 
         {/* Contact detail panel */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-hidden flex justify-center p-6">
           {!selectedContact ? (
-            <div className="flex items-center justify-center h-full text-xs text-on-surface-variant/40">
+            <div className="flex items-center justify-center w-full text-xs text-on-surface-variant/40">
               {t('acquis.selectContactHint')}
             </div>
           ) : (
-            <div className="p-5 flex flex-col gap-4 max-w-xl">
+            <div className="w-full max-w-xl bg-surface-container-low rounded-xl border border-outline-variant/30 shadow-lg overflow-y-auto self-start">
+            <div className="p-5 flex flex-col gap-4">
 
               {/* Name + company */}
               <div>
@@ -623,6 +624,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
                   {saving ? t('acquis.savingBtn') : t('acquis.save')}
                 </button>
               </div>
+            </div>
             </div>
           )}
         </div>

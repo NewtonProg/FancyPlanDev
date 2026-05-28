@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLicense } from './hooks/useLicense'
+import { useBrand } from './hooks/useBrand'
 import ErrorBoundary from './components/ErrorBoundary'
+import BrandLogo from './components/BrandLogo'
 import { LicenseModal } from './components/LicenseModal'
 import FNowModal from './views/FNowModal'
 import TodayView from './views/TodayView'
@@ -21,6 +23,7 @@ type NavView = 'today' | 'priorities' | 'activities' | 'contacts' | 'tree' | 'ma
 function App(): JSX.Element {
   const { t } = useTranslation()
   const { isVip, trialExpired, reload: reloadLicense } = useLicense()
+  const { appName } = useBrand()
   const [activeView, setActiveView] = useState<NavView>('today')
   const [showLicense, setShowLicense] = useState(false)
   const [subViewLabel, setSubViewLabel] = useState<string | null>(null)
@@ -82,7 +85,11 @@ function App(): JSX.Element {
         {/* Ausgeklappt: volle Navigation */}
         {navOpen && (
           <>
-            <div className="mb-6 px-3 flex items-center justify-between">
+            <div className="mb-4 px-3 flex items-center gap-2">
+              <BrandLogo imgClassName="h-8 w-8 object-contain flex-shrink-0" />
+              <span className="text-sm font-bold text-primary tracking-tight truncate">{appName || 'FancyPlan'}</span>
+            </div>
+            <div className="mb-4 px-3 flex items-center justify-between">
               <h1 className="text-base font-semibold text-primary tracking-tight truncate">{activeLabel}</h1>
               <button
                 onClick={() => setNavOpen(false)}

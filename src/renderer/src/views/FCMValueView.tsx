@@ -45,7 +45,6 @@ type SubEditor =
   | 'kostenstelle'
   | 'auftrag'
   | 'projekt'
-  | 'grp1' | 'grp2' | 'grp3' | 'grp4' | 'grp5' | 'grp6' | 'grp7' | 'grp8'
 
 interface Row { id: number; [k: string]: unknown }
 
@@ -282,106 +281,6 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
             ))}
             {rows.length === 0 && (
               <tr><td colSpan={4} className="py-6 text-center text-on-surface-variant/60 text-xs">{t('fcmval.empty')}</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-// â”€â”€ Gruppen-Editor (formName-aware) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-interface GroupEditorProps { groupNr: number; onBack: () => void }
-
-function GroupEditor({ groupNr, onBack }: GroupEditorProps) {
-  const { t } = useTranslation()
-  const [rows, setRows]         = useState<Row[]>([])
-  const [formName, setFormName] = useState('*')
-  const [newVal, setNewVal]     = useState('')
-  const [editId, setEditId]     = useState<number | null>(null)
-  const [editVal, setEditVal]   = useState('')
-
-  const load = useCallback(async () => {
-    const all = (await window.db.groupval.getAll(groupNr)) as Row[]
-    const fn = formName === '*' ? null : formName
-    setRows(fn ? all.filter(r => r.IDFormName === fn) : all)
-  }, [groupNr, formName])
-
-  useEffect(() => { load() }, [load])
-
-  async function handleAdd() {
-    if (!newVal.trim()) return
-    await window.db.groupval.create({ group_nr: groupNr, IDFormName: formName === '*' ? '*' : formName, grp_value: newVal.trim() })
-    setNewVal('')
-    load()
-  }
-
-  async function handleSave(id: number) {
-    if (!editVal.trim()) return
-    await window.db.groupval.update(id, { grp_value: editVal.trim() })
-    setEditId(null)
-    load()
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-outline-variant/40">
-        <button onClick={onBack} className="btn-secondary text-xs py-1 px-3">← {t('fcmval.back')}</button>
-        <h2 className="text-base font-semibold text-on-surface">{t('fcmval.group')} {groupNr}</h2>
-      </div>
-      <div className="p-5 overflow-auto flex-1 flex flex-col gap-4 max-w-xl">
-        <div className="flex gap-3 text-sm">
-          <label className="flex items-center gap-1 text-on-surface-variant">
-            {t('fcmval.formName')}:
-            <input value={formName} onChange={e => setFormName(e.target.value)}
-              className="input-field w-32 ml-1" placeholder="* = alle" />
-          </label>
-        </div>
-        <div className="flex gap-2">
-          <input value={newVal} onChange={e => setNewVal(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder={t('fcmval.newValue')} className="input-field flex-1" />
-          <button onClick={handleAdd} className="btn-primary">{t('fcmval.add')}</button>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left border-b border-outline-variant/40">
-              <th className="pb-2 font-medium text-on-surface-variant">{t('fcmval.group')} {groupNr}</th>
-              <th className="pb-2 font-medium text-on-surface-variant w-28">{t('fcmval.formName')}</th>
-              <th className="pb-2 w-28" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(r => (
-              <tr key={r.id} className="border-b border-outline-variant/20">
-                <td className="py-1.5">
-                  {editId === r.id
-                    ? <input value={editVal} onChange={e => setEditVal(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleSave(r.id); if (e.key === 'Escape') setEditId(null) }}
-                        className="input-field w-full" autoFocus />
-                    : <span className="text-on-surface">{String(r.grp_value ?? '')}</span>}
-                </td>
-                <td className="py-1.5 text-xs text-on-surface-variant/60">{String(r.IDFormName ?? '*')}</td>
-                <td className="py-1.5 text-right">
-                  {editId === r.id ? (
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleSave(r.id)} className="btn-primary text-xs py-0.5 px-2">{t('fcmval.ok')}</button>
-                      <button onClick={() => setEditId(null)} className="btn-secondary text-xs py-0.5 px-2">{t('fcmval.cancel')}</button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => { setEditId(r.id); setEditVal(String(r.grp_value ?? '')) }}
-                        className="btn-secondary text-xs py-0.5 px-2">{t('fcmval.edit')}</button>
-                      <button onClick={async () => { await window.db.groupval.delete(r.id); load() }}
-                        className="btn-secondary text-xs py-0.5 px-2 text-error hover:bg-error-container/10">{t('fcmval.del')}</button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={3} className="py-6 text-center text-on-surface-variant/60 text-xs">{t('fcmval.empty')}</td></tr>
             )}
           </tbody>
         </table>
@@ -871,8 +770,6 @@ export default function FCMValueView({ onBack }: Props) {
     if (sub === 'projekt')       reloadProjekt().then(setProjektRows)
   }, [sub])
 
-  function grpNr(): number { return parseInt((sub ?? 'grp1').replace('grp', '')) }
-
   if (sub === 'bereich') return (
     <ThemaEditor
       rows={themeRows}
@@ -951,10 +848,6 @@ export default function FCMValueView({ onBack }: Props) {
       onBack={() => setSub(null)} />
   )
 
-  if (sub?.startsWith('grp')) return (
-    <GroupEditor groupNr={grpNr()} onBack={() => setSub(null)} />
-  )
-
   // â”€â”€ Hub â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
@@ -965,7 +858,7 @@ export default function FCMValueView({ onBack }: Props) {
       </div>
 
       <div className="p-6 overflow-auto flex-1">
-        <div className="grid grid-cols-4 gap-x-8 gap-y-3">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-3 max-w-lg">
 
           {/* Spalte 1: Prioritäten + Kontierungsobjekte */}
           <div className="flex flex-col gap-2">
@@ -981,35 +874,12 @@ export default function FCMValueView({ onBack }: Props) {
             <HubBtn label={t('fcmval.projekt')}       onClick={() => setSub('projekt')} />
           </div>
 
-          {/* Spalte 2: Bereich / Thema / Status / Profile */}
+          {/* Spalte 2: Bereich / Thema / Kategorie / Status */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-1">{t('fcmval.secValues')}</p>
-            <HubBtn label={t('fcmval.areas')}      onClick={() => setSub('bereich')} />
-            <HubBtn label={t('fcmval.status')}     onClick={() => setSub('status')} />
-            <HubBtn label={t('fcmval.cat')}        onClick={() => setSub('kat')} />
-            <div className="mt-4" />
-            <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-1">{t('fcmval.secSystem')}</p>
-            <HubBtn label={t('fcmval.profiles')}   disabled />
-            <HubBtn label={t('fcmval.treeTech')}   disabled />
-          </div>
-
-          {/* Spalte 3: Kombinationsfelder (Platzhalter) */}
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-1">{t('fcmval.secCbo')}</p>
-            <HubBtn label={t('fcmval.cbo')}  disabled />
-            <HubBtn label={`${t('fcmval.cbo')} 1`} disabled />
-            <HubBtn label={`${t('fcmval.cbo')} 2`} disabled />
-            <HubBtn label={`${t('fcmval.cbo')} 3`} disabled />
-            <HubBtn label={`${t('fcmval.cbo')} 4`} disabled />
-            <HubBtn label={`${t('fcmval.cbo')} 5`} disabled />
-          </div>
-
-          {/* Spalte 4: Gruppen 1-8 */}
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold text-on-surface-variant/60 uppercase tracking-wide mb-1">{t('fcmval.secGroups')}</p>
-            {([1,2,3,4,5,6,7,8] as const).map(n => (
-              <HubBtn key={n} label={`${t('fcmval.group')} ${n}`} onClick={() => setSub(`grp${n}` as SubEditor)} />
-            ))}
+            <HubBtn label={t('fcmval.areas')}  onClick={() => setSub('bereich')} />
+            <HubBtn label={t('fcmval.status')} onClick={() => setSub('status')} />
+            <HubBtn label={t('fcmval.cat')}    onClick={() => setSub('kat')} />
           </div>
 
         </div>

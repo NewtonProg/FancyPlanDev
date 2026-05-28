@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS TPrio1 (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   IDPrio1     INTEGER,
   IDFormName  TEXT NOT NULL,
-  IDProfile   TEXT NOT NULL,
+  IDProfile   TEXT DEFAULT '*',
   Action      TEXT,
   Prio1       INTEGER,
   Prio1Txt    TEXT
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS TPrio2 (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   IDPrio2     INTEGER,
   IDFormName  TEXT NOT NULL,
-  IDProfile   TEXT NOT NULL,
+  IDProfile   TEXT DEFAULT '*',
   Action      TEXT,
   Prio2       INTEGER,
   Prio2Txt    TEXT
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS TPrio3 (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   IDPrio3     INTEGER,
   IDFormName  TEXT NOT NULL,
-  IDProfile   TEXT NOT NULL,
+  IDProfile   TEXT DEFAULT '*',
   Action      TEXT,
   Prio3       INTEGER,
   Prio3Txt    TEXT

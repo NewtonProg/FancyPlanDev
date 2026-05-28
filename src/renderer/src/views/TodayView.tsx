@@ -377,19 +377,6 @@ export default function TodayView(): JSX.Element {
               placeholder="Aktivitäten suchen..."
             />
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); load() }}
-            className="material-symbols-outlined text-on-surface-variant/60 hover:text-primary transition-colors"
-          >
-            refresh
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowVariantPanel((v) => !v) }}
-            className={`material-symbols-outlined transition-colors ${showVariantPanel ? 'text-primary' : 'text-on-surface-variant/60 hover:text-primary'}`}
-            title={t('today.planVariant')}
-          >
-            tune
-          </button>
         </div>
       </header>
 

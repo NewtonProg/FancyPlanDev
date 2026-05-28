@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",
+    "electron-log": "^5.4.4",
     "electron-updater": "^6.8.3",
     "googleapis": "^171.4.0",
     "i18next": "^26.0.10",
@@ -66,8 +67,18 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
-      "repo": "FancyPlan"
+      "owner": "NewtonProg",
+      "repo": "FancyPlanDev"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "language": "1031"
     },
     "win": {
       "target": [

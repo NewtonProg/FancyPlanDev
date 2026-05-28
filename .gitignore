@@ -1,6 +1,9 @@
 ﻿# Node
 node_modules/
 
+# Claude Code (local AI memory, not for version control)
+.claude/
+
 # Secrets
 .env
 

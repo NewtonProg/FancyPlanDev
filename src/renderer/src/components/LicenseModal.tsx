@@ -108,7 +108,7 @@ export function LicenseModal({ onClose, onActivated, forceOpen }: Props): JSX.El
 
         <div className="flex justify-between items-center">
           <a
-            href="https://fancyplan.lemonsqueezy.com"
+            href="https://inprime.net/fancyplan/"
             target="_blank"
             rel="noreferrer"
             className="text-xs text-primary hover:underline"

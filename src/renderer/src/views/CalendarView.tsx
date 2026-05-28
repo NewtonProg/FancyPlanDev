@@ -890,6 +890,7 @@ export default function CalendarView(): JSX.Element {
               return (
                 <div key={i}
                   onClick={() => { setSelectedDate(day); setMonth(new Date(day.getFullYear(), day.getMonth(), 1)) }}
+                  onDoubleClick={() => { setSelectedDate(day); setMonth(new Date(day.getFullYear(), day.getMonth(), 1)); setViewMode('1T') }}
                   className={[
                     'aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-colors relative select-none',
                     !isCurMonth ? 'opacity-20' : '',
@@ -1217,7 +1218,7 @@ export default function CalendarView(): JSX.Element {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-12">
               {groupedByDay.map(group => {
                 const isDayToday = sameDay(group.date, today)
                 const dayLabel   = group.date.toLocaleDateString('de', { weekday: 'long', day: '2-digit', month: 'long' })
