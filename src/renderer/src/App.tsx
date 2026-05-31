@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLicense } from './hooks/useLicense'
 import { useBrand } from './hooks/useBrand'
 import ErrorBoundary from './components/ErrorBoundary'
 import BrandLogo from './components/BrandLogo'
 import { LicenseModal } from './components/LicenseModal'
+import ProHintModal from './components/ProHintModal'
 import FNowModal from './views/FNowModal'
 import TodayView from './views/TodayView'
 import PrioritiesView from './views/PrioritiesView'
@@ -34,6 +35,13 @@ function App(): JSX.Element {
   const [globalActId,   setGlobalActId]   = useState<number | null>(null)
   const [returnView,    setReturnView]    = useState<NavView | null>(null)
   const [acquisFrom,    setAcquisFrom]    = useState<NavView>('today')
+  const [fcmSub,        setFcmSub]        = useState<'hub' | 'values' | 'fcmstatus'>('hub')
+  const [proHint,       setProHint]       = useState<string | null>(null)
+  // Rückkehr aus der "Werte"-Form zum aufrufenden FNow (actId) bzw. zur Ausgangs-View.
+  const [valuesFromAct,   setValuesFromAct]   = useState<number | null>(null)
+  const [valuesReturnView, setValuesReturnView] = useState<NavView>('today')
+  const activeViewRef = useRef(activeView)
+  activeViewRef.current = activeView
   useEffect(() => { setSubViewLabel(null) }, [activeView])
 
   useEffect(() => {
@@ -46,6 +54,31 @@ function App(): JSX.Element {
     window.addEventListener('fp:open-contact', handler)
     return () => window.removeEventListener('fp:open-contact', handler)
   }, [])
+
+  // Sprung zur "Werte"-Form aus FNow (oder anderen Modalen).
+  useEffect(() => {
+    const handler = (e: Event): void => {
+      const actId = (e as CustomEvent<{ actId?: number }>).detail?.actId ?? null
+      if (isVip) {
+        setValuesFromAct(actId)
+        setValuesReturnView(activeViewRef.current)
+        setGlobalActId(null)         // ggf. offenes globales FNow schließen
+        setFcmSub('values')
+        setActiveView('fcm')
+      } else {
+        setProHint(t('fcm.values')) // FNow bleibt offen, Hinweis liegt darüber
+      }
+    }
+    window.addEventListener('fp:open-values', handler)
+    return () => window.removeEventListener('fp:open-values', handler)
+  }, [isVip, t])
+
+  // "Zurück" aus der "Werte"-Form: zurück zum aufrufenden FNow bzw. zur Ausgangs-View.
+  const exitValuesForm = (): void => {
+    setFcmSub('hub')
+    setActiveView(valuesReturnView)
+    if (valuesFromAct != null) { setGlobalActId(valuesFromAct); setValuesFromAct(null) }
+  }
 
   const navItems: { id: NavView; label: string }[] = [
     { id: 'today',      label: t('nav.today') },
@@ -127,7 +160,7 @@ function App(): JSX.Element {
               </button>
               {settingsOpen && (
                 <button
-                  onClick={() => setActiveView('fcm')}
+                  onClick={() => { setFcmSub('hub'); setActiveView('fcm') }}
                   className={`sidebar-item pl-7 text-xs${activeView === 'fcm' ? ' active' : ''}`}
                 >
                   {t('nav.fcm')}
@@ -173,8 +206,12 @@ function App(): JSX.Element {
         ) : activeView === 'mydata' ? (
           <FMyDataView />
         ) : activeView === 'fcm' ? (
-          // TODO GoLive: VIP-Gate wieder aktivieren (isVip ? <FCMView> : locked-Message)
-          <FCMView onLabelChange={setSubViewLabel} />
+          <FCMView
+            onLabelChange={setSubViewLabel}
+            initialSubView={fcmSub}
+            onProHint={(feature) => setProHint(feature)}
+            onExitValues={valuesFromAct != null ? exitValuesForm : undefined}
+          />
         ) : null}
         </ErrorBoundary>
       </main>
@@ -184,6 +221,15 @@ function App(): JSX.Element {
           actId={globalActId}
           onClose={() => setGlobalActId(null)}
           onSaved={() => setGlobalActId(null)}
+        />
+      )}
+
+      {/* Pro-Hinweis (kostenlose App) */}
+      {proHint && (
+        <ProHintModal
+          feature={proHint}
+          onClose={() => setProHint(null)}
+          onUpgrade={() => { setProHint(null); setShowLicense(true) }}
         />
       )}
 

@@ -3,6 +3,7 @@ import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { SCHEMA_SQL, SCHEMA_VERSION } from './schema'
+import { seedDefaults } from './seed'
 
 let db: Database.Database | null = null
 
@@ -183,7 +184,25 @@ export function initDb(): void {
   if (!tterminCols.includes('meet_phone'))   db.exec('ALTER TABLE TTermin ADD COLUMN meet_phone TEXT')
   if (!tterminCols.includes('cat'))          db.exec('ALTER TABLE TTermin ADD COLUMN cat TEXT')
   if (!tterminCols.includes('cal_uid'))      db.exec('ALTER TABLE TTermin ADD COLUMN cal_uid TEXT')
+  if (!tterminCols.includes('is_owner'))     db.exec('ALTER TABLE TTermin ADD COLUMN is_owner INTEGER DEFAULT 1')
+  if (!tterminCols.includes('rec_master'))   db.exec('ALTER TABLE TTermin ADD COLUMN rec_master TEXT')
+  if (!tterminCols.includes('rec_rule'))      db.exec('ALTER TABLE TTermin ADD COLUMN rec_rule TEXT')
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ttermin_cal_uid ON TTermin(cal_uid) WHERE cal_uid IS NOT NULL')
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ttermin_rec_master ON TTermin(rec_master) WHERE rec_master IS NOT NULL')
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS TGcalTombstone (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      cal_uid       TEXT,
+      master_id     TEXT,
+      title         TEXT,
+      from_date     TEXT,
+      deleted_at    TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_gcaltomb_uid    ON TGcalTombstone(cal_uid);
+    CREATE INDEX IF NOT EXISTS idx_gcaltomb_master ON TGcalTombstone(master_id);
+    CREATE INDEX IF NOT EXISTS idx_gcaltomb_title  ON TGcalTombstone(title);
+  `)
 
   const tlinksCols = (db.prepare('PRAGMA table_info(TLinks)').all() as { name: string }[]).map(c => c.name)
   if (!tlinksCols.includes('password')) db.exec('ALTER TABLE TLinks ADD COLUMN password TEXT')
@@ -222,6 +241,52 @@ export function initDb(): void {
       String(SCHEMA_VERSION)
     )
   }
+
+  // Migration: "Test 1"-Platzhalter → "Willkommen bei FancyPlan"
+  const testActRow = db.prepare("SELECT id FROM TAct WHERE Title = 'Test 1' LIMIT 1").get() as { id: number } | undefined
+  if (testActRow) {
+    const totalActs = (db.prepare('SELECT COUNT(*) AS n FROM TAct').get() as { n: number }).n
+    if (totalActs === 1) {
+      const ref = db.prepare(`
+        SELECT c.Cat AS cat, t.ThemeName AS theme, a.AreaName AS area
+        FROM TCat c
+        JOIN TTheme t ON t.id = c.IDTheme
+        JOIN TArea  a ON a.id = t.IDArea
+        WHERE c.IDTheme IS NOT NULL AND c.IDTheme != 0
+          AND t.IDArea  IS NOT NULL AND t.IDArea  != 0
+        ORDER BY c.id ASC LIMIT 1
+      `).get() as { cat: string; theme: string; area: string } | undefined
+      const statusRow = db.prepare(`
+        SELECT Status AS status FROM TStatus
+        WHERE Status IS NOT NULL AND Status != '' AND Status != 'Archiv'
+        ORDER BY (Status = 'in Arbeit') DESC, (Status = 'Info') DESC, seq ASC, id ASC LIMIT 1
+      `).get() as { status: string } | undefined
+      if (ref) {
+        db.prepare(`
+          UPDATE TAct SET Title = ?, AreaName = ?, ThemeName = ?, Cat = ?, Status = ?,
+            Pl1Beg = '2026-01-01', Pl1End = '2028-12-31',
+            Com = 'Beispielaktivität – du kannst sie bearbeiten oder löschen.',
+            Prio1 = 10, Prio2 = 10
+          WHERE id = ?
+        `).run('Willkommen bei FancyPlan', ref.area, ref.theme, ref.cat, statusRow?.status ?? 'Info', testActRow.id)
+      }
+    }
+  }
+
+  // Migration: Prio1Txt / Prio2Txt für bestehende Zeilen ohne Text nachfüllen
+  const prio1Defaults: Record<number, string> = { 5:'Sofort', 10:'Dringend', 20:'Wichtig', 25:'Warte', 30:'Normal', 50:'Irgendwann' }
+  const prio2Defaults: Record<number, string> = { 1:'Neu', 2:'In Arbeit', 3:'Warten', 4:'erledigen', 5:'Fertig' }
+  for (const row of db.prepare("SELECT id, Prio1 FROM TPrio1 WHERE Prio1Txt IS NULL OR Prio1Txt = ''").all() as { id: number; Prio1: number }[]) {
+    const txt = prio1Defaults[row.Prio1]
+    if (txt) db.prepare('UPDATE TPrio1 SET Prio1Txt = ? WHERE id = ?').run(txt, row.id)
+  }
+  for (const row of db.prepare("SELECT id, Prio2 FROM TPrio2 WHERE Prio2Txt IS NULL OR Prio2Txt = ''").all() as { id: number; Prio2: number }[]) {
+    const txt = prio2Defaults[row.Prio2]
+    if (txt) db.prepare('UPDATE TPrio2 SET Prio2Txt = ? WHERE id = ?').run(txt, row.id)
+  }
+
+  // Auslieferungs-Standardwerte (einmalig bei frischer DB)
+  seedDefaults(db)
 }
 
 export function closeDb(): void {

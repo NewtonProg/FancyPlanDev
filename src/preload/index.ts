@@ -184,7 +184,16 @@ const dbApi = {
     create:          (data: Record<string, unknown>)            => ipcRenderer.invoke('termin:create', data),
     update:          (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('termin:update', id, data),
     delete:          (id: number)                              => ipcRenderer.invoke('termin:delete', id),
-    upsertFromSync:  (data: Record<string, unknown>)            => ipcRenderer.invoke('termin:upsertFromSync', data)
+    upsertFromSync:         (data: Record<string, unknown>)            => ipcRenderer.invoke('termin:upsertFromSync', data),
+    countSeriesFromDate:    (pattern: string, fromDate: string)        => ipcRenderer.invoke('termin:countSeriesFromDate', pattern, fromDate),
+    deleteSeriesFromDate:   (pattern: string, fromDate: string)        => ipcRenderer.invoke('termin:deleteSeriesFromDate', pattern, fromDate),
+    countByTitleFromDate:   (title: string,   fromDate: string)        => ipcRenderer.invoke('termin:countByTitleFromDate', title, fromDate),
+    deleteByTitleFromDate:  (title: string,   fromDate: string)        => ipcRenderer.invoke('termin:deleteByTitleFromDate', title, fromDate),
+    createSeries:               (data: Record<string, unknown>, rec: Record<string, unknown>) => ipcRenderer.invoke('termin:createSeries', data, rec),
+    countLocalSeriesFromDate:   (recMaster: string, fromDate: string)        => ipcRenderer.invoke('termin:countLocalSeriesFromDate', recMaster, fromDate),
+    deleteLocalSeriesFromDate:  (recMaster: string, fromDate: string)        => ipcRenderer.invoke('termin:deleteLocalSeriesFromDate', recMaster, fromDate),
+    updateLocalSeriesFromDate:  (recMaster: string, fromDate: string, data: Record<string, unknown>) => ipcRenderer.invoke('termin:updateLocalSeriesFromDate', recMaster, fromDate, data),
+    updateGcalSeries:           (recMaster: string, data: Record<string, unknown>)                   => ipcRenderer.invoke('termin:updateGcalSeries', recMaster, data)
   },
   recurring: {
     getAll:      ()                          => ipcRenderer.invoke('recurring:getAll'),
@@ -239,6 +248,7 @@ const dbApi = {
     copyAndSet:   (p: string)      => ipcRenderer.invoke('app:db-path:copy-and-set', p),
     relaunch:     ()               => ipcRenderer.invoke('app:relaunch'),
     quit:         ()               => ipcRenderer.invoke('app:quit'),
+    reset:        ()               => ipcRenderer.invoke('app:db:reset'),
   },
   license: {
     get:      ()                    => ipcRenderer.invoke('license:get'),

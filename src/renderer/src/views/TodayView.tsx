@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import FNowModal from './FNowModal'
 import PlanVariantPanel from '../components/PlanVariantPanel'
+import TimePicker from '../components/TimePicker'
 import { TerminModal } from './CalendarView'
 
 type Act = Record<string, unknown>
@@ -809,7 +810,7 @@ function RecurringPanel({ items, onClose, onCreated, onDeleted }: {
             </div>
             <div className="w-24">
               <label className="text-xs text-on-surface-variant/60 mb-1 block">Uhrzeit</label>
-              <input type="time" className={inp} value={timeStart} onChange={(e) => setTimeStart(e.target.value)} />
+              <TimePicker className={inp} value={timeStart} onChange={setTimeStart} />
             </div>
           </div>
           {freq === 'weekly' && (

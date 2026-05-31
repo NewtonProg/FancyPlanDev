@@ -80,6 +80,20 @@ ipcMain.handle('app:quit', () => {
   app.quit()
 })
 
+ipcMain.handle('app:db:reset', () => {
+  try {
+    const dbPath = getDbPath()
+    closeDb()
+    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
+    const { app } = require('electron')
+    app.relaunch()
+    app.exit(0)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+})
+
 // ── Backup exportieren ─────────────────────────────────────────────────────
 
 ipcMain.handle('app:backup:export', async () => {

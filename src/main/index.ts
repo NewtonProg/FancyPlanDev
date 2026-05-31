@@ -31,7 +31,7 @@ function resolveWindowIcon(): Electron.NativeImage | undefined {
   try {
     const iconPath = is.dev
       ? join(app.getAppPath(), 'build', 'icon.ico')
-      : join(__dirname, '../../build', 'icon.ico')
+      : join(process.resourcesPath, 'icon.ico')
     const img = nativeImage.createFromPath(iconPath)
     return img.isEmpty() ? undefined : img
   } catch {
@@ -46,6 +46,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
+    backgroundColor: '#0a1220',
     autoHideMenuBar: true,
     icon: resolveWindowIcon(),
     webPreferences: {
@@ -57,6 +58,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize()
     mainWindow.show()
   })
 
@@ -73,7 +75,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.fancyplan')
+  electronApp.setAppUserModelId('com.fancyplan.app')
 
   initDb()
   try { backupDb() } catch { /* ignore if db not yet present */ }

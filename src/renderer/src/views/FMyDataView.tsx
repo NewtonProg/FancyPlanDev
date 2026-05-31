@@ -206,7 +206,7 @@ function EntryForm({
         </div>
         <div className="flex-1">
           <label className={lbl}>{isLink ? 'Name / Bezeichnung' : 'Bezeichnung'}</label>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z.B. Gmail" className={inp} autoFocus />
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z.B. Gmail" className="w-full text-base font-bold text-white border border-outline-variant rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container placeholder:font-normal placeholder:text-on-surface/30" autoFocus />
         </div>
       </div>
 
@@ -461,13 +461,13 @@ export default function FMyDataView(): JSX.Element {
             value={tempNote1}
             onChange={(e) => setTempNote1(e.target.value)}
             placeholder="Notiz 1"
-            className="flex-1 min-w-0 text-xl font-bold text-blue-400 text-center border border-outline-variant/60 rounded-lg px-3 py-1.5 bg-surface-container-low focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-blue-400/40"
+            className="flex-1 min-w-0 text-sm font-medium text-blue-400 text-center border border-outline-variant/60 rounded-lg px-3 py-1.5 bg-surface-container-low focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-blue-400/40"
           />
           <input
             value={tempNote2}
             onChange={(e) => setTempNote2(e.target.value)}
             placeholder="Notiz 2"
-            className="flex-1 min-w-0 text-xl font-bold text-blue-400 text-center border border-outline-variant/60 rounded-lg px-3 py-1.5 bg-surface-container-low focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-blue-400/40"
+            className="flex-1 min-w-0 text-sm font-medium text-blue-400 text-center border border-outline-variant/60 rounded-lg px-3 py-1.5 bg-surface-container-low focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-blue-400/40"
           />
         </div>
 
@@ -524,20 +524,20 @@ export default function FMyDataView(): JSX.Element {
                 <div key={row.id} className="glass-card rounded-xl p-4">
                   {/* Karten-Header */}
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg px-3 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                       {row.category === 'email_account' ? 'Mail' : catLabel(row.category)}
                     </span>
-                    <span className="text-xl font-semibold text-on-surface flex-1">{row.label}</span>
+                    <span className="text-sm font-semibold text-on-surface flex-1">{row.label}</span>
                     {!isLink && (
                       <button onClick={() => toggleRevealAll(row.id)}
-                        className="text-base text-on-surface-variant/50 hover:text-on-surface px-3 py-1 rounded border border-outline-variant/30">
+                        className="text-xs text-on-surface-variant/50 hover:text-on-surface px-2 py-1 rounded border border-outline-variant/30">
                         {revealed ? '🙈 Verbergen' : '👁 Anzeigen'}
                       </button>
                     )}
                     <button onClick={() => setEditEntry(row)}
-                      className="btn-secondary text-base py-1 px-3">Bearbeiten</button>
+                      className="btn-secondary text-xs py-1 px-3">Bearbeiten</button>
                     <button onClick={() => handleDelete(row.id)}
-                      className="text-base py-1 px-3 text-error hover:bg-error-container/10 rounded">Löschen</button>
+                      className="text-xs py-1 px-3 text-error hover:bg-error-container/10 rounded">Löschen</button>
                   </div>
 
                   {/* LinkPanel — alle Kategorien */}

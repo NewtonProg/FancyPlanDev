@@ -16,7 +16,22 @@ type CalCfg = {
 }
 type GCalCfg = { gcal_client_id: string; gcal_client_secret: string }
 type FirebaseCfg = { firebase_project_id: string; firebase_api_key: string; firebase_app_id: string }
-type ImportResult = { canceled?: boolean; success?: boolean; counts?: Record<string, number>; errors?: string[] }
+type ImportResult = {
+  canceled?: boolean; success?: boolean; counts?: Record<string, number>; errors?: string[]
+  catMatched?: number; catUnmatched?: number
+}
+
+const TABLE_LABELS: Record<string, string> = {
+  TArea:   'Bereiche',
+  TTheme:  'Themen',
+  TCat:    'Kategorien',
+  TGroup1: 'Gruppen',
+  TPrio1:  'Prioritäten 1',
+  TPrio2:  'Prioritäten 2',
+  TPrio3:  'Prioritäten 3',
+  TTel:    'Kontakte',
+  TAct:    'Aktivitäten',
+}
 type ImportState = 'idle' | 'running' | 'done' | 'error'
 type JsonState = 'idle' | 'running' | 'done' | 'error'
 
@@ -43,11 +58,24 @@ const BRAND_ICONS = [
   { key: 'fp-text-bottom',    label: 'Text unten' },
   { key: 'fp-text-middle',    label: 'Text Mitte' },
   { key: 'fp-fp-bottom-tr',   label: '"FP" unten' },
-  { key: 'fp-full-bottom-tr', label: '"Fancy Plan" unten' },
-  { key: 'fp-full-bottom-bw', label: '"Fancy Plan" S/W' },
+  { key: 'fp-full-bottom-tr', label: '"FancyPlan" unten' },
+  { key: 'fp-full-bottom-bw', label: '"FancyPlan" S/W' },
   { key: 'fp-no-border',      label: 'Ohne Rand' },
   { key: 'fp-gr-bg-bw',       label: 'Grau S/W' },
   { key: 'fp-fp-bottom-bw',   label: '"FP" S/W' },
+]
+
+// Zentrale Kontakt-/Vorschlagsadresse.
+const SUGGEST_EMAIL = 'account@inprime.net'
+
+// Was sich anpassen lässt (für die Werbe-Sektion).
+const CUSTOMIZE_ITEMS = [
+  { icon: 'category', text: 'Bereiche, Themen & Kategorien frei strukturieren' },
+  { icon: 'flag',     text: 'Status & Prioritäten nach eigenem Workflow definieren' },
+  { icon: 'palette',  text: 'Erscheinungsbild & Branding anpassen' },
+  { icon: 'tune',     text: 'Seiten auf die eigene Arbeitsweise zuschneiden — und Ihre Seiten ergänzen' },
+  { icon: 'devices',  text: 'Kommunikation und Datenaustausch mit Anwendungen (z. B. Handy) erstellen' },
+  { icon: 'business', text: 'Anpassung an Ihre Firma' },
 ]
 
 function SectionHeader({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }): JSX.Element {
@@ -113,9 +141,13 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
   const [brandMsg,      setBrandMsg]      = useState<{ text: string; ok: boolean } | null>(null)
 
   // SubForm open/close
+  const [suggestOpen, setSuggestOpen] = useState(true)
+  const [emailCopied, setEmailCopied] = useState(false)
   const [calOpen, setCalOpen] = useState(false)
   const [licenseOpen, setLicenseOpen] = useState(false)
   const [dbOpen, setDbOpen] = useState(false)
+  const [resetConfirm, setResetConfirm] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [firebaseOpen, setFirebaseOpen] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
@@ -332,6 +364,75 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
       <div className="max-w-2xl mx-auto px-6 py-8">
         <h2 className="text-xl font-semibold text-on-surface mb-6">{t('settings.title')}</h2>
 
+        {/* ── Anpassung & Vorschläge ────────────────────────────────────── */}
+        <SectionHeader
+          label="Kontakt zu uns — Hilfe — Anpassung — Vorschläge"
+          open={suggestOpen}
+          onToggle={() => setSuggestOpen((o) => !o)}
+        />
+        {suggestOpen && (
+          <div className="mb-2">
+            {/* Werbung: Anpassbarkeit */}
+            <div className="glass-card rounded-xl p-5 mb-3">
+              <div className="flex items-start gap-3 mb-3">
+                <span className="material-symbols-outlined text-primary text-[26px] leading-none mt-0.5">auto_fix_high</span>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">Ganz auf Sie zugeschnitten</p>
+                  <p className="text-xs text-on-surface-variant/80 mt-1 leading-relaxed">
+                    FancyPlan wächst mit Ihren Anforderungen: Struktur, Workflow und Erscheinungsbild
+                    bestimmen Sie selbst — damit die App genau so arbeitet, wie Sie es sich wünschen.
+                  </p>
+                </div>
+              </div>
+              <ul className="flex flex-col gap-2 pl-1">
+                {CUSTOMIZE_ITEMS.map((it) => (
+                  <li key={it.icon} className="flex items-center gap-2.5 text-xs text-on-surface-variant">
+                    <span className="material-symbols-outlined text-secondary-fixed-dim text-[18px] leading-none">{it.icon}</span>
+                    {it.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Vorschläge per Mail */}
+            <div className="glass-card rounded-xl p-5 mb-6">
+              <div className="flex items-start gap-3 mb-3">
+                <span className="material-symbols-outlined text-primary text-[26px] leading-none mt-0.5">lightbulb</span>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">Ihre Idee fehlt noch?</p>
+                  <p className="text-xs text-on-surface-variant/80 mt-1 leading-relaxed">
+                    Wir entwickeln FancyPlan stetig weiter. Schreiben Sie uns, was Sie sich wünschen —
+                    jeder Vorschlag wird gelesen.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => window.db.links.open(
+                    `${SUGGEST_EMAIL}?subject=${encodeURIComponent('FancyPlan – Vorschlag')}`,
+                    'mail'
+                  )}
+                  className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary hover:bg-blue-600 flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px] leading-none">mail</span>
+                  Vorschlag senden
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(SUGGEST_EMAIL)
+                    setEmailCopied(true)
+                    setTimeout(() => setEmailCopied(false), 1800)
+                  }}
+                  className="px-4 py-2 text-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-high flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px] leading-none">{emailCopied ? 'check' : 'content_copy'}</span>
+                  {emailCopied ? 'Kopiert' : SUGGEST_EMAIL}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── App-Update ────────────────────────────────────────────────── */}
         <SectionHeader
           label="App-Update"
@@ -399,18 +500,33 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
               {importState === 'done' && importResult && (
                 <div className="mt-4 border border-secondary-container/30 bg-secondary-container/10 rounded-lg p-4">
                   <p className="text-sm font-medium text-secondary-fixed-dim mb-2">
-                    {t('import.completed', { count: importTotal.toLocaleString('de') })}
+                    Import abgeschlossen — {importTotal.toLocaleString('de')} Datensätze
                   </p>
-                  <table className="w-full text-xs">
+                  <table className="w-full text-xs mb-2">
                     <tbody>
                       {Object.entries(importResult.counts ?? {}).map(([tbl, cnt]) => (
                         <tr key={tbl} className="border-t border-secondary-container/20">
-                          <td className="py-0.5 text-secondary-fixed-dim">{tbl}</td>
+                          <td className="py-0.5 text-secondary-fixed-dim">{TABLE_LABELS[tbl] ?? tbl}</td>
                           <td className="py-0.5 text-right text-secondary-fixed-dim">{cnt.toLocaleString('de')}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {(importResult.catUnmatched ?? 0) > 0 && (
+                    <div className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2">
+                      <p className="text-xs text-amber-400 font-medium mb-0.5">
+                        {importResult.catMatched ?? 0} von {(importResult.counts?.['TCat'] ?? 0).toLocaleString('de')} Kategorien einem Thema zugeordnet
+                      </p>
+                      <p className="text-xs text-on-surface-variant/70">
+                        {importResult.catUnmatched} Kategorien ohne Zuordnung — in Werte-Liste → Kategorien korrigierbar.
+                      </p>
+                    </div>
+                  )}
+                  {(importResult.catUnmatched ?? 0) === 0 && (importResult.catMatched ?? 0) > 0 && (
+                    <p className="text-xs text-secondary-fixed-dim/70 mt-1">
+                      Alle {importResult.catMatched} Kategorien einem Thema zugeordnet.
+                    </p>
+                  )}
                   {(importResult.errors?.length ?? 0) > 0 && (
                     <div className="mt-3">
                       <p className="text-xs font-medium text-tertiary mb-1">{t('import.notes')}</p>
@@ -581,6 +697,47 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
                 {backupMsg && <p className={`text-xs ${backupMsg.ok ? 'text-secondary-fixed-dim' : 'text-error'}`}>{backupMsg.text}</p>}
               </div>
             </div>
+            {/* Reset / Alte Daten löschen */}
+            <div className="glass-card rounded-xl p-4 mb-3 border border-error/20">
+              <p className="text-xs font-semibold text-error uppercase tracking-wide mb-1">Alte Daten löschen</p>
+              <p className="text-xs text-on-surface-variant/70 mb-3">
+                Löscht die komplette Datenbank — inklusive aller Kontakte und Aktivitäten — und startet die App neu mit einer leeren Datenbank.
+              </p>
+              {!resetConfirm ? (
+                <button
+                  onClick={() => setResetConfirm(true)}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-error/50 text-error hover:bg-error/10"
+                >
+                  Alte Daten löschen…
+                </button>
+              ) : (
+                <div className="rounded-xl bg-error/10 border border-error/40 px-4 py-3 flex flex-col gap-2">
+                  <p className="text-sm text-on-surface font-semibold">Datenbank wirklich löschen?</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Die gesamte Datenbank wird unwiderruflich gelöscht — alle Kontakte, Aktivitäten, Termine und Einstellungen gehen verloren. Die App startet danach neu mit einer leeren Datenbank.
+                  </p>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={async () => {
+                        setResetting(true)
+                        await window.db.dbConfig.reset()
+                      }}
+                      disabled={resetting}
+                      className="px-4 py-1.5 text-sm rounded-lg bg-error text-on-error hover:opacity-90 disabled:opacity-50"
+                    >
+                      {resetting ? 'Löschen…' : 'Ja, alles löschen'}
+                    </button>
+                    <button
+                      onClick={() => setResetConfirm(false)}
+                      className="px-4 py-1.5 text-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-high"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="px-4 py-2.5 bg-primary/5 rounded-xl text-xs text-primary mb-4">
               Automatisches Backup beim App-Start: <strong>userData/backups/</strong> (letzte 7 Versionen)
             </div>
@@ -812,7 +969,7 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
                       title={ic.label}
                       className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-colors ${!brandLogoData && brandLogoKey === ic.key ? 'border-primary bg-primary/10' : 'border-outline-variant/40 hover:bg-surface-container-high'}`}
                     >
-                      <img src={`/brand-icons/${ic.key}.png`} alt={ic.label} className="h-10 w-10 object-contain" draggable={false} />
+                      <img src={`${import.meta.env.BASE_URL}brand-icons/${ic.key}.png`} alt={ic.label} className="h-10 w-10 object-contain" draggable={false} />
                       <span className="text-[9px] text-on-surface-variant leading-tight text-center">{ic.label}</span>
                     </button>
                   ))}

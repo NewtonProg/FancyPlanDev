@@ -9,6 +9,20 @@ type ImportResult = {
   success?: boolean
   counts?: Record<string, number>
   errors?: string[]
+  catMatched?: number
+  catUnmatched?: number
+}
+
+const TABLE_LABELS: Record<string, string> = {
+  TArea:   'Bereiche',
+  TTheme:  'Themen',
+  TCat:    'Kategorien',
+  TGroup1: 'Gruppen',
+  TPrio1:  'Prioritäten 1',
+  TPrio2:  'Prioritäten 2',
+  TPrio3:  'Prioritäten 3',
+  TTel:    'Kontakte',
+  TAct:    'Aktivitäten',
 }
 
 export default function ImportView(): JSX.Element {
@@ -67,9 +81,9 @@ export default function ImportView(): JSX.Element {
       {state === 'done' && result && (
         <div className="rounded-apple border border-secondary-container/30 bg-secondary-container/10 p-5">
           <p className="text-sm font-medium text-secondary-fixed-dim mb-3">
-            {t('import.completed', { count: totalRows.toLocaleString('de') })}
+            Import abgeschlossen — {totalRows.toLocaleString('de')} Datensätze
           </p>
-          <table className="w-full text-sm">
+          <table className="w-full text-sm mb-3">
             <thead>
               <tr className="text-left text-secondary-fixed-dim">
                 <th className="pb-1">{t('import.colTable')}</th>
@@ -79,7 +93,7 @@ export default function ImportView(): JSX.Element {
             <tbody>
               {Object.entries(result.counts ?? {}).map(([table, count]) => (
                 <tr key={table} className="border-t border-secondary-container/30">
-                  <td className="py-1 text-secondary-fixed-dim">{table}</td>
+                  <td className="py-1 text-secondary-fixed-dim">{TABLE_LABELS[table] ?? table}</td>
                   <td className="py-1 text-right text-secondary-fixed-dim">
                     {count.toLocaleString('de')}
                   </td>
@@ -87,6 +101,21 @@ export default function ImportView(): JSX.Element {
               ))}
             </tbody>
           </table>
+          {(result.catUnmatched ?? 0) > 0 && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 mb-2">
+              <p className="text-xs text-amber-400 font-medium mb-0.5">
+                {result.catMatched ?? 0} von {(result.counts?.['TCat'] ?? 0).toLocaleString('de')} Kategorien einem Thema zugeordnet
+              </p>
+              <p className="text-xs text-on-surface-variant/70">
+                {result.catUnmatched} Kategorien ohne Zuordnung — in Werte-Liste → Kategorien korrigierbar.
+              </p>
+            </div>
+          )}
+          {(result.catUnmatched ?? 0) === 0 && (result.catMatched ?? 0) > 0 && (
+            <p className="text-xs text-secondary-fixed-dim/70 mb-2">
+              Alle {result.catMatched} Kategorien einem Thema zugeordnet.
+            </p>
+          )}
           {(result.errors?.length ?? 0) > 0 && (
             <div className="mt-3">
               <p className="text-xs font-medium text-tertiary mb-1">{t('import.notes')}</p>

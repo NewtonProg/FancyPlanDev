@@ -6,6 +6,8 @@ export type MigrationResult = {
   success?: boolean
   counts?: Record<string, number>
   errors?: string[]
+  catMatched?: number
+  catUnmatched?: number
 }
 
 type ColumnValue = string | number | boolean | Date | Buffer | null
@@ -82,5 +84,24 @@ export async function importFromAccess(accdbPath: string): Promise<MigrationResu
     }
   }
 
-  return { success: errors.length === 0, counts, errors }
+  // Fix TCat.IDTheme from CatGrp string after import (IDTheme is not in Access)
+  let catMatched: number | undefined
+  let catUnmatched: number | undefined
+  if (counts['TCat'] !== undefined) {
+    try {
+      db.prepare(`
+        UPDATE TCat
+        SET IDTheme = COALESCE(
+          (SELECT id FROM TTheme WHERE ThemeName = TCat.CatGrp LIMIT 1), 0
+        )
+        WHERE CatGrp IS NOT NULL AND CatGrp != '*'
+      `).run()
+      catMatched   = (db.prepare('SELECT COUNT(*) as c FROM TCat WHERE IDTheme != 0').get() as { c: number }).c
+      catUnmatched = (db.prepare("SELECT COUNT(*) as c FROM TCat WHERE IDTheme = 0 AND CatGrp IS NOT NULL AND CatGrp != '*'").get() as { c: number }).c
+    } catch (e) {
+      errors.push(`TCat-Zuordnung: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  return { success: errors.length === 0, counts, errors, catMatched, catUnmatched }
 }

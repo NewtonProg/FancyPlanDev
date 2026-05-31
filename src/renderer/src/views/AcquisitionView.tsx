@@ -74,6 +74,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
   const [showCbx, setShowCbx] = useState(false)
   const [navOpen, setNavOpen] = useState(true)
   const [prio1Options, setPrio1Options] = useState<Row[]>([])
+  const [noHOError, setNoHOError] = useState(false)
 
   useEffect(() => {
     window.db.prio.getAll(1, 'FAcquis').then(setPrio1Options)
@@ -234,7 +235,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
     'px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container w-full'
 
   const emailInputCls =
-    'w-full text-xs border border-outline-variant rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-gray-800 placeholder-gray-500'
+    'w-full text-xs border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
 
   return (
     <div className="flex flex-col h-full">
@@ -245,15 +246,25 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
         )}
         <h2 className="text-sm font-semibold text-on-surface mr-2">{t('acquis.title')}</h2>
         <button
-          onClick={() => { setShowNewForm(true); setNewIsHeadOffice(false) }}
+          onClick={() => {
+            if (!selectedCompany) { setNoHOError(true); setTimeout(() => setNoHOError(false), 4000); return }
+            setNoHOError(false)
+            setShowNewForm(true)
+            setNewIsHeadOffice(false)
+          }}
           className="px-3 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-blue-600">
           {t('acquis.newContact')}
         </button>
         <button
-          onClick={() => { setShowNewForm(true); setNewIsHeadOffice(true) }}
+          onClick={() => { setNoHOError(false); setShowNewForm(true); setNewIsHeadOffice(true) }}
           className="px-3 py-1.5 text-xs rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-high">
           {t('acquis.newHeadOffice')}
         </button>
+        {noHOError && (
+          <span className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-lg px-3 py-1.5">
+            Bitte wählen Sie ein Head Office oder legen Sie ein Head-Office an.
+          </span>
+        )}
       </div>
 
       {/* New contact/HO modal */}

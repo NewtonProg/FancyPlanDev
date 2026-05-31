@@ -176,7 +176,7 @@ interface DbApi {
     authStatus:  () => Promise<{ configured: boolean; email: string }>
     connect:     () => Promise<{ ok?: boolean; email?: string; error?: string }>
     disconnect:  () => Promise<{ ok: boolean }>
-    sync:        () => Promise<{ count?: number; error?: string }>
+    sync:        () => Promise<{ count?: number; pushed?: number; error?: string }>
   }
   cal: {
     authStatus: () => Promise<{ configured: boolean; user: string }>
@@ -192,7 +192,16 @@ interface DbApi {
     create:          (data: Row)                                => Promise<Row>
     update:          (id: number, data: Row)                    => Promise<boolean>
     delete:          (id: number)                               => Promise<boolean>
-    upsertFromSync:  (data: Row)                                => Promise<boolean>
+    upsertFromSync:         (data: Row)                                => Promise<boolean>
+    countSeriesFromDate:    (pattern: string, fromDate: string)        => Promise<number>
+    deleteSeriesFromDate:   (pattern: string, fromDate: string)        => Promise<{ deleted: number; gcalAction: 'deleted' | 'truncated' | 'skipped' | 'failed'; gcalError: string | null }>
+    countByTitleFromDate:   (title: string,   fromDate: string)        => Promise<number>
+    deleteByTitleFromDate:  (title: string,   fromDate: string)        => Promise<{ deleted: number; gcalDeleted: number; gcalErrors: string[] }>
+    createSeries:               (data: Row, rec: Row)                       => Promise<{ master: string; count: number }>
+    countLocalSeriesFromDate:   (recMaster: string, fromDate: string)        => Promise<number>
+    deleteLocalSeriesFromDate:  (recMaster: string, fromDate: string)        => Promise<{ deleted: number }>
+    updateLocalSeriesFromDate:  (recMaster: string, fromDate: string, data: Row) => Promise<boolean>
+    updateGcalSeries:           (recMaster: string, data: Row) => Promise<{ ok: boolean; gcalAction: 'patched' | 'skipped' | 'failed'; gcalError: string | null }>
   }
   recurring: {
     getAll:     ()                          => Promise<Row[]>
@@ -250,6 +259,7 @@ declare global {
         copyAndSet: (p: string) => Promise<{ ok: boolean; error?: string }>
         relaunch:   () => Promise<void>
         quit:       () => Promise<void>
+        reset:      () => Promise<{ ok: boolean; error?: string }>
       }
       license: {
         get:      () => Promise<LicenseInfo>

@@ -38,7 +38,7 @@ function chipColor(type: string): string {
   return map[type] ?? 'bg-surface-container-low text-on-surface border-outline-variant'
 }
 
-const linkinp = 'text-xs border border-outline-variant rounded px-2 py-1 text-gray-800 placeholder-gray-500'
+const linkinp = 'text-xs border border-outline-variant rounded px-2 py-1 bg-surface-container-high text-on-surface placeholder-on-surface-variant/40'
 
 function PasswordBadge({ password, t }: { password: string; t: (k: string) => string }): JSX.Element {
   const [visible, setVisible] = useState(false)
@@ -55,7 +55,7 @@ function PasswordBadge({ password, t }: { password: string; t: (k: string) => st
       <button
         onClick={() => setVisible((v) => !v)}
         title={visible ? t('links.hidePassword') : t('links.showPassword')}
-        className="opacity-60 hover:opacity-100 text-lg leading-none select-none"
+        className="opacity-60 hover:opacity-100 text-xs leading-none select-none"
       >
         🔑
       </button>
@@ -146,7 +146,7 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-base font-semibold text-on-surface-variant uppercase tracking-wide">{t('links.title')}</span>
+        <span className="text-sm font-semibold text-on-surface-variant uppercase tracking-wide">{t('links.title')}</span>
         <button onClick={() => setAdding((v) => !v)}
           className="text-primary hover:text-primary/70 text-xl leading-none" title={t('links.addTitle')}>+</button>
       </div>

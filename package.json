@@ -9,6 +9,7 @@
     "dev": "node scripts/dev.js",
     "build": "electron-vite build",
     "build:win": "npm run build && electron-builder --win",
+    "build:release": "npm run build && electron-builder --win --publish always",
     "build:win:test": "npm run build && electron-builder --win --dir",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
@@ -63,6 +64,10 @@
       {
         "from": "resources/help",
         "to": "help"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
       }
     ],
     "publish": {
@@ -78,9 +83,17 @@
       "installerLanguages": [
         "de_DE"
       ],
-      "language": "1031"
+      "language": "1031",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "uninstallDisplayName": "FancyPlan",
+      "shortcutName": "FancyPlan",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis"

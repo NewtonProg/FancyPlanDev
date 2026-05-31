@@ -54,7 +54,7 @@ function fullName(c: Tel): string {
 }
 
 const inp = 'w-full text-sm border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
-const inpLight = 'w-full text-sm border border-outline-variant rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-gray-800 placeholder-gray-500'
+const inpLight = 'w-full text-sm border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
 const nameInp = 'w-full text-xl font-semibold border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-primary placeholder-on-surface-variant/40'
 const lbl = 'text-xs text-on-surface-variant/60 mb-0.5 block'
 
@@ -702,7 +702,7 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
   const visible = useMemo(() => {
     return contacts.filter((c) => {
       if (alphaFilter) {
-        const first = String(c.SurName ?? c.FirstName ?? c.Company ?? '').trim()[0]?.toUpperCase()
+        const first = String(c.FirstName ?? c.SurName ?? c.Company ?? '').trim()[0]?.toUpperCase()
         if (first !== alphaFilter) return false
       }
       if (btkSel.level3) {
@@ -864,7 +864,7 @@ export default function ContactsView({ initialTelId, onContactOpened, returnActI
                       {initials(c.FirstName, c.SurName)}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-on-surface truncate">{fullName(c)}</p>
+                      <p className="text-xs font-medium text-on-surface truncate">{fullName(c)}</p>
                       <p className="text-xs text-on-surface-variant/60 truncate">{String(c.Company ?? c.EMail1 ?? '')}</p>
                     </div>
                   </button>

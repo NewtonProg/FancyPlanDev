@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import { getDb } from '../db/database'
 import https from 'https'
 import { URLSearchParams } from 'url'
@@ -48,11 +48,9 @@ function lsPost(path: string, body: Record<string, string>): Promise<Record<stri
   })
 }
 
-function tierFromVariantId(variantId: unknown): 'standard' | 'vip' {
-  const id = String(variantId)
-  if (VIP_VARIANT_IDS.length > 0 && VIP_VARIANT_IDS.includes(id)) return 'vip'
-  if (TEST_VARIANT_IDS.length > 0 && TEST_VARIANT_IDS.includes(id)) return 'standard'
-  return 'standard'
+function tierFromVariantId(_variantId: unknown): 'vip' {
+  // Every activated license grants VIP access — no Standard/VIP distinction
+  return 'vip'
 }
 
 // Get current license status (initializes trial on first call)
@@ -64,11 +62,13 @@ ipcMain.handle('license:get', () => {
   }
 
   const key = getSetting('license_key')
-  const tier = getSetting('license_tier') || 'free'
   const validatedAt = getSetting('license_validated_at')
 
   const trialDays = Math.floor((Date.now() - new Date(trialStart).getTime()) / (1000 * 60 * 60 * 24))
   const trialExpired = !key && trialDays >= 60
+
+  // Dev mode: unpackaged app always gets VIP (developer access without key)
+  const tier = !app.isPackaged ? 'vip' : (getSetting('license_tier') || 'free')
 
   const maskedKey = key ? key.replace(/^(.{4})(.+)(.{4})$/, (_, a, m, z) => a + m.replace(/./g, '*') + z) : null
 

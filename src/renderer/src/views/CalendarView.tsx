@@ -1,8 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import TimePicker from '../components/TimePicker'
 
 type CalEvent = Record<string, unknown>
 type Termin   = Record<string, unknown>
+
+// ── Recurrence (FancyPlan-interne Serientermine) ─────────────────────────────
+type RecFreq = 'daily' | 'weekly' | 'monthly' | 'yearly'
+type Recurrence = { freq: RecFreq; interval: number; endMode: 'count' | 'until'; count: number; until: string }
+type SaveOpts = { recurrence?: Recurrence; scope?: 'single' | 'series' }
+
+const REC_FREQ_LABEL: Record<RecFreq, string> = {
+  daily:   'Täglich',
+  weekly:  'Wöchentlich',
+  monthly: 'Monatlich',
+  yearly:  'Jährlich'
+}
+
+// A FancyPlan-internal series is materialised locally and grouped by a "local:" master id
+function isLocalSeries(tr: Termin): boolean {
+  return String(tr.source ?? 'manual') !== 'gcal' && String(tr.rec_master ?? '').startsWith('local:')
+}
+
+function recSummary(rec_rule: unknown): string {
+  try {
+    const r = JSON.parse(String(rec_rule)) as Recurrence
+    const every = r.interval > 1 ? `alle ${r.interval} ` : ''
+    const unit = r.freq === 'daily' ? 'Tage' : r.freq === 'weekly' ? 'Wochen' : r.freq === 'monthly' ? 'Monate' : 'Jahre'
+    const base = r.interval > 1 ? `${every}${unit}` : REC_FREQ_LABEL[r.freq]
+    const end = r.endMode === 'count' ? `, ${r.count}×` : r.until ? `, bis ${r.until}` : ''
+    return `${base}${end}`
+  } catch {
+    return 'Serie'
+  }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function isoDay(d: Date): string {
@@ -165,11 +196,23 @@ function shiftInterval(from: string, to: string, dir: 1 | -1): { from: string; t
 export function TerminModal({ date, termin, onSave, onClose }: {
   date: Date
   termin?: Termin
-  onSave: (data: Record<string, unknown>) => Promise<void>
+  onSave: (data: Record<string, unknown>, opts?: SaveOpts) => Promise<void>
   onClose: () => void
 }): JSX.Element {
   const { t } = useTranslation()
-  const isEdit = !!termin
+  const isEdit  = !!termin
+  const src     = String(termin?.source ?? 'manual')
+  const isGcal  = src === 'gcal'
+  const isCaldav = src === 'caldav'
+  const recMaster = String(termin?.rec_master ?? '')
+  // A pure FancyPlan series (never pushed to Google) edits "from this date" forward.
+  const isLocalPureSeries = isEdit && recMaster.startsWith('local:') && !isGcal
+  // Any series that touches Google — either a real recurring instance or a FancyPlan
+  // series pushed up as individual gcal events (rec_master kept, source flipped to gcal).
+  const isGcalSeriesEdit = isEdit && isGcal && recMaster !== ''
+  const isOwner = (termin?.is_owner ?? 1) === 1
+  // Whether the edit dialog should offer the single-vs-series scope choice
+  const hasScopeChoice = isLocalPureSeries || isGcalSeriesEdit
 
   const [title,       setTitle]       = useState(isEdit ? String(termin!.title ?? '') : '')
   const [allDay,      setAllDay]      = useState(isEdit ? !termin!.time_start : false)
@@ -185,6 +228,17 @@ export function TerminModal({ date, termin, onSave, onClose }: {
   const [meetPhone,   setMeetPhone]   = useState(isEdit ? String(termin!.meet_phone   ?? '') : '')
   const [meetOpen,    setMeetOpen]    = useState(isEdit && !!(termin!.meet_url || termin!.meet_comment || termin!.meet_key || termin!.meet_phone))
   const [saving,      setSaving]      = useState(false)
+
+  // Serientermin (nur FancyPlan-intern, nur beim Anlegen)
+  const canRecur = !isEdit && !isGcal && !isCaldav
+  const [recOn,       setRecOn]       = useState(false)
+  const [recFreq,     setRecFreq]     = useState<RecFreq>('weekly')
+  const [recInterval, setRecInterval] = useState(1)
+  const [recEndMode,  setRecEndMode]  = useState<'count' | 'until'>('count')
+  const [recCount,    setRecCount]    = useState(10)
+  const [recUntil,    setRecUntil]    = useState('')
+  // Bearbeitungs-Umfang bei bestehender Serie
+  const [scope,       setScope]       = useState<'single' | 'series'>('single')
 
   const inp = 'w-full text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40 [&::-webkit-calendar-picker-indicator]:[filter:invert(0.7)] [&::-webkit-calendar-picker-indicator]:cursor-pointer'
 
@@ -206,7 +260,18 @@ export function TerminModal({ date, termin, onSave, onClose }: {
       source:       isEdit ? termin!.source : 'manual',
     }
     if (isEdit) data.id = termin!.id
-    await onSave(data)
+    const opts: SaveOpts = {}
+    if (canRecur && recOn) {
+      opts.recurrence = {
+        freq:     recFreq,
+        interval: Math.max(1, recInterval),
+        endMode:  recEndMode,
+        count:    Math.max(1, recCount),
+        until:    recUntil || terminDate
+      }
+    }
+    if (hasScopeChoice) opts.scope = scope
+    await onSave(data, opts)
     setSaving(false)
   }
 
@@ -214,11 +279,25 @@ export function TerminModal({ date, termin, onSave, onClose }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-surface-container-high rounded-2xl border border-outline-variant/30 shadow-2xl w-[420px] flex flex-col max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30 sticky top-0 bg-surface-container-high z-10">
-          <div className="flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-primary text-[20px]">{isEdit ? 'edit_calendar' : 'event_add'}</span>
-            <span className="font-semibold text-on-surface">{isEdit ? t('cal.editEvent') : t('cal.newEvent')}</span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="material-symbols-outlined text-primary text-[20px] flex-shrink-0">{isEdit ? 'edit_calendar' : 'calendar_add_on'}</span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold text-on-surface truncate">{isEdit ? t('cal.editEvent') : t('cal.newEvent')}</span>
+              <span className="flex items-center gap-1.5 mt-0.5">
+                <span className={`material-symbols-outlined text-[12px] ${srcCfg(src).badge}`}>{srcCfg(src).icon}</span>
+                <span className={`text-[10px] font-semibold uppercase tracking-wider ${srcCfg(src).badge}`}>
+                  {isGcal ? 'Google' : isCaldav ? 'CalDAV' : 'FancyPlan · Intern'}
+                </span>
+                {hasScopeChoice && (
+                  <span className="flex items-center gap-1 text-[10px] text-on-surface-variant/50">
+                    <span className="material-symbols-outlined text-[12px]">repeat</span>
+                    {termin?.rec_rule ? recSummary(termin.rec_rule) : 'Serie'}
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
-          <button onClick={onClose} className="text-on-surface-variant/50 hover:text-on-surface transition-colors">
+          <button onClick={onClose} className="text-on-surface-variant/50 hover:text-on-surface transition-colors flex-shrink-0">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -237,6 +316,43 @@ export function TerminModal({ date, termin, onSave, onClose }: {
             />
           </div>
 
+          {hasScopeChoice && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/80">
+                <span className="material-symbols-outlined text-[14px]">repeat</span>
+                Serie – Umfang der Änderung
+              </div>
+              <label className="flex items-center gap-2.5 text-sm text-on-surface cursor-pointer select-none">
+                <input type="radio" name="scope" checked={scope === 'single'} onChange={() => setScope('single')} className="accent-primary w-4 h-4" />
+                Nur diesen Termin
+              </label>
+              <label className="flex items-center gap-2.5 text-sm text-on-surface cursor-pointer select-none">
+                <input type="radio" name="scope" checked={scope === 'series'} onChange={() => setScope('series')} className="accent-primary w-4 h-4" />
+                {isGcalSeriesEdit ? 'Ganze Serie (alle Termine)' : 'Ganze Serie ab diesem Termin'}
+              </label>
+              {scope === 'series' && (
+                <p className="text-[10px] text-on-surface-variant/50 leading-snug">
+                  {isGcalSeriesEdit
+                    ? 'Titel, Zeit, Ort, Notiz, Kategorie & Meeting werden auf die gesamte Google-Serie übertragen. Das Datum bleibt je Termin erhalten.'
+                    : 'Titel, Zeit, Ort, Notiz, Kategorie & Meeting werden auf alle folgenden Termine übertragen. Das Datum bleibt je Termin erhalten.'}
+                </p>
+              )}
+              {isGcalSeriesEdit && !isOwner && (
+                <p className="text-[10px] text-error/80 leading-snug flex items-start gap-1">
+                  <span className="material-symbols-outlined text-[12px] mt-px">info</span>
+                  Geteilte Google-Serie – Änderungen werden nur lokal gespeichert, der Google-Kalender bleibt unberührt.
+                </p>
+              )}
+            </div>
+          )}
+
+          {isGcal && !isGcalSeriesEdit && !isOwner && (
+            <p className="text-[10px] text-error/80 leading-snug flex items-start gap-1 -mt-1">
+              <span className="material-symbols-outlined text-[12px] mt-px">info</span>
+              Geteilter Google-Termin – Änderungen werden nur lokal gespeichert, der Google-Kalender bleibt unberührt.
+            </p>
+          )}
+
           <label className="flex items-center gap-3 text-sm text-on-surface cursor-pointer select-none">
             <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} className="accent-primary w-4 h-4" />
             {t('cal.allDay')}
@@ -246,11 +362,11 @@ export function TerminModal({ date, termin, onSave, onClose }: {
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs text-on-surface-variant/60 mb-1.5 block">{t('cal.fromLabel')}</label>
-                <input type="time" className={inp} value={timeStart} onChange={(e) => setTimeStart(e.target.value)} />
+                <TimePicker className={inp} value={timeStart} onChange={setTimeStart} />
               </div>
               <div className="flex-1">
                 <label className="text-xs text-on-surface-variant/60 mb-1.5 block">{t('cal.toLabel')}</label>
-                <input type="time" className={inp} value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
+                <TimePicker className={inp} value={timeEnd} onChange={setTimeEnd} />
               </div>
             </div>
           )}
@@ -271,6 +387,53 @@ export function TerminModal({ date, termin, onSave, onClose }: {
             </label>
             <input className={inp} value={cat} onChange={(e) => setCat(e.target.value)} placeholder={t('cal.catPh')} />
           </div>
+
+          {/* ── Serientermin (nur FancyPlan-intern beim Anlegen) ────────── */}
+          {canRecur && (
+            <div className="rounded-xl border border-outline-variant/30 overflow-hidden">
+              <label className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-container/50 hover:bg-surface-container-high/60 transition-colors cursor-pointer select-none">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] text-on-surface-variant/60">repeat</span>
+                  <span className="text-xs font-semibold text-on-surface-variant/70 uppercase tracking-wide">Serientermin</span>
+                </div>
+                <input type="checkbox" checked={recOn} onChange={(e) => setRecOn(e.target.checked)} className="accent-primary w-4 h-4" />
+              </label>
+              {recOn && (
+                <div className="px-4 pb-4 pt-3 flex flex-col gap-3 bg-surface-container/20">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-on-surface-variant/60">Wiederholung alle</span>
+                    <input type="number" min={1} value={recInterval}
+                      onChange={(e) => setRecInterval(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-16 text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-2 py-1.5 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40" />
+                    <select value={recFreq} onChange={(e) => setRecFreq(e.target.value as RecFreq)}
+                      className="flex-1 text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-2 py-1.5 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40">
+                      <option value="daily">{recInterval > 1 ? 'Tage' : 'Tag'}</option>
+                      <option value="weekly">{recInterval > 1 ? 'Wochen' : 'Woche'}</option>
+                      <option value="monthly">{recInterval > 1 ? 'Monate' : 'Monat'}</option>
+                      <option value="yearly">{recInterval > 1 ? 'Jahre' : 'Jahr'}</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2.5 text-sm text-on-surface cursor-pointer select-none">
+                      <input type="radio" name="recEnd" checked={recEndMode === 'count'} onChange={() => setRecEndMode('count')} className="accent-primary w-4 h-4" />
+                      <span>Endet nach</span>
+                      <input type="number" min={1} value={recCount} disabled={recEndMode !== 'count'}
+                        onChange={(e) => setRecCount(Math.max(1, Number(e.target.value) || 1))}
+                        className="w-16 text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-2 py-1.5 text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40 disabled:opacity-40" />
+                      <span className="text-on-surface-variant/60">Terminen</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 text-sm text-on-surface cursor-pointer select-none">
+                      <input type="radio" name="recEnd" checked={recEndMode === 'until'} onChange={() => setRecEndMode('until')} className="accent-primary w-4 h-4" />
+                      <span>Endet am</span>
+                      <input type="date" value={recUntil} disabled={recEndMode !== 'until'}
+                        onChange={(e) => setRecUntil(e.target.value)}
+                        className={`${inp} flex-1 disabled:opacity-40`} />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Online Meeting (aufklappbar) ────────────────────────────── */}
           <div className="rounded-xl border border-outline-variant/30 overflow-hidden">
@@ -328,9 +491,18 @@ export function TerminModal({ date, termin, onSave, onClose }: {
 }
 
 // ── AgendaCard ───────────────────────────────────────────────────────────────
+function isGcalSeries(tr: Termin): boolean {
+  const uid = String(tr.cal_uid ?? '')
+  return uid.startsWith('gcal:') && /_\d{8}T\d{6}/.test(uid)
+}
+
+function isGcalEvent(tr: Termin): boolean {
+  return String(tr.source ?? '') === 'gcal'
+}
+
 function AgendaCard({ tr, onDelete, onEdit, compact = false }: {
   tr: Termin
-  onDelete: (id: number) => void
+  onDelete: (tr: Termin) => void
   onEdit: (tr: Termin) => void
   compact?: boolean
 }): JSX.Element {
@@ -370,6 +542,9 @@ function AgendaCard({ tr, onDelete, onEdit, compact = false }: {
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span className={`material-symbols-outlined text-[13px] ${cfg.badge}`}>{cfg.icon}</span>
             <span className={`text-[10px] font-semibold uppercase tracking-widest ${cfg.badge}`}>{cfg.label}</span>
+            {!!tr.rec_master && (
+              <span className="material-symbols-outlined text-[13px] text-on-surface-variant/40" title="Serientermin">repeat</span>
+            )}
             {cat && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-outline-variant/30 text-on-surface-variant/60"
                 style={{ borderColor: catColor ? catColor + '60' : undefined, color: catColor ?? undefined }}>
@@ -411,7 +586,7 @@ function AgendaCard({ tr, onDelete, onEdit, compact = false }: {
           className="w-7 h-7 rounded-full flex items-center justify-center bg-surface-container/60 border border-outline-variant/20 text-on-surface-variant/40 hover:text-primary hover:border-primary/30 transition-all">
           <span className="material-symbols-outlined text-[14px]">edit</span>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(tr.id as number) }}
+        <button onClick={(e) => { e.stopPropagation(); onDelete(tr) }}
           className="w-7 h-7 rounded-full flex items-center justify-center bg-surface-container/60 border border-outline-variant/20 text-on-surface-variant/40 hover:text-error hover:border-error/30 transition-all">
           <span className="material-symbols-outlined text-[14px]">delete</span>
         </button>
@@ -426,7 +601,7 @@ const PX_MIN   = HOUR_H / 60
 
 function DayGridView({ termins, onDelete, onEdit }: {
   termins:  Termin[]
-  onDelete: (id: number) => void
+  onDelete: (tr: Termin) => void
   onEdit:   (tr: Termin) => void
 }): JSX.Element {
   const timed  = termins.filter(tr => tr.time_start)
@@ -461,7 +636,7 @@ function DayGridView({ termins, onDelete, onEdit }: {
                   <button onClick={e => { e.stopPropagation(); onEdit(tr) }} className="text-on-surface-variant/40 hover:text-primary">
                     <span className="material-symbols-outlined text-[13px]">edit</span>
                   </button>
-                  <button onClick={e => { e.stopPropagation(); onDelete(tr.id as number) }} className="text-on-surface-variant/40 hover:text-error">
+                  <button onClick={e => { e.stopPropagation(); onDelete(tr) }} className="text-on-surface-variant/40 hover:text-error">
                     <span className="material-symbols-outlined text-[13px]">close</span>
                   </button>
                 </div>
@@ -546,7 +721,7 @@ function DayGridView({ termins, onDelete, onEdit }: {
                       className="w-5 h-5 rounded-full bg-surface-container/95 flex items-center justify-center shadow-md">
                       <span className="material-symbols-outlined text-[10px] text-on-surface-variant">edit</span>
                     </button>
-                    <button onClick={e => { e.stopPropagation(); onDelete(tr.id as number) }}
+                    <button onClick={e => { e.stopPropagation(); onDelete(tr) }}
                       className="w-5 h-5 rounded-full bg-surface-container/95 flex items-center justify-center shadow-md">
                       <span className="material-symbols-outlined text-[10px] text-error">delete</span>
                     </button>
@@ -564,7 +739,7 @@ function DayGridView({ termins, onDelete, onEdit }: {
 // ── OverlapCluster ───────────────────────────────────────────────────────────
 function OverlapCluster({ events, onDelete, onEdit }: {
   events: Termin[]
-  onDelete: (id: number) => void
+  onDelete: (tr: Termin) => void
   onEdit:   (tr: Termin) => void
 }): JSX.Element {
   const slots = events.map(ev => {
@@ -676,8 +851,12 @@ export default function CalendarView(): JSX.Element {
   const [caldavUser,   setCaldavUser]   = useState('')
   const [caldavPass,   setCaldavPass]   = useState('')
   const [caldavSaving, setCaldavSaving] = useState(false)
-  const [gcalBusy,     setGcalBusy]     = useState(false)
-  const [gcalError,    setGcalError]    = useState<string | null>(null)
+  const [gcalBusy,           setGcalBusy]           = useState(false)
+  const [gcalError,          setGcalError]          = useState<string | null>(null)
+  const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<Termin | null>(null)
+  const [deleteSeriesCount,  setDeleteSeriesCount]  = useState(0)
+  const [deleteSeriesBusy,   setDeleteSeriesBusy]   = useState(false)
+  const [deleteSeriesError,  setDeleteSeriesError]  = useState<string | null>(null)
 
   const today = new Date()
 
@@ -727,8 +906,16 @@ export default function CalendarView(): JSX.Element {
       if (!map.has(d)) map.set(d, [])
       if (map.get(d)!.length < 3) map.get(d)!.push({ color })
     }
-    for (const ev of calEvents) add(isoDay(new Date(ev.dtstart as string)), calDotColor(ev))
-    for (const tr of monthTermins) if (tr.source === 'manual') add(String(tr.termin_date ?? ''), 'bg-primary')
+    // caldav events from TCalendar (gcal entries excluded — they are tracked via TTermin)
+    for (const ev of calEvents) {
+      if (String(ev.source ?? '') !== 'gcal') {
+        add(isoDay(new Date(ev.dtstart as string)), calDotColor(ev))
+      }
+    }
+    // all TTermin entries (manual + gcal) — single source of truth after deletion
+    for (const tr of monthTermins) {
+      add(String(tr.termin_date ?? ''), srcCfg(String(tr.source ?? 'manual')).dot)
+    }
     return map
   }, [calEvents, monthTermins])
 
@@ -794,10 +981,24 @@ export default function CalendarView(): JSX.Element {
     setTimeout(() => setSyncMsg(''), 4000)
   }
 
-  const handleModalSave = async (data: Record<string, unknown>): Promise<void> => {
-    if (data.id) {
+  const handleModalSave = async (data: Record<string, unknown>, opts?: SaveOpts): Promise<void> => {
+    if (opts?.recurrence) {
+      // FancyPlan-interne Serie anlegen
+      await window.db.termin.createSeries(data, opts.recurrence as unknown as Record<string, unknown>)
+    } else if (data.id) {
       const { id, ...fields } = data
-      await window.db.termin.update(id as number, fields)
+      const recMaster = String(editingTermin?.rec_master ?? data.rec_master ?? '')
+      const isGcalRow = String(editingTermin?.source ?? data.source ?? '') === 'gcal'
+      if (opts?.scope === 'series' && recMaster.startsWith('local:') && !isGcalRow) {
+        // Pure FancyPlan series — edit this occurrence and all following (no Google)
+        const fromDate = String(data.termin_date ?? editingTermin?.termin_date)
+        await window.db.termin.updateLocalSeriesFromDate(recMaster, fromDate, fields)
+      } else if (opts?.scope === 'series' && recMaster !== '') {
+        // Google series (real recurring or pushed FancyPlan series) — update all + propagate
+        await window.db.termin.updateGcalSeries(recMaster, fields)
+      } else {
+        await window.db.termin.update(id as number, fields)
+      }
     } else {
       await window.db.termin.create(data)
     }
@@ -806,15 +1007,81 @@ export default function CalendarView(): JSX.Element {
     loadViewTermins(); loadMonthTermins()
   }
 
-  const handleDelete = async (id: number): Promise<void> => {
-    if (!confirm('Termin löschen?')) return
-    await window.db.termin.delete(id)
-    setViewTermins(prev => prev.filter(t => (t.id as number) !== id))
-    setMonthTermins(prev => prev.filter(t => (t.id as number) !== id))
+  function seriesPattern(tr: Termin): string {
+    const uid = String(tr.cal_uid ?? '')
+    if (!uid.startsWith('gcal:')) return uid
+    const id = uid.slice(5)
+    const m = id.match(/^(.+)_\d{8}T\d{6}Z?$/)
+    return m ? `gcal:${m[1]}_%` : uid
   }
 
-  const prevMonth = (): void => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))
-  const nextMonth = (): void => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))
+  const handleDelete = async (tr: Termin): Promise<void> => {
+    const fromDate = String(tr.termin_date ?? isoDay(today))
+    if (isGcalEvent(tr)) {
+      let cnt = 0
+      if (isGcalSeries(tr)) {
+        cnt = await window.db.termin.countSeriesFromDate(seriesPattern(tr), fromDate)
+      } else {
+        cnt = await window.db.termin.countByTitleFromDate(String(tr.title ?? ''), fromDate)
+      }
+      setDeleteSeriesCount(cnt)
+      setDeleteSeriesError(null)
+      setDeleteSeriesTarget(tr)
+    } else if (isLocalSeries(tr)) {
+      const cnt = await window.db.termin.countLocalSeriesFromDate(String(tr.rec_master), fromDate)
+      setDeleteSeriesCount(cnt)
+      setDeleteSeriesError(null)
+      setDeleteSeriesTarget(tr)
+    } else {
+      if (!confirm('Termin löschen?')) return
+      await window.db.termin.delete(tr.id as number)
+      setViewTermins(prev => prev.filter(t => (t.id as number) !== (tr.id as number)))
+      setMonthTermins(prev => prev.filter(t => (t.id as number) !== (tr.id as number)))
+    }
+  }
+
+  const confirmDeleteSingle = async (): Promise<void> => {
+    if (!deleteSeriesTarget) return
+    setDeleteSeriesBusy(true)
+    setDeleteSeriesError(null)
+    await window.db.termin.delete(deleteSeriesTarget.id as number)
+    setDeleteSeriesBusy(false)
+    setDeleteSeriesTarget(null)
+    loadViewTermins(); loadMonthTermins(); loadCalEvents()
+  }
+
+  const confirmDeleteSeries = async (): Promise<void> => {
+    if (!deleteSeriesTarget) return
+    setDeleteSeriesBusy(true)
+    setDeleteSeriesError(null)
+    const fromDate = String(deleteSeriesTarget.termin_date ?? isoDay(today))
+    let err: string | null = null
+    if (isLocalSeries(deleteSeriesTarget)) {
+      await window.db.termin.deleteLocalSeriesFromDate(String(deleteSeriesTarget.rec_master), fromDate)
+    } else if (isGcalSeries(deleteSeriesTarget)) {
+      const res = await window.db.termin.deleteSeriesFromDate(seriesPattern(deleteSeriesTarget), fromDate)
+      if (res.gcalAction === 'failed') err = `Google: ${res.gcalError ?? 'Unbekannter Fehler'}`
+    } else {
+      const res = await window.db.termin.deleteByTitleFromDate(String(deleteSeriesTarget.title ?? ''), fromDate)
+      if (res.gcalErrors?.length) err = `Google: ${res.gcalErrors.join(' | ')}`
+    }
+    setDeleteSeriesBusy(false)
+    if (err) {
+      setDeleteSeriesError(err)
+    } else {
+      setDeleteSeriesTarget(null)
+    }
+    loadViewTermins(); loadMonthTermins(); loadCalEvents()
+  }
+
+  const prevMonth = (): void => {
+    const d = new Date(month.getFullYear(), month.getMonth() - 1, 1)
+    setMonth(d); setSelectedDate(d)
+  }
+  const nextMonth = (): void => {
+    const d = new Date(month.getFullYear(), month.getMonth() + 1, 1)
+    setMonth(d); setSelectedDate(d)
+  }
 
   const handlePrev = (): void => {
     if (viewMode === 'INT') {
@@ -1034,6 +1301,7 @@ export default function CalendarView(): JSX.Element {
                           }} className="text-xs py-1.5 bg-error/15 hover:bg-error/25 text-error rounded-lg font-semibold transition-colors disabled:opacity-40 w-full">
                             {gcalBusy ? 'Trennt…' : 'Trennen'}
                           </button>
+
                         </>
                       ) : (
                         <>
@@ -1257,7 +1525,7 @@ export default function CalendarView(): JSX.Element {
                                   className="text-on-surface-variant/40 hover:text-primary">
                                   <span className="material-symbols-outlined text-[13px]">edit</span>
                                 </button>
-                                <button onClick={e => { e.stopPropagation(); handleDelete(tr.id as number) }}
+                                <button onClick={e => { e.stopPropagation(); handleDelete(tr) }}
                                   className="text-on-surface-variant/40 hover:text-error">
                                   <span className="material-symbols-outlined text-[13px]">close</span>
                                 </button>
@@ -1304,6 +1572,58 @@ export default function CalendarView(): JSX.Element {
           onClose={() => setEditingTermin(null)}
         />
       )}
+
+      {/* Delete-Series Confirmation Overlay */}
+      {deleteSeriesTarget && (() => {
+        const isOwner = Number(deleteSeriesTarget.is_owner ?? 1) === 1
+        const isLocal = isLocalSeries(deleteSeriesTarget)
+        const closeModal = (): void => { setDeleteSeriesTarget(null); setDeleteSeriesError(null) }
+        return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card rounded-2xl border border-outline-variant/20 p-6 w-[360px] flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-error text-[22px]">delete</span>
+              <h3 className="text-base font-semibold text-on-surface">Termin löschen</h3>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm text-on-surface font-medium truncate">
+                {String(deleteSeriesTarget.title ?? '')}
+              </p>
+              <p className="text-xs text-on-surface-variant/60">
+                {String(deleteSeriesTarget.time_start ?? '')}
+                {deleteSeriesTarget.time_end ? ` – ${String(deleteSeriesTarget.time_end)}` : ''}
+              </p>
+            </div>
+            <p className="text-xs text-on-surface-variant/50 -mt-1">
+              {isLocal
+                ? 'FancyPlan-Termin (intern) – die Serie wird nur lokal gelöscht.'
+                : isOwner
+                  ? 'Google-Termin (Du bist Ersteller) – Änderungen werden auch in Google Calendar übernommen.'
+                  : 'Google-Termin (geteilt von einem anderen Konto) – nur lokal entfernen; Google bleibt unberührt.'}
+            </p>
+            {deleteSeriesError && (
+              <p className="text-xs text-error leading-tight break-all bg-error/10 rounded-lg px-3 py-2">
+                {deleteSeriesError}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 pt-1">
+              <button onClick={closeModal} disabled={deleteSeriesBusy}
+                className="w-full py-2 rounded-xl border border-outline-variant/40 text-on-surface-variant text-sm hover:bg-surface-container-high transition-colors disabled:opacity-40">
+                Abbrechen
+              </button>
+              <button onClick={confirmDeleteSingle} disabled={deleteSeriesBusy}
+                className="w-full py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface text-sm transition-colors disabled:opacity-40">
+                {deleteSeriesBusy ? 'Löscht…' : 'Nur diesen Termin löschen'}
+              </button>
+              <button onClick={confirmDeleteSeries} disabled={deleteSeriesBusy}
+                className="w-full py-2 rounded-xl bg-error/20 hover:bg-error/35 text-error font-semibold text-sm transition-colors disabled:opacity-40">
+                {deleteSeriesBusy ? 'Löscht…' : `Ganze Serie ab diesem Termin löschen (${deleteSeriesCount})`}
+              </button>
+            </div>
+          </div>
+        </div>
+        )
+      })()}
     </div>
   )
 }

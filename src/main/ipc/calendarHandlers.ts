@@ -115,7 +115,7 @@ ipcMain.handle('cal:sync', async () => {
 // List events from local DB (optional date range)
 ipcMain.handle('cal:list', (_e, filter?: { from?: string; to?: string }) => {
   const db = getDb()
-  let sql = 'SELECT id, cal_uid, summary, description, location, dtstart, dtend, all_day, status FROM TCalendar'
+  let sql = 'SELECT id, cal_uid, summary, description, location, dtstart, dtend, all_day, status, source FROM TCalendar'
   const conds: string[] = []
   const params: string[] = []
 

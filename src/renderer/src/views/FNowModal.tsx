@@ -495,6 +495,14 @@ export default function FNowModal({
             {t('fnow.cancel')}
           </button>
           <button
+            onClick={() => window.dispatchEvent(new CustomEvent('fp:open-values', { detail: { actId } }))}
+            title={t('fcm.values')}
+            className="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:bg-surface-container-high flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-[18px] leading-none">tune</span>
+            {t('fcm.values')}
+          </button>
+          <button
             onClick={() => window.db.help.open('fnow')}
             title={t('common.help')}
             className="w-8 h-8 flex items-center justify-center rounded-full border border-outline-variant/50 text-on-surface-variant/50 hover:border-primary/40 hover:text-primary text-sm transition-colors"

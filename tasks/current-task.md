@@ -26,7 +26,7 @@
 
 - [ ] **F9-05: App-Test (ausführlich)** — `dist\win-unpacked\FancyPlan.exe` oder Installer; Feedback ausstehend
 - [x] **S10-02** ✅ Konfigurierbarer DB-Pfad für Challenger-Integration (SettingsView)
-- [ ] **S10-03** — Datenbank-Backup-Export (Button in SettingsView, fs.copyFile)
+- [x] **S10-03** ✅ Datenbank-Backup-Export + Import (SettingsView, fs.copyFile) — live getestet OK (2026-05-30)
 - [x] **S10-04** ✅ FMyData: sensible persönliche Daten (Passwörter, Kontonummern), TMyData + FMyDataView
 - [x] **S10-06** ✅ Interne Feldverschlüsselung für TMyData (AES-256, PBKDF2)
 - [x] **U12-01** ✅ In-App Update-Prüfung (electron-updater + IPC Events)
@@ -36,7 +36,7 @@
 ## Offen — Priorität Mittel
 
 - [x] **U12-04** ✅ Update-Sektion in SettingsView (Version, Check-Button, Fortschrittsbalken, Install-Button)
-- [ ] **L11-05a** — Hilfe Built-in: hartverdrahteter Hilfe-Button pro Formular (öffnet .docx)
+- [ ] **L11-05a** → 🚫 Phase 2 — Hilfe Built-in: hartverdrahteter Hilfe-Button pro Formular (öffnet .docx)
 - [ ] **F9-06** — macOS-Build (.dmg)
 - [ ] **F9-07** — Linux-Build (.AppImage)
 - [ ] **F9-08** — Corporate-Tauglichkeit: Installation ohne Admin-Rechte (per-user NSIS, Library-Prüfung)
