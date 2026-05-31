@@ -16,7 +16,8 @@ Thumbs.db
 
 # Build
 dist/
-build/
 out/
+build/*
+!build/icon.ico
 build_out.txt
 tsconfig.web.tsbuildinfo
