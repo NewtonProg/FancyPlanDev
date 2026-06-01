@@ -206,7 +206,7 @@ function EntryForm({
         </div>
         <div className="flex-1">
           <label className={lbl}>{isLink ? 'Name / Bezeichnung' : 'Bezeichnung'}</label>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z.B. Gmail" className="w-full text-base font-bold text-white border border-outline-variant rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container placeholder:font-normal placeholder:text-on-surface/30" autoFocus />
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z.B. Gmail" className="w-full text-base font-bold text-on-surface border border-outline-variant rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container placeholder:font-normal placeholder:text-on-surface/30" autoFocus />
         </div>
       </div>
 

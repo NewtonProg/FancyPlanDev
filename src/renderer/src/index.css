@@ -54,6 +54,109 @@
     --fp-on-background:             224 226 237;
   }
 
+  /* ── Design 2: Erdfarben (hell, Erd-Töne — Clay/Terracotta/Olive) ── */
+  :root[data-theme="erdfarben"] {
+    --fp-primary:                   125 99 85;      /* #7d6355 Clay */
+    --fp-on-primary:                255 255 255;
+    --fp-primary-container:         166 139 124;    /* #a68b7c Clay Light */
+    --fp-on-primary-container:      255 255 255;
+    --fp-inverse-primary:           172 199 255;
+    --fp-primary-fixed:             215 226 255;
+    --fp-primary-fixed-dim:         172 199 255;
+    --fp-on-primary-fixed:          0 26 64;
+    --fp-on-primary-fixed-variant:  0 68 146;
+    --fp-secondary:                 176 90 58;      /* #b05a3a Terracotta */
+    --fp-on-secondary:              255 255 255;
+    --fp-secondary-container:       217 125 84;     /* #d97d54 Terracotta Light */
+    --fp-on-secondary-container:    255 255 255;
+    --fp-secondary-fixed:           255 218 213;
+    --fp-secondary-fixed-dim:       255 180 169;
+    --fp-on-secondary-fixed:        65 0 1;
+    --fp-on-secondary-fixed-variant:147 0 4;
+    --fp-tertiary:                  92 67 0;        /* #5c4300 Olive-Gold */
+    --fp-on-tertiary:               255 255 255;
+    --fp-tertiary-container:        122 130 93;     /* #7a825d Olive */
+    --fp-on-tertiary-container:     250 211 134;
+    --fp-tertiary-fixed:            255 223 159;
+    --fp-tertiary-fixed-dim:        231 194 118;
+    --fp-on-tertiary-fixed:         38 26 0;
+    --fp-on-tertiary-fixed-variant: 92 67 0;
+    --fp-error:                     186 26 26;
+    --fp-on-error:                  255 255 255;
+    --fp-error-container:           255 218 214;
+    --fp-on-error-container:        147 0 10;
+    --fp-surface:                   245 241 234;    /* #f5f1ea Parchment */
+    --fp-surface-dim:               217 218 219;
+    --fp-surface-bright:            248 249 250;
+    --fp-surface-container-lowest:  255 255 255;
+    --fp-surface-container-low:     243 244 245;
+    --fp-surface-container:         237 238 239;
+    --fp-surface-container-high:    231 232 233;
+    --fp-surface-container-highest: 225 227 228;
+    --fp-on-surface:                0 0 0;          /* reines Schwarz — gestochen scharf */
+    --fp-on-surface-variant:        66 71 83;
+    --fp-inverse-surface:           46 49 50;
+    --fp-inverse-on-surface:        240 241 242;
+    --fp-outline:                   114 119 132;
+    --fp-outline-variant:           194 198 213;
+    --fp-surface-tint:              125 99 85;
+    --fp-surface-variant:           225 227 228;
+    --fp-background:                245 241 234;
+    --fp-on-background:             0 0 0;
+  }
+
+  /* ── Design 3: Tactile Precision (hell, gesättigt-präzise) ── */
+  :root[data-theme="tactile-precision"] {
+    --fp-primary:                   45 84 194;
+    --fp-on-primary:                255 255 255;
+    --fp-primary-container:         76 133 226;
+    --fp-on-primary-container:      255 255 255;
+    --fp-inverse-primary:           147 197 253;
+    --fp-primary-fixed:             219 234 254;
+    --fp-primary-fixed-dim:         147 197 253;
+    --fp-on-primary-fixed:          0 26 80;
+    --fp-on-primary-fixed-variant:  45 84 194;
+    --fp-secondary:                 220 38 38;
+    --fp-on-secondary:              255 255 255;
+    --fp-secondary-container:       239 68 68;
+    --fp-on-secondary-container:    255 255 255;
+    --fp-secondary-fixed:           254 202 202;
+    --fp-secondary-fixed-dim:       252 165 165;
+    --fp-on-secondary-fixed:        69 10 10;
+    --fp-on-secondary-fixed-variant:153 27 27;
+    --fp-tertiary:                  180 83 9;
+    --fp-on-tertiary:               255 255 255;
+    --fp-tertiary-container:        217 119 6;
+    --fp-on-tertiary-container:     255 255 255;
+    --fp-tertiary-fixed:            254 243 199;
+    --fp-tertiary-fixed-dim:        253 230 138;
+    --fp-on-tertiary-fixed:         66 32 6;
+    --fp-on-tertiary-fixed-variant: 120 53 15;
+    --fp-error:                     220 38 38;
+    --fp-on-error:                  255 255 255;
+    --fp-error-container:           254 202 202;
+    --fp-on-error-container:        153 27 27;
+    --fp-surface:                   248 250 252;
+    --fp-surface-dim:               226 232 240;
+    --fp-surface-bright:            248 250 252;
+    --fp-surface-container-lowest:  255 255 255;
+    --fp-surface-container-low:     248 250 252;
+    --fp-surface-container:         241 245 249;
+    --fp-surface-container-high:    232 238 245;
+    --fp-surface-container-highest: 219 228 240;
+    --fp-on-surface:                7 8 10;
+    --fp-on-surface-variant:        55 65 81;
+    --fp-inverse-surface:           30 41 59;
+    --fp-inverse-on-surface:        241 245 249;
+    --fp-outline:                   100 116 139;
+    --fp-outline-variant:           203 213 225;
+    --fp-surface-tint:              45 84 194;
+    --fp-surface-variant:           226 232 240;
+    --fp-background:                241 245 249;
+    --fp-on-background:             7 8 10;
+  }
+
+
   html,
   body,
   #root {
@@ -170,4 +273,166 @@
     @apply block text-xs mb-1;
     color: rgb(var(--fp-on-surface-variant));
   }
+}
+
+/* ── glass-card / activity-card für helle Themes ── */
+:root[data-theme="erdfarben"] .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(125, 99, 85, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+:root[data-theme="tactile-precision"] .glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="erdfarben"] .activity-card {
+  background: linear-gradient(155deg, #ffffff 0%, #e8e2d9 100%);
+  border: 1px solid rgba(125, 99, 85, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 8px rgba(0, 0, 0, 0.09), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="tactile-precision"] .activity-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="erdfarben"] .activity-card:hover {
+  border-color: rgba(125, 99, 85, 0.3);
+  transform: translateY(-3px);
+  background: linear-gradient(155deg, #ffffff 0%, #f0ebe2 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 16px 32px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="tactile-precision"] .activity-card:hover {
+  border-color: rgba(29, 78, 216, 0.35);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 12px 28px rgba(29, 78, 216, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="erdfarben"] .activity-card::after {
+  background: radial-gradient(ellipse at center, rgba(125, 99, 85, 0.08) 0%, transparent 75%);
+}
+
+:root[data-theme="tactile-precision"] .activity-card::after {
+  background: radial-gradient(ellipse at center, rgba(29, 78, 216, 0.1) 0%, transparent 75%);
+}
+
+:root[data-theme="erdfarben"] .sidebar-item,
+:root[data-theme="tactile-precision"] .sidebar-item {
+  color: rgb(var(--fp-on-surface-variant));
+}
+
+:root[data-theme="erdfarben"] .sidebar-item:hover,
+:root[data-theme="tactile-precision"] .sidebar-item:hover {
+  background-color: rgb(var(--fp-surface-container-high));
+}
+
+:root[data-theme="erdfarben"] .sidebar-item.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #a68b7c 0%, #7d6355 100%);
+  font-weight: 700;
+}
+
+:root[data-theme="tactile-precision"] .sidebar-item.active {
+  color: #ffffff;
+  background-color: rgb(39 61 125);
+  font-weight: 700;
+}
+
+/* ── 3D-Schaltflächen für Erdfarben ── */
+:root[data-theme="erdfarben"] .btn-primary {
+  background: linear-gradient(155deg, #a68b7c 0%, #7d6355 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 3px 6px rgba(0,0,0,0.22), 0 1px 2px rgba(0,0,0,0.12);
+  border: none;
+  color: #ffffff;
+  transition: all 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+:root[data-theme="erdfarben"] .btn-primary:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 12px rgba(0,0,0,0.26), 0 2px 4px rgba(0,0,0,0.14);
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+:root[data-theme="erdfarben"] .btn-primary:active {
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.35), inset 0 1px 2px rgba(0,0,0,0.2);
+  transform: scale(0.97) translateY(1px);
+  opacity: 1;
+}
+
+:root[data-theme="erdfarben"] .btn-secondary {
+  background: linear-gradient(155deg, #ffffff 0%, #f0ebe2 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+  border: 1px solid rgba(125, 99, 85, 0.25);
+  color: rgb(66 71 83);
+  transition: all 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+:root[data-theme="erdfarben"] .btn-secondary:hover {
+  background: linear-gradient(155deg, #ffffff 0%, #e8e2d9 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 8px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+  color: rgb(var(--fp-on-surface));
+}
+
+:root[data-theme="erdfarben"] .btn-secondary:active {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  transform: scale(0.97) translateY(1px);
+}
+
+/* ── Schwarz gestochen scharf + Text-Schärfe für Erdfarben ── */
+:root[data-theme="erdfarben"] body {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: geometricPrecision;
+  color: #000000;
+}
+
+:root[data-theme="erdfarben"] h1,
+:root[data-theme="erdfarben"] h2,
+:root[data-theme="erdfarben"] h3,
+:root[data-theme="erdfarben"] h4 {
+  font-weight: 700;
+  color: #000000;
+}
+
+/* ── Text-Schärfe für Tactile Precision ── */
+:root[data-theme="tactile-precision"] body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-weight: 500;
+}
+
+:root[data-theme="tactile-precision"] h1,
+:root[data-theme="tactile-precision"] h2,
+:root[data-theme="tactile-precision"] h3,
+:root[data-theme="tactile-precision"] h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgb(7 8 10);
+}
+
+/* ── Tabellen-Text scharf & mittelstark für alle 3 Designs ── */
+table td {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 500;
+}
+
+:root[data-theme="erdfarben"] table td {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-weight: 500;
+}
+
+:root[data-theme="tactile-precision"] table td {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 500;
 }

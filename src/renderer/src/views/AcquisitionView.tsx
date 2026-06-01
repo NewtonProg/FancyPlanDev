@@ -232,10 +232,10 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
       setDetailEdits((p) => ({ ...p, [field]: e.target.value }))
 
   const inputCls =
-    'px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container w-full'
+    'px-3 py-2 text-[14px] text-on-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container w-full'
 
   const emailInputCls =
-    'w-full text-xs border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
+    'w-full text-[14px] border border-outline-variant rounded-lg px-3 py-2 bg-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
 
   return (
     <div className="flex flex-col h-full">
@@ -451,18 +451,18 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
             </div>
           ) : (
             <div className="w-full max-w-xl bg-surface-container-low rounded-xl border border-outline-variant/30 shadow-lg overflow-y-auto self-start">
-            <div className="p-5 flex flex-col gap-4">
+            <div className="p-6 flex flex-col gap-5">
 
               {/* Name + company */}
               <div>
                 <div
-                  className={`text-sm font-semibold text-on-surface${onOpenContact ? ' cursor-pointer hover:text-primary' : ''}`}
+                  className={`text-[15px] font-semibold text-on-surface${onOpenContact ? ' cursor-pointer hover:text-primary' : ''}`}
                   title={onOpenContact ? 'Doppelklick: Kontakt öffnen' : undefined}
                   onDoubleClick={() => onOpenContact && selectedContact.id != null && onOpenContact(selectedContact.id as number)}
                 >
                   {contactLabel(selectedContact)}
                 </div>
-                <div className="text-xs text-primary">{selectedCompany}</div>
+                <div className="text-[14px] text-primary">{selectedCompany}</div>
               </div>
 
               {/* PRIMÄRE KONTAKTDATEN */}
@@ -473,7 +473,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
 
                 {/* Anrede / Titel */}
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">
                     {t('contacts.labelTitle')}
                   </label>
                   <input className={`${inputCls} w-24`} placeholder="Herr/Frau"
@@ -484,7 +484,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
 
                 {/* Head-Office + Land */}
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">
                     {t('contacts.labelHeadOffice')}
                   </label>
                   <input className={inputCls}
@@ -495,7 +495,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
 
                 {/* Firma */}
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">
                     {t('contacts.labelCompany')}
                   </label>
                   <input className={inputCls}
@@ -504,14 +504,14 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
 
                 {/* Mobile 1 */}
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">Mobile 1</label>
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">Mobile 1</label>
                   <input className={inputCls}
                     value={String(detailEdits.Mobile1 ?? '')} onChange={setField('Mobile1')} />
                 </div>
 
                 {/* Tel 1 */}
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">Tel 1</label>
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">Tel 1</label>
                   <input className={inputCls}
                     value={String(detailEdits.TelNr1 ?? '')} onChange={setField('TelNr1')} />
                 </div>
@@ -524,7 +524,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
                     {t('contacts.sectionEmail')}
                   </p>
                   <button onClick={() => setShowCbx((v) => !v)}
-                    className="text-[10px] text-on-surface-variant/50 hover:text-on-surface-variant transition-colors px-1.5 py-0.5 rounded border border-outline-variant/30">
+                    className="text-[11px] text-on-surface-variant/50 hover:text-on-surface-variant transition-colors px-2 py-[3px] rounded border border-outline-variant/30">
                     {showCbx ? t('contacts.hideCbx') : t('contacts.showCbx')}
                   </button>
                 </div>
@@ -547,17 +547,17 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
                       </div>
                       {showCbx && (
                         <div className="flex gap-3 mt-0.5 ml-1">
-                          <label className="flex items-center gap-1 text-xs text-on-surface-variant/60 cursor-pointer">
+                          <label className="flex items-center gap-1 text-[14px] text-on-surface-variant/60 cursor-pointer">
                             <input type="checkbox" checked={e.bSender === 1}
                               onChange={(ev) => updateEmail(realIdx, 'bSender', ev.target.checked ? 1 : 0)} />
                             {t('contacts.senderRecip')}
                           </label>
-                          <label className="flex items-center gap-1 text-xs text-on-surface-variant/60 cursor-pointer">
+                          <label className="flex items-center gap-1 text-[14px] text-on-surface-variant/60 cursor-pointer">
                             <input type="checkbox" checked={e.bFavorit === 1}
                               onChange={(ev) => updateEmail(realIdx, 'bFavorit', ev.target.checked ? 1 : 0)} />
                             {t('contacts.favorite')}
                           </label>
-                          <label className="flex items-center gap-1 text-xs text-on-surface-variant/60 cursor-pointer">
+                          <label className="flex items-center gap-1 text-[14px] text-on-surface-variant/60 cursor-pointer">
                             <input type="checkbox" checked={e.bIsImap === 1}
                               onChange={(ev) => updateEmail(realIdx, 'bIsImap', ev.target.checked ? 1 : 0)} />
                             {t('contacts.imap')}
@@ -568,17 +568,17 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
                   )
                 })}
                 <button onClick={addEmail}
-                  className="text-xs text-on-surface-variant/50 hover:text-on-surface-variant border border-dashed border-outline-variant/40 rounded-lg px-2 py-1 w-full transition-colors">
+                  className="text-[14px] text-on-surface-variant/50 hover:text-on-surface-variant border border-dashed border-outline-variant/40 rounded-lg px-[9px] py-[5px] w-full transition-colors">
                   + {t('contacts.addEmail')}
                 </button>
               </div>
 
               {/* Notizen */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-on-surface-variant">{t('acquis.document')}</label>
+                <label className="text-[14px] text-on-surface-variant">{t('acquis.document')}</label>
                 <textarea
                   ref={txt1Ref}
-                  className="px-2.5 py-1.5 text-xs border border-outline-variant rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container resize-none w-full"
+                  className="px-3 py-2 text-[14px] text-on-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 bg-surface-container resize-none w-full"
                   style={{ minHeight: '5.5rem', height: 'auto', overflow: 'hidden' }}
                   value={String(detailEdits.txt1 ?? '')}
                   onChange={setField('txt1')}
@@ -593,7 +593,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
               {/* Priorität */}
               {prio1Options.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <label className="w-24 flex-shrink-0 text-xs text-on-surface-variant/60 text-right">
+                  <label className="w-[106px] flex-shrink-0 text-[14px] text-on-surface-variant/60 text-right">
                     {t('prio.colPrio1')}
                   </label>
                   <select
@@ -615,7 +615,7 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={handleBccCopy}
-                  className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                  className={`px-[13px] py-2 text-[14px] rounded-lg border transition-colors ${
                     bccToast
                       ? 'bg-secondary-container/10 border-green-300 text-secondary-fixed-dim'
                       : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-high'
@@ -625,13 +625,13 @@ export default function AcquisitionView({ onOpenContact, onBack }: Props): JSX.E
                 <div className="flex-1" />
                 <button
                   onClick={handleDeleteContact}
-                  className="text-xs text-error hover:text-red-600 px-2 py-1">
+                  className="text-[14px] text-error hover:text-red-600 px-[9px] py-[5px]">
                   {t('acquis.delete')}
                 </button>
                 <button
                   onClick={handleDetailSave}
                   disabled={saving}
-                  className="px-4 py-1.5 text-xs rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40">
+                  className="px-[17px] py-2 text-[14px] rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40">
                   {saving ? t('acquis.savingBtn') : t('acquis.save')}
                 </button>
               </div>

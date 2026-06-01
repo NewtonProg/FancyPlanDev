@@ -188,10 +188,10 @@ export default function PrioritiesView(): JSX.Element {
                   <td className="px-3 py-1.5 text-on-surface font-medium tabular-nums">
                     {act.Prio1 != null && act.Prio1 !== '' ? String(act.Prio1) : ''}
                   </td>
-                  <td className="px-3 py-1.5 text-on-surface-variant/60 tabular-nums">
+                  <td className="px-3 py-1.5 text-on-surface-variant tabular-nums">
                     {act.Prio2 != null && act.Prio2 !== '' ? String(act.Prio2) : ''}
                   </td>
-                  <td className="px-3 py-1.5 text-on-surface max-w-0">
+                  <td className="px-3 py-1.5 text-on-surface font-medium max-w-0">
                     <div className="truncate" title={String(act.Title ?? '')}>
                       {String(act.Title ?? '')}
                     </div>
