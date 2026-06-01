@@ -443,7 +443,7 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
           <div className="mb-2">
             <div className="glass-card rounded-xl p-4 mb-3 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-on-surface-variant/70">Version <strong className="text-on-surface">0.1.0</strong></span>
+                <span className="text-xs text-on-surface-variant/70">Version <strong className="text-on-surface">1.0.0</strong></span>
                 {updateEvt.status === 'idle' || updateEvt.status === 'not-available' ? (
                   <button
                     onClick={() => window.db.update.check()}
