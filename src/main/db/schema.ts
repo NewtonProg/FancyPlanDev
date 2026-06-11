@@ -541,13 +541,16 @@ CREATE TABLE IF NOT EXISTS TFCMStatus (
   p3LtVal     INTEGER, p3LtSet INTEGER, p3LtNoop INTEGER DEFAULT 1,
   p3EqVal     INTEGER, p3EqSet INTEGER, p3EqNoop INTEGER DEFAULT 1,
   p3GtVal     INTEGER, p3GtSet INTEGER, p3GtNoop INTEGER DEFAULT 1,
-  setIstVon   INTEGER DEFAULT 0,
-  setIstBis   INTEGER DEFAULT 0,
-  setPlanVon  INTEGER DEFAULT 0,
-  setPlanBis  INTEGER DEFAULT 0,
-  setInfo     INTEGER DEFAULT 0,
-  text1       TEXT,
-  text2       TEXT,
+  setIstVon    INTEGER DEFAULT 0,
+  setIstBis    INTEGER DEFAULT 0,
+  setPlanVon   INTEGER DEFAULT 0,
+  setPlanBis   INTEGER DEFAULT 0,
+  setInfo      INTEGER DEFAULT 0,
+  setLtxt1Date INTEGER DEFAULT 0,
+  setLtxt2Date INTEGER DEFAULT 0,
+  setErledigt  INTEGER DEFAULT 0,
+  text1        TEXT,
+  text2        TEXT,
   created_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_tfcmstatus_status ON TFCMStatus(Status);

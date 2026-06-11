@@ -7,7 +7,8 @@ const dbApi = {
     getById: (id: number)                        => ipcRenderer.invoke('db:act:getById', id),
     create:  (data: Record<string, unknown>)     => ipcRenderer.invoke('db:act:create', data),
     update:  (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('db:act:update', id, data),
-    delete:  (id: number)                        => ipcRenderer.invoke('db:act:delete', id)
+    delete:  (id: number)                        => ipcRenderer.invoke('db:act:delete', id),
+    recent:  (limit?: number)                    => ipcRenderer.invoke('db:act:recent', limit)
   },
   tel: {
     getAll:               (search?: string)                   => ipcRenderer.invoke('db:tel:getAll', search),
@@ -133,7 +134,7 @@ const dbApi = {
     update:      (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('db:links:update', id, data),
     delete:      (id: number)                            => ipcRenderer.invoke('db:links:delete', id),
     open:        (url: string, linkType: string)         => ipcRenderer.invoke('db:links:open', url, linkType),
-    pickPath:    ()                                      => ipcRenderer.invoke('db:links:pickPath')
+    pickPath:    (opts?: { defaultPath?: string; mode?: 'file' | 'directory' | 'both' }) => ipcRenderer.invoke('db:links:pickPath', opts)
   },
   planvariant: {
     getAll:    ()                                    => ipcRenderer.invoke('db:planvariant:getAll'),
@@ -176,6 +177,16 @@ const dbApi = {
     connect:     ()                             => ipcRenderer.invoke('gcal:auth:connect'),
     disconnect:  ()                             => ipcRenderer.invoke('gcal:auth:disconnect'),
     sync:        ()                             => ipcRenderer.invoke('gcal:sync')
+  },
+  cloud: {
+    authStatus:     ()                                => ipcRenderer.invoke('cloud:auth:status'),
+    login:          (email: string, password: string) => ipcRenderer.invoke('cloud:auth:login', email, password),
+    logout:         ()                                => ipcRenderer.invoke('cloud:auth:logout'),
+    pushRefData:    ()                                => ipcRenderer.invoke('cloud:sync:pushRefData'),
+    pushFcmRules:   ()                                => ipcRenderer.invoke('cloud:sync:pushFcmRules'),
+    pushActivities: ()                                => ipcRenderer.invoke('cloud:sync:pushActivities'),
+    pull:           ()                                => ipcRenderer.invoke('cloud:sync:pull'),
+    syncAll:        ()                                => ipcRenderer.invoke('cloud:sync:all')
   },
   termin: {
     getByDate:       (date: string)                            => ipcRenderer.invoke('termin:getByDate', date),

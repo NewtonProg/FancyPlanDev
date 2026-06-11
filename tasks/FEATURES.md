@@ -54,6 +54,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F2-02g | Status-Dropdown themenabhängig — zeigt nur Status die zum gewählten Thema passen | TStatus.IDTheme: 0=alle Themen, sonst FK→TTheme.id; FNowModal filtert `visibleStatuses` reaktiv nach ThemeName→id; dbHandlers: `IDFormName=? OR IDFormName='*'`; StatusEditor in FCMValueView mit Thema-Dropdown beim Anlegen/Bearbeiten | Hoch | ✅ |
 | F2-02h | Kategorie-Picker FdlgCat — Mehrfachauswahl per Doppelklick | FdlgCatModal.tsx: alle TCat-Einträge als Chips gruppiert nach CatGrp; bereits im Feld enthaltene Kategorien (Colon-getrennt) erscheinen aktiv (blau); Klick togglet; OK schreibt `:` getrennten String zurück ins Cat-Feld | Hoch | ✅ |
 | F2-02i | HTML-Tags in migrierten Textfeldern bereinigt | stripHtml() in FNowModal: Com/Ltxt1/Ltxt2 werden beim Laden von `<font>`/`<div>`/`&nbsp;` bereinigt; ActivitiesView-Vorschau ebenfalls stripHtml | Mittel | ✅ |
+| F2-02l | Text 1 / Text 2 als formatierbare HTML-Felder (Rechtsklick-Menü) | RichEditor.tsx (contentEditable): Rechtsklick öffnet Format-Menü — Fett (Toggle), Unterstrichen, Doppelt unterstrichen, Durchgestrichen, Schriftfarbe (Palette + eigene Farbe), **Schriftart** (9 Fonts + Standard), **Schriftgröße** (8–24 px), **Hintergrundfarbe/Highlight** (10 Farben + „Keine" + eigene), Link, Emoji; span-basiert mit Entfernen verschachtelter Gleichstile; Eigenbau statt TipTap/Quill (HTML bleibt kompatibel zu applyFcmStatus + Cloud-Sync) | Mittel | ✅ |
 | F2-02a | Aktivität als erledigt markieren setzt "Heute" automatisch zurück | Sdone=1 → SToday=0 in handleToggleDone | Hoch | ✅ |
 | F2-02b | Tagesansicht nach Aufgaben / Infos / Alles filtern | SInfo-Flag, Toggle-Buttons in TodayView | Hoch | ✅ |
 | F2-02c | Baumknoten einer Aktivität per Picker zuweisen | PSPName-Feld mit ↗-Button → TreePickerModal (Doppelklick oder Button) | Mittel | ✅ |
@@ -97,7 +98,8 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F5-01 | Kontakte suchen (Name, Firma, E-Mail) | ContactsView.tsx — Suchfeld + Alphabet-Filter | Hoch | ✅ |
 | F5-02 | Kontakt-Detailansicht anzeigen und bearbeiten | Zweispaltig: Adresse/Firma links, Telefon/E-Mail/Web rechts | Hoch | ✅ |
 | F5-02a | Links (Web, Mail, Datei, Social) pro Kontakt oder Baumknoten verwalten | TLinks-Tabelle (entity_type+id); LinkPanel.tsx; Klick öffnet extern | Hoch | ✅ |
-| F5-02c | Datei-/Ordnerpfad per Explorer-Dialog im LinkPanel wählen | Doppelklick auf URL-Feld bei Typ Datei/Netzwerk öffnet Electrons dialog.showOpenDialog (openFile+openDirectory); Pfad wird ins Feld übernommen; db:links:pickPath IPC-Handler; LinkPanel.tsx | Mittel | ✅ |
+| F5-02c | Datei-/Ordnerpfad per Explorer-Dialog im LinkPanel wählen | 📁-Button bei Typ Datei/Netzwerk öffnet Electrons dialog.showOpenDialog; Pfad wird ins Feld übernommen; db:links:pickPath IPC-Handler (Modus file/directory/both, defaultPath); LinkPanel.tsx | Mittel | ✅ |
+| F5-02d | Datei-/Ordnerpfad per Doppelklick im OS-Explorer öffnen | Doppelklick auf URL-Feld bei Typ Datei/Netzwerk ruft db:links:open (shell.openPath) auf → Ordner öffnet echtes Windows-Explorer-Fenster, Datei öffnet in Standard-App (z. B. Word); Standard-Doppelklick-Verhalten; LinkPanel.tsx | Mittel | ✅ |
 | F5-02b | Vollständige Kontakt-Detailansicht (alle Felder aus FTel-1 + FTel-2) | Alle 99 TTel-Felder in ContactsView; Checkboxes für IMAP/Sender | Mittel | ✅ |
 | F5-03 | Aktivitäten suchen (Volltext über alle Felder) | ActivitiesView.tsx — Suchfeld, Bereich-Filter, Erledigt-Filter | Hoch | ✅ |
 | F5-04 | Aktivitäten-Liste mit Prio, Status, Datum | Tabelle mit Doppelklick → FNowModal | Hoch | ✅ |
@@ -133,6 +135,7 @@ Features ohne Stufen-Kennzeichnung sind Stufe 1. Stufe-2-Features setzen eine VI
 | F7-04 | Termine vom CalDAV-Server synchronisieren | tsdav fetchCalendarObjects → node-ical parse → TCalendar SQLite-Cache | Mittel | ✅ |
 | F7-05 | Termin löschen | Lokal + CalDAV DELETE | Niedrig | ✅ |
 | F7-06 | Google Calendar verbinden (OAuth2, kein App-Review nötig) | googleCalHandlers.ts — loopback OAuth2-Server, googleapis, Sync in TCalendar (source=gcal); SettingsView: Client-ID/Secret + Verbinden-Flow; Live-Test ✅ 2026-05-21: 91 Termine synchronisiert; Bugs behoben: Client-ID-Persistenz, refresh_token-Auth, startOfDay-timeMin, TTermin-UNIQUE-Index | Hoch | ✅ |
+| F7-06b | Google OAuth-Verifizierung + Produktiv-Veröffentlichung | Projekt smartplan-777 (Nr. 76333238835): Scope `calendar.events` von Google verifiziert ✅ 2026-06-08; OAuth-Veröffentlichungsstatus auf "In Produktion" / Nutzertyp "Extern" gesetzt → kein 100-Test-User-Limit, kein "nicht verifiziert"-Warnscreen; Endnutzer verbinden eigenen Google-Account ohne Test-User-Eintrag | Hoch | ✅ |
 
 ### Architektur-Entscheidungen Terminplanung (beschlossen 2026-05-07)
 
@@ -261,6 +264,7 @@ Für zukünftige Mobile-App-Integration (Aktivitäten versenden/empfangen, Statu
 | F9-09 | Manueller Sicherungspunkt (Tree-Header) | 💾-Button im TreeView-Header → `window.db.backup.create()` → IPC → `backupDb()`; Bestätigungsmeldung 3 Sek. sichtbar | Hoch | ✅ |
 | F9-10 | Undo für Tree-Drag & Drop | `undoStack` State in TreeView; vor jedem Move wird `{nodeId, oldParentId}` gespeichert; ↩-Button erscheint orange wenn Stack > 0; Klick stellt letzten Zug wieder her (`tree.move` mit altem Parent); mehrfach rückgängig möglich | Hoch | ✅ |
 | F9-11 | Persistentes Error-Log für Qualitätssicherung | electron-log (npm): schreibt `warn`+`error` automatisch in `%AppData%\FancyPlan\logs\main.log`; Renderer-Fehler werden ebenfalls erfasst; kein Admin-Recht erforderlich; Dev: volle Konsolenausgabe; Prod: nur Warnungen/Fehler; Grundlage für spätere gezielte Fehler-Nachverfolgung und QS | Mittel | ✅ |
+| F9-12 | „Letzte"-Ansicht in Aktivitäten (Schnellzugriff zuletzt bearbeitet) | ActivitiesView: Button „Liste" → „Letzte"; neuer IPC `db:act:recent` liefert die 20 zuletzt bearbeiteten Aktivitäten (`ORDER BY updated_at DESC`, ohne Seitenleisten-Filter); Zeile zeigt Bearbeitungs-Zeitstempel (Heute/Gestern/Datum + Uhrzeit), Doppelklick öffnet FNow; Liste lädt nach jedem Speichern/Löschen neu (bearbeitete Aktivität rutscht nach oben); nutzt vorhandene Spalte `updated_at` (kein Schema-Change) | Mittel | ✅ |
 
 ---
 
@@ -286,3 +290,16 @@ Hintergrund: FancyPlan ist eine Electron-Desktop-App. Updates müssen ohne Store
 | U12-02 | Automatischer Download + Installation im Hintergrund | autoDownload=true; autoInstallOnAppQuit=true; Fortschrittsbalken in SettingsView; "Jetzt installieren"-Button bei status=downloaded | Hoch | ✅ |
 | U12-03 | Update-Server konfigurieren | package.json build.publish: provider=github; owner/repo als Platzhalter — vor Go-Live eintragen; GH_TOKEN für Release-Upload nötig | Hoch | ✅ |
 | U12-04 | Fallback: Manueller Update-Hinweis in SettingsView | Sektion "App-Update" in SettingsView: Version, "Auf Updates prüfen"-Button, Status-Anzeige, Fortschrittsbalken | Mittel | ✅ |
+
+---
+
+## Phase 13 — FancyPlan Cloud (Mobile-Sync)
+
+Hintergrund: Gemeinsames **Cloud-Functions-Backend** (Firebase, Projekt `smartplan-777`, Region europe-west3) für Desktop **und** Android-App (FancyPlanMobile). Der **PC bleibt führendes System** (offline-fähig, volle Datenhaltung); die Cloud ist eine additive Replik. Mobile-Änderungen fließen zum PC zurück. Identifikation rein über Firebase-Auth-UID (Bearer-ID-Token), pro Nutzer eigene Datenpartition. Ersetzt das frühere Direkt-Firestore-Konzept (L11-06/07).
+
+| ID | Was es tut | Implementierung | Prio | Status |
+|----|-----------|----------------|------|--------|
+| C13-01 | Cloud-Functions-Backend (geteilt PC + Android) | FancyPlanCloud/functions: Activities (getTodayActivities, getActivity, create/update/updateStatus/deleteActivity), getRefData, Sync (syncActivities, pullActivityUpdates, acknowledgePull, syncReferenceData, syncFcmRules); applyFcmStatus 1:1-Port aus FNowModal; **LIVE auf smartplan-777** | Hoch | ✅ |
+| C13-02 | Desktop Sync-Engine (PC ↔ Cloud) | cloudHandlers.ts: Login/Logout/authStatus (Firebase signInWithPassword + Token-Refresh in TSettings), Push (Stammdaten/FCM-Regeln/Aktivitäten inkrementell via updated_at), Pull (Mobile-Änderungen → TAct + acknowledge mit localId-Rückmeldung), `cloud:sync:all` (Voll-Push + Pull); Preload-Bridge + env.d.ts | Hoch | ✅ |
+| C13-03 | Cloud-Login & Synchronisierung in SettingsView | Sektion „FancyPlan Cloud — Synchronisierung": E-Mail/Passwort-Login (`cloud.login`, Enter-Submit), Status-/Konfig-Anzeige, „Jetzt synchronisieren" (`cloud.syncAll`, meldet gesendet/empfangen), Abmelden; setzt gespeicherte Firebase-Config voraus. **Live-Test ✅ 2026-06-08**: Login business@inprime.net, Erst-Sync 1601 Aktivitäten gesendet / 0 empfangen (PC führend, erwartbar) | Hoch | ✅ |
+| C13-04 | FancyPlanMobile (Android) — FToday + FNow gegen Cloud | Eigene App (Kotlin), nicht dieser Client: Firebase-Auth-Login → ID-Token; FToday = `getTodayActivities`, FNow = `getActivity`/`createActivity`/`updateActivity`/`updateActivityStatus`/`deleteActivity`, Dropdowns = `getRefData`; keine FCM-Logik in Kotlin (Server wendet Regel an) | Hoch | 🔲 |

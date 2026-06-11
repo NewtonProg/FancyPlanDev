@@ -96,8 +96,14 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
 
   const isPathType = (type: string): boolean => type === 'file' || type === 'network'
 
-  const pickPath = async (setter: (path: string) => void): Promise<void> => {
-    const result = await window.db.links.pickPath()
+  const pickPath = async (
+    setter: (path: string) => void,
+    opts?: { defaultPath?: string; mode?: 'file' | 'directory' | 'both' }
+  ): Promise<void> => {
+    const result = await window.db.links.pickPath({
+      defaultPath: opts?.defaultPath?.trim() || undefined,
+      mode: opts?.mode
+    })
     if (result.path) setter(result.path)
   }
 
@@ -160,6 +166,10 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
           <div className="flex gap-1">
             <input placeholder={t('links.urlPh')} value={form.url}
               onChange={(e) => setForm({ ...form, url: e.target.value })}
+              onDoubleClick={isPathType(form.link_type) && form.url.trim()
+                ? () => window.db.links.open(form.url.trim(), form.link_type)
+                : undefined}
+              title={isPathType(form.link_type) ? t('links.openFolderHint') : undefined}
               className={`${linkinp} flex-1 min-w-0`} />
             {isPathType(form.link_type) && (
               <button onClick={() => pickPath((p) => setForm((f) => ({ ...f, url: p })))}
@@ -197,6 +207,10 @@ export default function LinkPanel({ entityType, entityId }: { entityType: 'tel' 
               <div className="flex gap-1">
                 <input value={editForm.url}
                   onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+                  onDoubleClick={isPathType(editForm.link_type) && editForm.url.trim()
+                    ? () => window.db.links.open(editForm.url.trim(), editForm.link_type)
+                    : undefined}
+                  title={isPathType(editForm.link_type) ? t('links.openFolderHint') : undefined}
                   className={`${linkinp} flex-1 min-w-0`} />
                 {isPathType(editForm.link_type) && (
                   <button onClick={() => pickPath((p) => setEditForm((f) => ({ ...f, url: p })))}

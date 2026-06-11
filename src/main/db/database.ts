@@ -174,8 +174,11 @@ export function initDb(): void {
   }
 
   const tfcmCols = (db.prepare('PRAGMA table_info(TFCMStatus)').all() as { name: string }[]).map(c => c.name)
-  if (!tfcmCols.includes('text1')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN text1 TEXT')
-  if (!tfcmCols.includes('text2')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN text2 TEXT')
+  if (!tfcmCols.includes('text1'))        db.exec('ALTER TABLE TFCMStatus ADD COLUMN text1 TEXT')
+  if (!tfcmCols.includes('text2'))        db.exec('ALTER TABLE TFCMStatus ADD COLUMN text2 TEXT')
+  if (!tfcmCols.includes('setLtxt1Date')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN setLtxt1Date INTEGER DEFAULT 0')
+  if (!tfcmCols.includes('setLtxt2Date')) db.exec('ALTER TABLE TFCMStatus ADD COLUMN setLtxt2Date INTEGER DEFAULT 0')
+  if (!tfcmCols.includes('setErledigt'))  db.exec('ALTER TABLE TFCMStatus ADD COLUMN setErledigt INTEGER DEFAULT 0')
 
   const tterminCols = (db.prepare('PRAGMA table_info(TTermin)').all() as { name: string }[]).map(c => c.name)
   if (!tterminCols.includes('meet_url'))     db.exec('ALTER TABLE TTermin ADD COLUMN meet_url TEXT')

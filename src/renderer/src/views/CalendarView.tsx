@@ -240,7 +240,7 @@ export function TerminModal({ date, termin, onSave, onClose }: {
   // Bearbeitungs-Umfang bei bestehender Serie
   const [scope,       setScope]       = useState<'single' | 'series'>('single')
 
-  const inp = 'w-full text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40 [&::-webkit-calendar-picker-indicator]:[filter:invert(0.7)] [&::-webkit-calendar-picker-indicator]:cursor-pointer'
+  const inp = 'w-full text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface placeholder-on-surface-variant/40'
 
   const handleSave = async (): Promise<void> => {
     if (!title.trim()) return
@@ -310,7 +310,7 @@ export function TerminModal({ date, termin, onSave, onClose }: {
             <span className="material-symbols-outlined text-primary/60 text-[18px] flex-shrink-0">calendar_month</span>
             <input
               type="date"
-              className="flex-1 text-sm font-medium text-on-surface bg-transparent border-none outline-none focus:ring-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:[filter:invert(0.7)] [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="flex-1 text-sm font-medium text-on-surface bg-transparent border-none outline-none focus:ring-0 cursor-pointer"
               value={terminDate}
               onChange={(e) => setTerminDate(e.target.value)}
             />
@@ -1109,7 +1109,7 @@ export default function CalendarView(): JSX.Element {
     ? (intFrom && intTo ? viewRangeTitle('INT', new Date(intFrom + 'T00:00:00'), new Date(intTo + 'T00:00:00')) : 'Intervall wählen')
     : viewRangeTitle(viewMode, viewRange.from, viewRange.to)
 
-  const inpDate = 'text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface [&::-webkit-calendar-picker-indicator]:[filter:invert(0.7)] [&::-webkit-calendar-picker-indicator]:cursor-pointer'
+  const inpDate = 'text-sm bg-surface-container border border-outline-variant/40 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface'
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

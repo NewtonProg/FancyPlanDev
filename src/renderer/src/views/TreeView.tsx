@@ -173,6 +173,7 @@ export default function TreeView(): JSX.Element {
   const [activeNode, setActiveNode] = useState<TreeNode | null>(null)
   const [acts, setActs] = useState<Act[]>([])
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'Title', dir: 'asc' })
   const [ctx, setCtx] = useState<ContextState>(null)
   const [openActId, setOpenActId] = useState<number | null>(null)
   const renameRef = useRef<HTMLInputElement>(null)
@@ -284,6 +285,21 @@ export default function TreeView(): JSX.Element {
     setTimeout(() => addRef.current?.focus(), 50)
   }
 
+  const toggleSort = (key: string): void =>
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
+
+  const sortedActs = [...acts].sort((a, b) => {
+    const av = a[sort.key]
+    const bv = b[sort.key]
+    let cmp: number
+    if (typeof av === 'number' && typeof bv === 'number') {
+      cmp = av - bv
+    } else {
+      cmp = String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true, sensitivity: 'base' })
+    }
+    return sort.dir === 'asc' ? cmp : -cmp
+  })
+
   return (
     <div className="flex h-full">
       <div className="w-64 flex-shrink-0 flex flex-col border-r border-outline-variant/40">
@@ -375,14 +391,27 @@ export default function TreeView(): JSX.Element {
                 <table className="w-full text-sm border-collapse">
                   <thead className="sticky top-0 bg-surface-container-low border-b border-outline-variant">
                     <tr>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">{t('tree.colTitle')}</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-28">{t('tree.colArea')}</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-20">{t('tree.colPrio')}</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant w-32">{t('tree.colStatus')}</th>
+                      {([
+                        { key: 'Title', label: t('tree.colTitle'), w: '' },
+                        { key: 'AreaName', label: t('tree.colArea'), w: 'w-28' },
+                        { key: 'Prio1', label: t('tree.colPrio'), w: 'w-20' },
+                        { key: 'Status', label: t('tree.colStatus'), w: 'w-32' }
+                      ] as const).map((col) => (
+                        <th key={col.key}
+                          onClick={() => toggleSort(col.key)}
+                          className={`text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none hover:text-on-surface ${col.w}`}>
+                          <span className="inline-flex items-center gap-1">
+                            {col.label}
+                            <span className="text-[10px] leading-none opacity-70">
+                              {sort.key === col.key ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅'}
+                            </span>
+                          </span>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {acts.map((act, i) => (
+                    {sortedActs.map((act, i) => (
                       <tr key={act.id as number}
                         className={`border-b border-outline-variant/40 cursor-pointer hover:bg-primary/5 ${i % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/40'} ${Number(act.Sdone) === 1 ? 'opacity-40' : ''}`}
                         onDoubleClick={() => setOpenActId(act.id as number)}>
@@ -410,7 +439,7 @@ export default function TreeView(): JSX.Element {
       <ContextMenu ctx={ctx} onAction={handleAction} onClose={() => setCtx(null)} />
 
       {openActId !== null && (
-        <FNowModal actId={openActId} onClose={() => setOpenActId(null)} formName="FTreeEdit"
+        <FNowModal actId={openActId} onClose={() => setOpenActId(null)}
           onSaved={(updated) => {
             setActs((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
             setOpenActId(null)

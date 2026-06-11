@@ -133,6 +133,15 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
   const [gcalMsg, setGcalMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [firebaseMsg, setFirebaseMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
+  // FancyPlan Cloud (Login + Sync)
+  const [cloudEmail, setCloudEmail] = useState('')
+  const [cloudPassword, setCloudPassword] = useState('')
+  const [cloudStatus, setCloudStatus] = useState<{ configured: boolean; loggedIn: boolean; email: string } | null>(null)
+  const [cloudOpen, setCloudOpen] = useState(false)
+  const [cloudLoggingIn, setCloudLoggingIn] = useState(false)
+  const [cloudSyncing, setCloudSyncing] = useState(false)
+  const [cloudMsg, setCloudMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
   const [brandLogoKey,  setBrandLogoKey]  = useState('fp-taskbar-1')
   const [brandLogoData, setBrandLogoData] = useState('')
   const [brandAppName,  setBrandAppName]  = useState('')
@@ -184,6 +193,7 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
     window.db.mail.authStatus().then(setMailStatus)
     window.db.cal.authStatus().then(setCalStatus)
     window.db.gcal.authStatus().then(setGcalStatus)
+    window.db.cloud.authStatus().then((s) => { setCloudStatus(s); if (s.email) setCloudEmail(s.email) })
     loadDbPath()
   }, [loadDbPath])
 
@@ -301,6 +311,38 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
     setSavingFirebase(false)
     setFirebaseMsg({ text: t('settings.saved'), ok: true })
     setTimeout(() => setFirebaseMsg(null), 3000)
+  }
+
+  const handleCloudLogin = async (): Promise<void> => {
+    setCloudLoggingIn(true); setCloudMsg(null)
+    const r = await window.db.cloud.login(cloudEmail.trim(), cloudPassword)
+    setCloudLoggingIn(false)
+    if (r.ok) {
+      setCloudPassword('')
+      setCloudMsg({ text: `✓ Angemeldet als ${r.email}`, ok: true })
+      window.db.cloud.authStatus().then(setCloudStatus)
+    } else {
+      setCloudMsg({ text: `Fehler: ${r.error}`, ok: false })
+    }
+  }
+
+  const handleCloudLogout = async (): Promise<void> => {
+    await window.db.cloud.logout()
+    setCloudPassword('')
+    window.db.cloud.authStatus().then(setCloudStatus)
+    setCloudMsg({ text: 'Abgemeldet', ok: true })
+    setTimeout(() => setCloudMsg(null), 2000)
+  }
+
+  const handleCloudSync = async (): Promise<void> => {
+    setCloudSyncing(true); setCloudMsg(null)
+    const r = await window.db.cloud.syncAll()
+    setCloudSyncing(false)
+    if (r.ok) {
+      setCloudMsg({ text: `✓ Synchronisiert — ${r.pushed ?? 0} gesendet, ${r.pulled ?? 0} empfangen`, ok: true })
+    } else {
+      setCloudMsg({ text: `Fehler: ${r.error}`, ok: false })
+    }
   }
 
   const handleGcalConnect = async (): Promise<void> => {
@@ -744,6 +786,106 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
           </div>
         )}
 
+        {/* ── FancyPlan Cloud (Login & Synchronisierung) ─────────────────── */}
+        <SectionHeader
+          label="FancyPlan Cloud — Synchronisierung"
+          open={cloudOpen}
+          onToggle={() => setCloudOpen((o) => !o)}
+        />
+        {cloudOpen && (
+          <div className="mb-2">
+            {cloudStatus && !cloudStatus.configured && (
+              <div className="mb-3 px-4 py-2 rounded-xl text-sm bg-surface-container-low text-on-surface-variant">
+                Firebase ist noch nicht konfiguriert. Bitte zuerst unter „Firebase / Cloud Functions" Projekt-ID und Web API Key speichern.
+              </div>
+            )}
+            {cloudStatus && (
+              <div className={`mb-3 px-4 py-2 rounded-xl text-sm ${cloudStatus.loggedIn ? 'bg-secondary-container/10 text-secondary-fixed-dim' : 'bg-surface-container-low text-on-surface-variant'}`}>
+                {cloudStatus.loggedIn ? `Angemeldet als ${cloudStatus.email}` : 'Nicht angemeldet'}
+              </div>
+            )}
+
+            <div className="glass-card rounded-xl p-4 mb-3 flex flex-col gap-3">
+              <div><label className={lbl}>E-Mail</label>
+                <input className={inp} type="email" autoComplete="username" value={cloudEmail}
+                  onChange={(e) => setCloudEmail(e.target.value)}
+                  placeholder="nutzer@example.com" />
+              </div>
+              <div><label className={lbl}>Passwort</label>
+                <input className={inp} type="password" autoComplete="current-password" value={cloudPassword}
+                  onChange={(e) => setCloudPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && cloudEmail && cloudPassword) handleCloudLogin() }}
+                  placeholder="••••••••" />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {cloudStatus?.loggedIn ? (
+                  <>
+                    <button onClick={handleCloudSync} disabled={cloudSyncing}
+                      className="px-5 py-2 text-sm rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px] leading-none">sync</span>
+                      {cloudSyncing ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+                    </button>
+                    <button onClick={handleCloudLogout} disabled={cloudSyncing}
+                      className="px-4 py-2 text-sm rounded-lg border border-error/40 text-error hover:bg-error-container/10 disabled:opacity-40">
+                      Abmelden
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={handleCloudLogin} disabled={cloudLoggingIn || !cloudEmail || !cloudPassword}
+                    className="px-5 py-2 text-sm rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40">
+                    {cloudLoggingIn ? 'Anmelden…' : 'Anmelden'}
+                  </button>
+                )}
+                {cloudMsg && <p className={`text-xs ${cloudMsg.ok ? 'text-secondary-fixed-dim' : 'text-error'}`}>{cloudMsg.text}</p>}
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 bg-primary/5 rounded-xl text-xs text-primary mb-4">
+              Aktivitäten, FCM-Regeln und Stammdaten werden mit FancyPlan Cloud abgeglichen (PC ist führend). Änderungen vom Handy werden dabei zurückgeholt.
+            </div>
+          </div>
+        )}
+
+        {/* ── Firebase / Cloud Functions ─────────────────────────────────── */}
+        <SectionHeader
+          label="Firebase / Cloud Functions"
+          open={firebaseOpen}
+          onToggle={() => setFirebaseOpen((o) => !o)}
+        />
+        {firebaseOpen && (
+          <div className="mb-2">
+            <div className="glass-card rounded-xl p-4 mb-3 flex flex-col gap-3">
+              <div><label className={lbl}>Project ID</label>
+                <input className={inp} value={firebase.firebase_project_id}
+                  onChange={(e) => setF('firebase_project_id', e.target.value)}
+                  placeholder="fancyplan-xxxxx" />
+              </div>
+              <div><label className={lbl}>Web API Key</label>
+                <input className={inp} value={firebase.firebase_api_key}
+                  onChange={(e) => setF('firebase_api_key', e.target.value)}
+                  placeholder="AIzaSy…" />
+              </div>
+              <div><label className={lbl}>App ID</label>
+                <input className={inp} value={firebase.firebase_app_id}
+                  onChange={(e) => setF('firebase_app_id', e.target.value)}
+                  placeholder="1:123456789:web:abc…" />
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={handleSaveFirebase} disabled={savingFirebase}
+                  className="px-4 py-1.5 text-sm rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40">
+                  {savingFirebase ? t('settings.saving') : t('settings.saveAll')}
+                </button>
+                {firebaseMsg && <p className={`text-xs ${firebaseMsg.ok ? 'text-secondary-fixed-dim' : 'text-error'}`}>{firebaseMsg.text}</p>}
+              </div>
+            </div>
+            <div className="px-4 py-2.5 bg-primary/5 rounded-xl text-xs text-primary mb-4">
+              <strong>Vorbereitung für L11-06/07:</strong> Aktivitäten und Mails über Firebase Cloud Functions versenden und empfangen.
+              Konfiguration jetzt speichern — Integration folgt in einer späteren Phase.
+            </div>
+          </div>
+        )}
+
         {/* ── Mail — IMAP / SMTP ────────────────────────────────────────── */}
         <SectionHeader
           label={t('settings.mail')}
@@ -800,45 +942,6 @@ export default function SettingsView({ onLicense }: Props): JSX.Element {
                 {testingMail ? t('settings.testing') : t('settings.testMail')}
               </button>
               {mailMsg && <p className={`text-xs ${mailMsg.ok ? 'text-secondary-fixed-dim' : 'text-error'}`}>{mailMsg.text}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* ── Firebase / Cloud Functions ─────────────────────────────────── */}
-        <SectionHeader
-          label="Firebase / Cloud Functions"
-          open={firebaseOpen}
-          onToggle={() => setFirebaseOpen((o) => !o)}
-        />
-        {firebaseOpen && (
-          <div className="mb-2">
-            <div className="glass-card rounded-xl p-4 mb-3 flex flex-col gap-3">
-              <div><label className={lbl}>Project ID</label>
-                <input className={inp} value={firebase.firebase_project_id}
-                  onChange={(e) => setF('firebase_project_id', e.target.value)}
-                  placeholder="fancyplan-xxxxx" />
-              </div>
-              <div><label className={lbl}>Web API Key</label>
-                <input className={inp} value={firebase.firebase_api_key}
-                  onChange={(e) => setF('firebase_api_key', e.target.value)}
-                  placeholder="AIzaSy…" />
-              </div>
-              <div><label className={lbl}>App ID</label>
-                <input className={inp} value={firebase.firebase_app_id}
-                  onChange={(e) => setF('firebase_app_id', e.target.value)}
-                  placeholder="1:123456789:web:abc…" />
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={handleSaveFirebase} disabled={savingFirebase}
-                  className="px-4 py-1.5 text-sm rounded-lg bg-primary text-on-primary hover:bg-blue-600 disabled:opacity-40">
-                  {savingFirebase ? t('settings.saving') : t('settings.saveAll')}
-                </button>
-                {firebaseMsg && <p className={`text-xs ${firebaseMsg.ok ? 'text-secondary-fixed-dim' : 'text-error'}`}>{firebaseMsg.text}</p>}
-              </div>
-            </div>
-            <div className="px-4 py-2.5 bg-primary/5 rounded-xl text-xs text-primary mb-4">
-              <strong>Vorbereitung für L11-06/07:</strong> Aktivitäten und Mails über Firebase Cloud Functions versenden und empfangen.
-              Konfiguration jetzt speichern — Integration folgt in einer späteren Phase.
             </div>
           </div>
         )}

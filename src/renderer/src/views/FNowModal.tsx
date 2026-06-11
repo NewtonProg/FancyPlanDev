@@ -30,8 +30,48 @@ const inputCls   = 'w-full text-sm border border-outline-variant rounded-lg px-2
 const selectCls  = `${inputCls} cursor-pointer`
 const textareaCls = `${inputCls} resize-none text-[11px]`
 
+function PrioSelect({ level, rows, value, onChange }: {
+  level: 1 | 2
+  rows: Row[]
+  value: string
+  onChange: (val: number | null) => void
+}): JSX.Element {
+  const numKey = `Prio${level}` as const
+  const txtKey = `Prio${level}Txt` as const
+  if (!rows.length) {
+    return (
+      <input type="number" className={inputCls}
+        value={value}
+        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} />
+    )
+  }
+  return (
+    <select className={selectCls} value={value}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}>
+      <option value="">—</option>
+      {rows.map(r => {
+        const nr  = String(r[numKey] ?? '')
+        const txt = String(r[txtKey] ?? '')
+        return (
+          <option key={String(r.id)} value={nr}>
+            {nr}{txt ? ` ${txt}` : ''}
+          </option>
+        )
+      })}
+    </select>
+  )
+}
+
 function toDateStr(v: unknown): string {
   return String(v ?? '').slice(0, 10)
+}
+
+// Datum als TT.MM.JJ (z. B. 09.06.26); leer wenn kein gültiges Datum
+function fmtDE(v: unknown): string {
+  const iso = toDateStr(v)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y.slice(2)}`
 }
 
 function dateDiffDays(a: string, b: string): number {
@@ -62,11 +102,13 @@ export default function FNowModal({
   actId,
   onClose,
   onSaved,
+  onDeleted,
   formName = 'FAct'
 }: {
   actId: number
   onClose: () => void
   onSaved: (act: Act) => void
+  onDeleted?: (id: number) => void
   formName?: string
 }): JSX.Element {
   const { t } = useTranslation()
@@ -173,10 +215,12 @@ export default function FNowModal({
     window.db.tel.getByCat(String(form.Cat)).then(rows => setCatContacts(rows as Row[]))
   }, [tab, form.Cat])
 
+  // Termine immer laden (nicht nur im Termine-Tab), damit die Zeitangabe im
+  // Kopfbereich nur erscheint, wenn tatsächlich ein Termin verknüpft ist.
   useEffect(() => {
-    if (tab === 'termine') {
-      window.db.termin.getByAct(currentId).then(rows => setActTermins(rows))
-    }
+    let cancelled = false
+    window.db.termin.getByAct(currentId).then(rows => { if (!cancelled) setActTermins(rows) })
+    return () => { cancelled = true }
   }, [tab, currentId])
 
   const loadLinkDateTermins = async (date: string): Promise<void> => {
@@ -207,29 +251,43 @@ export default function FNowModal({
   }
 
   // ── Bereich→Thema filtering ──────────────────────────────────────────────
+  // Nur dem Bereich zugeordnete Themen anzeigen (IDArea oder TAreaTheme-Link).
+  // Fallback: hat der Bereich noch keine Zuordnung, werden alle Themen gezeigt.
   const selectedArea  = areas.find(a => String(a.AreaName) === String(form.AreaName))
-  const visibleThemes: Row[] = selectedArea
-    ? allThemes.filter(t => {
-        if (Number(t.IDArea) === 0) return true
-        if (Number(t.IDArea) === Number(selectedArea.id)) return true
-        return areaThemeLinks.some(at => Number(at.IDArea) === Number(selectedArea.id) && Number(at.IDTheme) === Number(t.id))
-      })
-    : allThemes
+  const visibleThemes: Row[] = (() => {
+    if (!selectedArea) return allThemes
+    const assigned = allThemes.filter(t =>
+      Number(t.IDArea) === Number(selectedArea.id) ||
+      areaThemeLinks.some(at => Number(at.IDArea) === Number(selectedArea.id) && Number(at.IDTheme) === Number(t.id))
+    )
+    const base = assigned.length > 0 ? assigned : allThemes
+    // Aktuell gewähltes Thema immer enthalten, auch wenn (noch) nicht zugeordnet
+    if (form.ThemeName && !base.some(t => String(t.ThemeName) === String(form.ThemeName))) {
+      const cur = allThemes.find(t => String(t.ThemeName) === String(form.ThemeName))
+      return cur ? [...base, cur] : base
+    }
+    return base
+  })().slice().sort((a, b) => String(a.ThemeName).localeCompare(String(b.ThemeName), 'de', { sensitivity: 'base' }))
 
   // ── Thema→Kategorie filtering (by CatGrp === ThemeName) ──────────────────
-  const visibleCats: Row[] = form.ThemeName
+  const visibleCats: Row[] = (form.ThemeName
     ? cats.filter(c => String(c.CatGrp) === String(form.ThemeName))
     : cats
+  ).slice().sort((a, b) => String(a.Cat).localeCompare(String(b.Cat), 'de', { sensitivity: 'base' }))
 
   function handleAreaChange(newArea: string): void {
     set('AreaName', newArea)
     if (!newArea) return
     const area = areas.find(a => String(a.AreaName) === newArea)
     if (area && form.ThemeName) {
-      const still = areaThemeLinks.some(
-        at => Number(at.IDArea) === Number(area.id) && String(at.ThemeName) === String(form.ThemeName)
+      // Nur leeren, wenn der neue Bereich überhaupt Zuordnungen hat (sonst Fallback
+      // = alle Themen erlaubt) und das aktuelle Thema nicht dazugehört.
+      const assigned = allThemes.filter(t =>
+        Number(t.IDArea) === Number(area.id) ||
+        areaThemeLinks.some(at => Number(at.IDArea) === Number(area.id) && Number(at.IDTheme) === Number(t.id))
       )
-      if (!still) set('ThemeName', '')
+      const fits = assigned.some(t => String(t.ThemeName) === String(form.ThemeName))
+      if (assigned.length > 0 && !fits) set('ThemeName', '')
     }
   }
 
@@ -269,10 +327,32 @@ export default function FNowModal({
       if (cfg.setIstBis)  next.ActEnd  = today
       if (cfg.setPlanVon) next.Pl1Beg  = today
       if (cfg.setPlanBis) next.Pl1End  = today
-      if (cfg.setInfo)    next.binInfo = 1
-      // Text1 / Text2 setzen wenn in FCMStatus eingetragen
-      if (cfg.text1 && String(cfg.text1).trim()) next.Ltxt1 = String(cfg.text1)
-      if (cfg.text2 && String(cfg.text2).trim()) next.Ltxt2 = String(cfg.text2)
+      if (cfg.setInfo)    next.SInfo = 1
+      // Text1 / Text2: Datum und Text in einer Zeile wenn beide aktiv
+      const d = new Date()
+      const dateLabel = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
+      const t1raw = cfg.text1 && String(cfg.text1).trim() ? String(cfg.text1) : ''
+      const t2raw = cfg.text2 && String(cfg.text2).trim() ? String(cfg.text2) : ''
+      if (cfg.setLtxt1Date || t1raw) {
+        const prefix = cfg.setLtxt1Date
+          ? (t1raw ? dateLabel + ' ' + t1raw : dateLabel)
+          : t1raw
+        const cur1 = String(next.Ltxt1 ?? '')
+        next.Ltxt1 = cur1 ? prefix + '<br>' + cur1 : prefix
+      }
+      if (cfg.setLtxt2Date || t2raw) {
+        const prefix = cfg.setLtxt2Date
+          ? (t2raw ? dateLabel + ' ' + t2raw : dateLabel)
+          : t2raw
+        const cur2 = String(next.Ltxt2 ?? '')
+        next.Ltxt2 = cur2 ? prefix + '<br>' + cur2 : prefix
+      }
+      // Aktivität als erledigt markieren
+      if (cfg.setErledigt) {
+        next.Sdone   = 1
+        next.SToday  = 0
+        next.dateEnd = today
+      }
       return next
     })
   }
@@ -298,14 +378,21 @@ export default function FNowModal({
     setForm(prev => ({ ...prev, Pl1End: today }))
   }
 
-  const handleSave = async (): Promise<void> => {
+  const saveData = async (): Promise<void> => {
     setSaving(true)
-    const { id, created_at, updated_at, ...data } = form
-    if (Number(data.Sdone) === 1) data.SToday = 0
-    data.TodayEdited = new Date().toISOString().slice(0, 10)
-    await window.db.act.update(id as number, data)
-    onSaved({ ...form, ...data })
-    setSaving(false)
+    try {
+      const { id, created_at, updated_at, ...data } = form
+      if (Number(data.Sdone) === 1) data.SToday = 0
+      data.TodayEdited = new Date().toISOString().slice(0, 10)
+      await window.db.act.update(id as number, data)
+      onSaved({ ...form, ...data })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSave = async (): Promise<void> => {
+    await saveData()
     onClose()
   }
 
@@ -327,10 +414,17 @@ export default function FNowModal({
   }
 
   const currentThemeId    = allThemes.find(th => String(th.ThemeName) === String(form.ThemeName))?.id
-  const visibleStatuses   = statuses.filter(s =>
-    Number(s.IDTheme) === 0 || Number(s.IDTheme) === Number(currentThemeId ?? 0)
-  )
+  const visibleStatuses   = statuses
+    .filter(s => Number(s.IDTheme) === 0 || Number(s.IDTheme) === Number(currentThemeId ?? 0))
+    .sort((a, b) => String(a.Status).localeCompare(String(b.Status), undefined, { sensitivity: 'base' }))
   const hasPlan           = !!toDateStr(form.Pl1Beg)
+  // Nächster verknüpfter Termin (für die Zeitangabe im Kopfbereich) — erster
+  // ab heute, sonst der zeitlich erste vorhandene.
+  const nextTermin        = (() => {
+    if (actTermins.length === 0) return null
+    const today = new Date().toISOString().slice(0, 10)
+    return actTermins.find(tr => toDateStr(tr.termin_date) >= today) ?? actTermins[0]
+  })()
   const navTitle          = navStack.length > 0 ? navStack[navStack.length - 1].title : ''
 
   const daysLeft = (() => {
@@ -412,46 +506,6 @@ export default function FNowModal({
     await window.db.act.update(currentId, updates)
   }
 
-  // ── Prio helper ─────────────────────────────────────────────────────────
-  function PrioSelect({ level, rows }: { level: 1 | 2; rows: Row[] }): JSX.Element {
-    const key   = `Prio${level}` as 'Prio1' | 'Prio2'
-    const numKey = `Prio${level}` as const
-    const txtKey = `Prio${level}Txt` as const
-    const cur   = form[key] != null ? String(form[key]) : ''
-    if (!rows.length) {
-      return (
-        <input type="number" className={inputCls}
-          value={cur}
-          onChange={(e) => set(key, e.target.value ? Number(e.target.value) : null)} />
-      )
-    }
-    return (
-      <select className={selectCls} value={cur}
-        onChange={(e) => set(key, e.target.value ? Number(e.target.value) : null)}>
-        <option value="">—</option>
-        {rows.map(r => {
-          const nr  = String(r[numKey] ?? '')
-          const txt = String(r[txtKey] ?? '')
-          return (
-            <option key={String(r.id)} value={nr}>
-              {nr}{txt ? ` ${txt}` : ''}
-            </option>
-          )
-        })}
-      </select>
-    )
-  }
-
-  // ── Folgeaktivität: display only Nr after selection ──────────────────────
-  function prioDisplayValue(prios: Row[], level: 1 | 2): string {
-    const key = `Prio${level}` as 'Prio1' | 'Prio2'
-    const val = form[key]
-    if (val == null || val === '') return ''
-    return String(val)
-  }
-
-  // suppress linter — prioDisplayValue used for future reference
-  void prioDisplayValue
 
   return (
     <>
@@ -495,7 +549,18 @@ export default function FNowModal({
             {t('fnow.cancel')}
           </button>
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('fp:open-values', { detail: { actId } }))}
+            onClick={async () => {
+              await window.db.act.delete(currentId)
+              onDeleted?.(currentId)
+              onClose()
+            }}
+            title="Aktivität löschen"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-error/40 text-error/60 hover:bg-error/10 hover:text-error hover:border-error transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px] leading-none">delete</span>
+          </button>
+          <button
+            onClick={async () => { await saveData(); window.dispatchEvent(new CustomEvent('fp:open-values', { detail: { actId } })) }}
             title={t('fcm.values')}
             className="px-4 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm hover:bg-surface-container-high flex items-center gap-1.5"
           >
@@ -517,11 +582,16 @@ export default function FNowModal({
           {/* ── Main content ─────────────────────────────────────────── */}
           <div className="flex-1 p-5 flex flex-col gap-4 border-r border-outline-variant/40 overflow-y-auto">
 
-            {/* Zeit/Plan — nur wenn Termin (Pl1Beg gesetzt) */}
-            {hasPlan && (
+            {/* Termin/Plan — Zeit nur wenn ein Termin verknüpft ist, Datum als TT.MM.JJ */}
+            {(hasPlan || nextTermin) && (
               <div className="flex gap-4 text-xs text-on-surface-variant/60">
-                {form.ActBeg && <span>Zeit: {String(form.ActBeg).slice(0, 16)}</span>}
-                <span>Plan: {toDateStr(form.Pl1Beg)} – {toDateStr(form.Pl1End)}</span>
+                {nextTermin && (
+                  <span>
+                    Termin: {fmtDE(nextTermin.termin_date)}
+                    {nextTermin.time_start ? ` ${String(nextTermin.time_start)}` : ''}
+                  </span>
+                )}
+                {hasPlan && <span>Plan: {fmtDE(form.Pl1Beg)} – {fmtDE(form.Pl1End)}</span>}
               </div>
             )}
 
@@ -590,11 +660,15 @@ export default function FNowModal({
                   <div className="flex gap-3 mb-3">
                     <div className="flex-1">
                       <label className="block text-xs text-on-surface-variant/60 mb-1">{t('fnow.prio1')}</label>
-                      <PrioSelect level={1} rows={prio1s} />
+                      <PrioSelect level={1} rows={prio1s}
+                        value={form.Prio1 != null ? String(form.Prio1) : ''}
+                        onChange={(v) => set('Prio1', v)} />
                     </div>
                     <div className="flex-1">
                       <label className="block text-xs text-on-surface-variant/60 mb-1">{t('fnow.prio2')}</label>
-                      <PrioSelect level={2} rows={prio2s} />
+                      <PrioSelect level={2} rows={prio2s}
+                        value={form.Prio2 != null ? String(form.Prio2) : ''}
+                        onChange={(v) => set('Prio2', v)} />
                     </div>
                   </div>
 
@@ -655,7 +729,7 @@ export default function FNowModal({
                     <select className={selectCls} value={String(form.AreaName ?? '')}
                       onChange={(e) => handleAreaChange(e.target.value)}>
                       <option value="">—</option>
-                      {areas.map((a) => (
+                      {areas.slice().sort((a, b) => String(a.AreaName).localeCompare(String(b.AreaName), 'de', { sensitivity: 'base' })).map((a) => (
                         <option key={String(a.id)} value={String(a.AreaName)}>{String(a.AreaName)}</option>
                       ))}
                     </select>
@@ -672,16 +746,19 @@ export default function FNowModal({
                     </select>
                   </Field>
 
-                  {/* Kategorie — mehrfach, gefiltert nach Thema */}
+                  {/* Kategorie — manuell editierbares Textfeld + Picker (N:M) */}
                   <Field label={t('fnow.category')}>
                     <div className="flex gap-1.5">
-                      <input className={inputCls} readOnly
+                      <input
+                        className={inputCls}
                         value={String(form.Cat ?? '')}
-                        placeholder={t('fdlgcat.none')}
-                        onDoubleClick={() => setShowCatPicker(true)} />
-                      <button onClick={() => setShowCatPicker(true)}
+                        onChange={(e) => set('Cat', e.target.value)}
+                        placeholder={t('fnow.noCat')}
+                      />
+                      <button
+                        onClick={() => setShowCatPicker(true)}
                         className="flex-shrink-0 px-2.5 py-1 rounded-lg border border-outline-variant text-on-surface-variant text-xs hover:bg-surface-container-high"
-                        title={t('fdlgcat.title')}>
+                        title={t('fnow.selectCat')}>
                         ↗
                       </button>
                     </div>
@@ -851,7 +928,12 @@ export default function FNowModal({
                       onChange={(e) => {
                         const v = e.target.checked ? 1 : 0
                         set('Sdone', v)
-                        if (v === 1) set('SToday', 0)
+                        if (v === 1) {
+                          set('SToday', 0)
+                          set('dateEnd', new Date().toISOString().slice(0, 10))
+                        } else {
+                          set('dateEnd', null)
+                        }
                       }} />
                     <div>
                       <p className="text-sm text-on-surface">{t('fnow.done')}</p>

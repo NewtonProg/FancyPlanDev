@@ -25,6 +25,9 @@ interface FCMStatusEntry {
   setPlanVon?: number
   setPlanBis?: number
   setInfo?: number
+  setLtxt1Date?: number
+  setLtxt2Date?: number
+  setErledigt?: number
   text1?: string
   text2?: string
 }
@@ -51,6 +54,9 @@ const emptyForm = (): FCMStatusEntry => ({
   setPlanVon: 0,
   setPlanBis: 0,
   setInfo: 0,
+  setLtxt1Date: 0,
+  setLtxt2Date: 0,
+  setErledigt: 0,
   text1: '',
   text2: ''
 })
@@ -263,9 +269,17 @@ export default function FCMStatusView({ onBack }: { onBack: () => void }): JSX.E
               <input type="checkbox" className="w-4 h-4" checked={Number(form.setIstVon) === 1} onChange={e => set('setIstVon', e.target.checked ? 1 : 0)} />
               {t('fcmst.setIstVon')}
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
+            <label className="flex items-center gap-2 mb-1.5 cursor-pointer text-sm text-on-surface">
               <input type="checkbox" className="w-4 h-4" checked={Number(form.setIstBis) === 1} onChange={e => set('setIstBis', e.target.checked ? 1 : 0)} />
               {t('fcmst.setIstBis')}
+            </label>
+            <label className="flex items-center gap-2 mb-1.5 cursor-pointer text-sm text-on-surface">
+              <input type="checkbox" className="w-4 h-4" checked={Number(form.setLtxt1Date) === 1} onChange={e => set('setLtxt1Date', e.target.checked ? 1 : 0)} />
+              {t('fcmst.setLtxt1Date')}
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
+              <input type="checkbox" className="w-4 h-4" checked={Number(form.setLtxt2Date) === 1} onChange={e => set('setLtxt2Date', e.target.checked ? 1 : 0)} />
+              {t('fcmst.setLtxt2Date')}
             </label>
           </Section>
 
@@ -281,9 +295,13 @@ export default function FCMStatusView({ onBack }: { onBack: () => void }): JSX.E
           </Section>
 
           <Section title={t('fcmst.secInfo')}>
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
+            <label className="flex items-center gap-2 mb-1.5 cursor-pointer text-sm text-on-surface">
               <input type="checkbox" className="w-4 h-4" checked={Number(form.setInfo) === 1} onChange={e => set('setInfo', e.target.checked ? 1 : 0)} />
               {t('fcmst.setInfo')}
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface">
+              <input type="checkbox" className="w-4 h-4" checked={Number(form.setErledigt) === 1} onChange={e => set('setErledigt', e.target.checked ? 1 : 0)} />
+              {t('fcmst.setErledigt')}
             </label>
           </Section>
 

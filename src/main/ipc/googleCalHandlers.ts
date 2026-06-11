@@ -153,29 +153,18 @@ ipcMain.handle('gcal:sync', async () => {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const future = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
 
-    // List all calendars the user has access to (primary + subscribed/shared)
-    const calListResp = await calendar.calendarList.list({})
-    const calendars = (calListResp.data.items ?? []).filter(c => c.id)
-
-    // Fetch events from every visible calendar; non-owner role → is_owner = 0
+    // Fetch events from primary calendar only (calendar.events scope; calendarList requires calendar.readonly)
     const allEvents: Array<{ event: calendar_v3.Schema$Event; calendarAccessRole: string }> = []
-    for (const cal of calendars) {
-      if (!cal.id) continue
-      try {
-        const resp = await calendar.events.list({
-          calendarId: cal.id,
-          timeMin: startOfDay.toISOString(),
-          timeMax: future.toISOString(),
-          singleEvents: true,
-          orderBy: 'startTime',
-          maxResults: 500
-        })
-        for (const ev of resp.data.items ?? []) {
-          allEvents.push({ event: ev, calendarAccessRole: cal.accessRole ?? 'reader' })
-        }
-      } catch {
-        // Skip calendars that fail to load (permission issues etc.) — don't abort whole sync
-      }
+    const primaryResp = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: startOfDay.toISOString(),
+      timeMax: future.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 500
+    })
+    for (const ev of primaryResp.data.items ?? []) {
+      allEvents.push({ event: ev, calendarAccessRole: 'owner' })
     }
     const upsert = db.prepare(`
       INSERT INTO TCalendar (cal_uid, summary, description, location, dtstart, dtend, all_day, source)
@@ -205,6 +194,7 @@ ipcMain.handle('gcal:sync', async () => {
     const tombByMaster = db.prepare('SELECT 1 FROM TGcalTombstone WHERE master_id = ? AND (from_date IS NULL OR ? >= from_date)')
     const tombByTitle  = db.prepare('SELECT 1 FROM TGcalTombstone WHERE title = ? AND (from_date IS NULL OR ? >= from_date)')
 
+    const fetchedUids = new Set<string>()
     let count = 0
     let skipped = 0
     for (const { event, calendarAccessRole } of allEvents) {
@@ -228,6 +218,7 @@ ipcMain.handle('gcal:sync', async () => {
         continue
       }
 
+      fetchedUids.add(calUid)
       upsert.run({
         cal_uid:     calUid,
         summary,
@@ -256,7 +247,24 @@ ipcMain.handle('gcal:sync', async () => {
       count++
     }
 
-    return { count, pushed, skipped }
+    // Remove gcal entries that are no longer in Google Calendar (deleted remotely)
+    // Only within the fetched time window to avoid touching events outside the sync range
+    const windowStart = startOfDay.toISOString().slice(0, 10)
+    const windowEnd   = future.toISOString().slice(0, 10)
+    const localGcalUids: Array<{ cal_uid: string }> = db.prepare(
+      `SELECT cal_uid FROM TCalendar WHERE source = 'gcal' AND dtstart >= ? AND dtstart < ?`
+    ).all(windowStart, windowEnd) as Array<{ cal_uid: string }>
+
+    let deleted = 0
+    for (const { cal_uid } of localGcalUids) {
+      if (!fetchedUids.has(cal_uid)) {
+        db.prepare(`DELETE FROM TCalendar WHERE cal_uid = ?`).run(cal_uid)
+        db.prepare(`DELETE FROM TTermin WHERE cal_uid = ?`).run(cal_uid)
+        deleted++
+      }
+    }
+
+    return { count, pushed, skipped, deleted }
   } catch (err: unknown) {
     return { error: (err as Error).message }
   }

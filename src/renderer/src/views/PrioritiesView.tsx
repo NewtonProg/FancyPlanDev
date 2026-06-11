@@ -35,8 +35,8 @@ function statusColor(status: unknown): string {
 
 function rowBg(act: Act, idx: number): string {
   if (Number(act.Sdone) === 1) return 'opacity-40'
-  const s = String(act.Status ?? '').toLowerCase()
-  if (s.includes('arbeit')) return idx % 2 === 0 ? 'bg-blue-50/40' : 'bg-blue-50/20'
+  if (Number(act.Prio1) === 1 || Number(act.Prio2) === 1)
+    return idx % 2 === 0 ? 'bg-amber-500/15' : 'bg-amber-500/10'
   return idx % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/60'
 }
 
@@ -58,6 +58,8 @@ export default function PrioritiesView(): JSX.Element {
   const [catFilter, setCatFilter] = useState<string>((s.catFilter as string) ?? 'all')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>((s.typeFilter as TypeFilter) ?? 'all')
   const [dateFilter, setDateFilter] = useState<DateFilter>((s.dateFilter as DateFilter) ?? 'all')
+  const [abHeuteDate, setAbHeuteDate] = useState<string>((s.abHeuteDate as string) ?? todayIso)
+  const [bisHeuteDate, setBisHeuteDate] = useState<string>((s.bisHeuteDate as string) ?? todayIso)
   const [showArchiv, setShowArchiv] = useState<boolean>((s.showArchiv as boolean) ?? false)
   const [openActId, setOpenActId] = useState<number | null>(null)
   const [sortCol, setSortCol] = useState<SortCol | null>((s.sortCol as SortCol) ?? null)
@@ -65,8 +67,8 @@ export default function PrioritiesView(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<string | null>((s.statusFilter as string) ?? null)
 
   useEffect(() => {
-    localStorage.setItem('prio_filters', JSON.stringify({ catFilter, typeFilter, dateFilter, showArchiv, sortCol, sortDir, statusFilter }))
-  }, [catFilter, typeFilter, dateFilter, showArchiv, sortCol, sortDir, statusFilter])
+    localStorage.setItem('prio_filters', JSON.stringify({ catFilter, typeFilter, dateFilter, abHeuteDate, bisHeuteDate, showArchiv, sortCol, sortDir, statusFilter }))
+  }, [catFilter, typeFilter, dateFilter, abHeuteDate, bisHeuteDate, showArchiv, sortCol, sortDir, statusFilter])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -87,11 +89,11 @@ export default function PrioritiesView(): JSX.Element {
     if (typeFilter === 'infos' && Number(a.SInfo) !== 1) return false
     if (dateFilter === 'ab-heute') {
       const beg = String(a.Pl1Beg ?? '').slice(0, 10)
-      if (beg && beg < todayIso) return false
+      if (!beg || beg < abHeuteDate) return false
     }
     if (dateFilter === 'bis-heute') {
       const end = String(a.Pl1End ?? '').slice(0, 10)
-      if (end && end > todayIso) return false
+      if (end && end > bisHeuteDate) return false
     }
     if (statusFilter && String(a.Status ?? '') !== statusFilter) return false
     return true
@@ -99,7 +101,7 @@ export default function PrioritiesView(): JSX.Element {
 
   const availableCats = [...new Set(
     preFiltered.flatMap((a) => String(a.Cat || '').split(/[;:]/).map((s) => s.trim()).filter(Boolean))
-  )].sort()
+  )].sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }))
 
   const visible = catFilter === 'all'
     ? preFiltered
@@ -246,10 +248,30 @@ export default function PrioritiesView(): JSX.Element {
 
         <div className="w-px h-5 bg-outline-variant/40" />
 
-        <div className="flex items-center gap-1">
-          {tabBtn(dateFilter === 'ab-heute', () => setDateFilter(dateFilter === 'ab-heute' ? 'all' : 'ab-heute'), t('prio.fromToday'))}
-          {tabBtn(dateFilter === 'bis-heute', () => setDateFilter(dateFilter === 'bis-heute' ? 'all' : 'bis-heute'), t('prio.untilToday'))}
-          {tabBtn(false, () => { setDateFilter('all'); setCatFilter('all'); setTypeFilter('all'); setStatusFilter(null) }, t('prio.reset'))}
+        <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1">
+            {tabBtn(dateFilter === 'ab-heute', () => setDateFilter(dateFilter === 'ab-heute' ? 'all' : 'ab-heute'), t('prio.fromToday'))}
+            {dateFilter === 'ab-heute' && (
+              <input
+                type="date"
+                value={abHeuteDate}
+                onChange={(e) => setAbHeuteDate(e.target.value || todayIso)}
+                className="px-2 py-0.5 text-xs rounded-md bg-surface-container border border-primary/40 text-on-surface focus:outline-none focus:border-primary"
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            {tabBtn(dateFilter === 'bis-heute', () => setDateFilter(dateFilter === 'bis-heute' ? 'all' : 'bis-heute'), t('prio.untilToday'))}
+            {dateFilter === 'bis-heute' && (
+              <input
+                type="date"
+                value={bisHeuteDate}
+                onChange={(e) => setBisHeuteDate(e.target.value || todayIso)}
+                className="px-2 py-0.5 text-xs rounded-md bg-surface-container border border-primary/40 text-on-surface focus:outline-none focus:border-primary"
+              />
+            )}
+          </div>
+          {tabBtn(false, () => { setDateFilter('all'); setCatFilter('all'); setTypeFilter('all'); setStatusFilter(null); setAbHeuteDate(todayIso); setBisHeuteDate(todayIso) }, t('prio.reset'))}
         </div>
 
         {statusFilter && (

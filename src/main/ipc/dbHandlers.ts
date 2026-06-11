@@ -21,6 +21,7 @@ ipcMain.handle('db:act:getAll', (_event, filter: Partial<Row> = {}) => {
     if (filter.SToday === 1) {
       const d = filter.forDate ? `'${String(filter.forDate)}'` : `date('now')`
       sql += ` AND (SToday = 1 OR (Pl1Beg IS NOT NULL AND Pl1End IS NOT NULL AND date(Pl1Beg) <= ${d} AND date(Pl1End) >= ${d}))`
+      sql += ` AND (ToDayShifted IS NULL OR date(ToDayShifted) != ${d})`
     } else {
       sql += ' AND SToday = ?'; params.push(filter.SToday)
     }
@@ -74,11 +75,18 @@ ipcMain.handle('db:act:create', (_event, data: Row) => {
 })
 
 ipcMain.handle('db:act:update', (_event, id: number, data: Row) => {
+  type ColInfo = { name: string }
+  const validCols = new Set(
+    (getDb().prepare('PRAGMA table_info(TAct)').all() as ColInfo[]).map((c) => c.name)
+  )
+  const filtered: Row = Object.fromEntries(
+    Object.entries(data).filter(([k]) => validCols.has(k))
+  )
   // Detail-Protokoll: wenn SDetailStat=1, Änderungen loggen
   const current = dbGet('SELECT * FROM TAct WHERE id = ?', [id]) as Row | undefined
   if (current && Number(current.SDetailStat) === 1) {
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19)
-    for (const [field, newVal] of Object.entries(data)) {
+    for (const [field, newVal] of Object.entries(filtered)) {
       const oldVal = current[field]
       if (String(oldVal ?? '') !== String(newVal ?? '')) {
         dbRun(
@@ -88,15 +96,23 @@ ipcMain.handle('db:act:update', (_event, id: number, data: Row) => {
       }
     }
   }
-  const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ')
+  const sets = Object.keys(filtered).map((k) => `${k} = ?`).join(', ')
   const sql = `UPDATE TAct SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-  dbRun(sql, [...Object.values(data), id])
+  dbRun(sql, [...Object.values(filtered), id])
   return { ok: true }
 })
 
 ipcMain.handle('db:act:delete', (_event, id: number) => {
   dbRun('UPDATE TAct SET Sdel = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id])
   return { ok: true }
+})
+
+// Zuletzt bearbeitete Aktivitäten (neueste zuerst), für die „Letzte"-Ansicht
+ipcMain.handle('db:act:recent', (_event, limit = 20) => {
+  return dbAll(
+    'SELECT * FROM TAct WHERE Sdel = 0 ORDER BY updated_at DESC, id DESC LIMIT ?',
+    [Number(limit) || 20]
+  )
 })
 
 // ── TTel ───────────────────────────────────────────────────────────────────
@@ -256,7 +272,7 @@ ipcMain.handle('db:areatheme:delete', (_event, id: number) => {
 })
 
 ipcMain.handle('db:cat:getAll', (_event, formName?: string) => {
-  if (formName) return dbAll("SELECT * FROM TCat WHERE IDFormName = ? OR IDFormName = '*' ORDER BY Cat ASC", [formName])
+  if (formName) return dbAll("SELECT * FROM TCat WHERE IDFormName = ? OR IDFormName = '*' OR IDFormName = '' OR IDFormName IS NULL ORDER BY Cat ASC", [formName])
   return dbAll('SELECT * FROM TCat ORDER BY Cat ASC')
 })
 ipcMain.handle('db:cat:create', (_event, data: Row) => {
@@ -310,7 +326,7 @@ ipcMain.handle('db:prio:delete', (_event, level: 1 | 2 | 3, id: number) => {
 
 ipcMain.handle('db:status:getAll', (_event, formName?: string) => {
   if (formName) return dbAll(
-    "SELECT * FROM TStatus WHERE (IDFormName = ? OR IDFormName = '*') AND binArchiv = 0 ORDER BY seq ASC, Status ASC",
+    "SELECT * FROM TStatus WHERE (IDFormName = ? OR IDFormName = '*' OR IDFormName = '' OR IDFormName IS NULL) AND binArchiv = 0 ORDER BY seq ASC, Status ASC",
     [formName]
   )
   return dbAll('SELECT * FROM TStatus WHERE binArchiv = 0 ORDER BY IDFormName ASC, seq ASC, Status ASC')
@@ -353,7 +369,7 @@ ipcMain.handle('db:land:delete', (_event, id: number) => {
 ipcMain.handle('db:groupval:getAll', (_event, groupNr: number, formName?: string) => {
   if (formName && formName !== '*') {
     return dbAll(
-      'SELECT * FROM TGroupValues WHERE group_nr = ? AND IDFormName = ? ORDER BY seq ASC, grp_value ASC',
+      "SELECT * FROM TGroupValues WHERE group_nr = ? AND (IDFormName = ? OR IDFormName = '*' OR IDFormName = '' OR IDFormName IS NULL) ORDER BY seq ASC, grp_value ASC",
       [groupNr, formName]
     )
   }

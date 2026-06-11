@@ -2,11 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const FORM_OPTIONS = [
-  { value: '*',        label: 'Alle Formulare' },
+  { value: '*',        label: '*' },
   { value: 'FAct',     label: 'Aktivitäten' },
   { value: 'FAcquis',  label: 'Akquisition' },
   { value: 'FTreeEdit', label: 'Tree' },
 ]
+
+/** Anzeige-Label für IDFormName; Wildcard '*' (auch leerer String/NULL aus Legacy-Import) = "*". */
+function formLabel(v: unknown): string {
+  const s = String(v ?? '').trim() || '*'
+  return FORM_OPTIONS.find(o => o.value === s)?.label ?? s
+}
 
 function FormSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }): JSX.Element {
   return (
@@ -188,8 +194,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
 
   const load = useCallback(async () => {
     const all = (await window.db.prio.getAll(level)) as Row[]
-    const fn = formName === '*' ? '' : formName
-    setRows(fn ? all.filter(r => r.IDFormName === fn) : all)
+    setRows(formName === '*' ? all : all.filter(r => r.IDFormName === formName))
   }, [level, formName])
 
   useEffect(() => { load() }, [load])
@@ -198,7 +203,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
     const p = parseInt(newPrio)
     if (!newPrio || isNaN(p)) return
     await window.db.prio.create(level, {
-      IDFormName: formName === '*' ? '' : formName,
+      IDFormName: formName,
       [prioField]: p,
       [txtField]:  newTxt
     })
@@ -209,7 +214,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
   async function handleSave(id: number) {
     const p = parseInt(editPrio)
     if (isNaN(p)) return
-    await window.db.prio.update(level, id, { [prioField]: p, [txtField]: editTxt, IDFormName: editFormName === '*' ? '' : editFormName })
+    await window.db.prio.update(level, id, { [prioField]: p, [txtField]: editTxt, IDFormName: editFormName })
     setEditId(null)
     load()
   }
@@ -260,7 +265,7 @@ function PrioEditor({ level, onBack }: PrioEditorProps) {
                 <td className="py-1.5">
                   {editId === r.id
                     ? <FormSelect value={editFormName} onChange={setEditFormName} className="w-full text-xs" />
-                    : <span className="text-on-surface-variant text-xs">{FORM_OPTIONS.find(o => o.value === String(r.IDFormName || '*'))?.label ?? String(r.IDFormName ?? '*')}</span>}
+                    : <span className="text-on-surface-variant text-xs">{formLabel(r.IDFormName)}</span>}
                 </td>
                 <td className="py-1.5 text-right">
                   {editId === r.id ? (
@@ -390,7 +395,7 @@ function StatusEditor({ rows, themes, onAdd, onUpdate, onDelete, onBack }: {
                   {editId === (r.id as number) ? (
                     <FormSelect value={editForm} onChange={setEditForm} className="w-full text-xs" />
                   ) : (
-                    <span className="text-on-surface-variant text-xs">{FORM_OPTIONS.find(o => o.value === String(r.IDFormName ?? '*'))?.label ?? String(r.IDFormName ?? '*')}</span>
+                    <span className="text-on-surface-variant text-xs">{formLabel(r.IDFormName)}</span>
                   )}
                 </td>
                 <td className="py-1.5">
@@ -531,7 +536,7 @@ function ThemaEditor({ rows, areas, onAdd, onUpdate, onDelete, onBack }: {
                   {editId === (r.id as number) ? (
                     <FormSelect value={editForm} onChange={setEditForm} className="w-full text-xs" />
                   ) : (
-                    <span className="text-on-surface-variant text-xs">{FORM_OPTIONS.find(o => o.value === String(r.IDFormName ?? '*'))?.label ?? String(r.IDFormName ?? '*')}</span>
+                    <span className="text-on-surface-variant text-xs">{formLabel(r.IDFormName)}</span>
                   )}
                 </td>
                 <td className="py-1.5">
@@ -673,7 +678,7 @@ function KatEditor({ rows, themes, onAdd, onUpdate, onDelete, onBack }: {
                   {editId === (r.id as number) ? (
                     <FormSelect value={editForm} onChange={setEditForm} className="w-full text-xs" />
                   ) : (
-                    <span className="text-on-surface-variant text-xs">{FORM_OPTIONS.find(o => o.value === String(r.IDFormName ?? '*'))?.label ?? String(r.IDFormName ?? '*')}</span>
+                    <span className="text-on-surface-variant text-xs">{formLabel(r.IDFormName)}</span>
                   )}
                 </td>
                 <td className="py-1.5">

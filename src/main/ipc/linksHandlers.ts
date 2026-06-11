@@ -32,8 +32,15 @@ ipcMain.handle('db:links:delete', (_e, id: number) => {
   return { ok: true }
 })
 
-ipcMain.handle('db:links:pickPath', async () => {
-  const result = await dialog.showOpenDialog({ properties: ['openFile', 'openDirectory'] })
+ipcMain.handle('db:links:pickPath', async (_e, opts?: { defaultPath?: string; mode?: 'file' | 'directory' | 'both' }) => {
+  const mode = opts?.mode ?? 'both'
+  // Windows kann openFile + openDirectory nicht kombinieren → je nach Modus eindeutig wählen.
+  const properties: ('openFile' | 'openDirectory')[] =
+    mode === 'file' ? ['openFile'] : mode === 'directory' ? ['openDirectory'] : ['openFile', 'openDirectory']
+  const result = await dialog.showOpenDialog({
+    properties,
+    ...(opts?.defaultPath ? { defaultPath: opts.defaultPath } : {})
+  })
   if (result.canceled || result.filePaths.length === 0) return { path: null }
   return { path: result.filePaths[0] }
 })

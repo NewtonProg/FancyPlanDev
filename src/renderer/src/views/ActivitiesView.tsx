@@ -15,10 +15,25 @@ type ColFilter = Partial<Record<'Prio1' | 'Prio2' | 'Status' | 'Tage', string>>
 type SavedFilter = {
   area: string | null; theme: string | null; cat: string | null
   done: DoneFilter; colFilters: ColFilter; sort: SortState
+  planAbDatum?: string
 }
 
 function stripHtml(s: string): string {
   return s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
+}
+
+// updated_at kommt als UTC-Zeitstempel ("YYYY-MM-DD HH:MM:SS") aus SQLite
+function formatEdited(v: unknown): string {
+  if (v == null || v === '') return ''
+  const d = new Date(String(v).replace(' ', 'T') + 'Z')
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const sameDay = d.toDateString() === now.toDateString()
+  const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  if (sameDay) return `Heute ${time}`
+  const yest = new Date(now); yest.setDate(now.getDate() - 1)
+  if (d.toDateString() === yest.toDateString()) return `Gestern ${time}`
+  return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${time}`
 }
 
 function parsePlanDate(v: unknown): Date | null {
@@ -109,8 +124,11 @@ export default function ActivitiesView(): JSX.Element {
   const [btkSel, setBtkSel] = useState<BtkSelection>({ level1: null, level2: null, level3: null })
   const [colFilters, setColFilters] = useState<ColFilter>({})
   const [sort, setSort] = useState<SortState>({ col: null, dir: 'asc' })
+  const [planAbDatum, setPlanAbDatum] = useState<string>('')
   const [openActId, setOpenActId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'table' | 'list'>('table')
+  const [recentActs, setRecentActs] = useState<Act[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initializedRef = useRef(false)
 
@@ -128,6 +146,7 @@ export default function ActivitiesView(): JSX.Element {
         setDoneFilter(saved.done ?? 'open')
         setColFilters(saved.colFilters ?? {})
         setSort(saved.sort ?? { col: null, dir: 'asc' })
+        if (saved.planAbDatum) setPlanAbDatum(saved.planAbDatum)
         if (saved.area || saved.theme || saved.cat) {
           const l1 = ar.map(a => ({
             id: Number(a.id), name: String(a.AreaName),
@@ -151,9 +170,9 @@ export default function ActivitiesView(): JSX.Element {
       area: btkSel.level1?.name ?? null,
       theme: btkSel.level2?.name ?? null,
       cat: btkSel.level3?.name ?? null,
-      done: doneFilter, colFilters, sort
+      done: doneFilter, colFilters, sort, planAbDatum
     }))
-  }, [btkSel, doneFilter, colFilters, sort])
+  }, [btkSel, doneFilter, colFilters, sort, planAbDatum])
 
   const load = useCallback(async (search: string) => {
     setLoading(true)
@@ -171,6 +190,15 @@ export default function ActivitiesView(): JSX.Element {
     debounceRef.current = setTimeout(() => load(searchText), 300)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [searchText, load])
+
+  // „Letzte"-Ansicht: die 20 zuletzt bearbeiteten Aktivitäten laden
+  const loadRecent = useCallback(async () => {
+    setRecentActs(await window.db.act.recent(20))
+  }, [])
+
+  useEffect(() => {
+    if (viewMode === 'list') loadRecent()
+  }, [viewMode, loadRecent])
 
   // BtkSelector-Daten aufbauen
   const level1Items = useMemo<BtkLevel1[]>(() => {
@@ -190,10 +218,25 @@ export default function ActivitiesView(): JSX.Element {
   const level2Items = useMemo<BtkItem[]>(() =>
     themes.map(t => ({ id: Number(t.id), name: String(t.ThemeName) })), [themes])
 
-  const level3Items = useMemo<BtkLevel3[]>(() =>
-    cats.filter(c => c.Cat).map(c => ({
-      id: Number(c.id), name: String(c.Cat), parentId: Number(c.IDTheme ?? 0)
-    })), [cats])
+  const level3Items = useMemo<BtkLevel3[]>(() => {
+    // Kategorien werden im Filter über den Namen gematcht. Mehrfach-Einträge (Legacy-Importe)
+    // zusammenfassen: existiert eine globale Variante (IDTheme=0, "Alle Themen"), wird nur diese
+    // behalten (sie erscheint ohnehin unter jedem Thema); sonst je distinktem Thema ein Eintrag.
+    const byName = new Map<string, Map<number, number>>() // name -> (parentId -> catId)
+    for (const c of cats) {
+      if (!c.Cat) continue
+      const name = String(c.Cat), parentId = Number(c.IDTheme ?? 0)
+      if (!byName.has(name)) byName.set(name, new Map())
+      const m = byName.get(name)!
+      if (!m.has(parentId)) m.set(parentId, Number(c.id))
+    }
+    const out: BtkLevel3[] = []
+    for (const [name, m] of byName) {
+      if (m.has(0)) out.push({ id: m.get(0)!, name, parentId: 0 })
+      else for (const [parentId, id] of m) out.push({ id, name, parentId })
+    }
+    return out
+  }, [cats])
 
   // Filtern + Sortieren
   const visible = useMemo(() => {
@@ -208,6 +251,10 @@ export default function ActivitiesView(): JSX.Element {
     if (colFilters.Prio2) r = r.filter(a => String(a.Prio2 ?? '') === colFilters.Prio2)
     if (colFilters.Status) r = r.filter(a => String(a.Status ?? '') === colFilters.Status)
     if (colFilters.Tage) r = r.filter(a => computeTageTxt(a) === colFilters.Tage)
+    if (planAbDatum) {
+      const cutoff = new Date(planAbDatum + 'T00:00:00')
+      r = r.filter(a => { const d = parsePlanDate(a.Pl1Beg); return d !== null && d >= cutoff })
+    }
     if (sort.col) {
       const d = sort.dir === 'asc' ? 1 : -1
       r = [...r].sort((a, b) => {
@@ -223,7 +270,7 @@ export default function ActivitiesView(): JSX.Element {
       })
     }
     return r
-  }, [acts, btkSel, colFilters, sort])
+  }, [acts, btkSel, colFilters, sort, planAbDatum])
 
   function handleSort(col: SortCol): void {
     setSort(prev => ({ col, dir: prev.col === col ? (prev.dir === 'asc' ? 'desc' : 'asc') : 'asc' }))
@@ -238,9 +285,9 @@ export default function ActivitiesView(): JSX.Element {
   function clearTheme(): void { setBtkSel(prev => ({ ...prev, level2: null, level3: null })) }
   function clearCat():   void { setBtkSel(prev => ({ ...prev, level3: null })) }
   function clearColFilter(col: keyof ColFilter): void { setColFilters(prev => { const n = { ...prev }; delete n[col]; return n }) }
-  function clearAll(): void { setBtkSel({ level1: null, level2: null, level3: null }); setColFilters({}) }
+  function clearAll(): void { setBtkSel({ level1: null, level2: null, level3: null }); setColFilters({}); setPlanAbDatum('') }
 
-  const hasFilters = !!(btkSel.level1 || btkSel.level2 || btkSel.level3 || Object.values(colFilters).some(Boolean))
+  const hasFilters = !!(btkSel.level1 || btkSel.level2 || btkSel.level3 || Object.values(colFilters).some(Boolean) || planAbDatum)
 
   const handleNew = async (): Promise<void> => {
     try {
@@ -252,6 +299,18 @@ export default function ActivitiesView(): JSX.Element {
       console.error('[handleNew] failed:', err)
       alert('Fehler beim Anlegen: ' + String(err))
     }
+  }
+
+  const handleDeleteSelected = async (): Promise<void> => {
+    const n = selectedIds.size
+    if (n === 0) return
+    const ok = window.confirm(`${n} Aktivität${n === 1 ? '' : 'en'} werden unwiderruflich gelöscht. Fortfahren?`)
+    if (!ok) return
+    for (const id of selectedIds) {
+      await window.db.act.delete(id)
+    }
+    setActs(prev => prev.filter(a => !selectedIds.has(Number(a.id))))
+    setSelectedIds(new Set())
   }
 
   const handleExportCsv = async (): Promise<void> => {
@@ -276,6 +335,21 @@ export default function ActivitiesView(): JSX.Element {
           showAllWhenEmpty
           onChange={setBtkSel}
         />
+        <div className="mt-2 pt-2 border-t border-outline-variant/40">
+          <p className="text-[10px] font-semibold text-on-surface-variant/60 uppercase tracking-wide px-1 mb-1.5">Plan ab Datum</p>
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={planAbDatum}
+              onChange={(e) => setPlanAbDatum(e.target.value)}
+              className="flex-1 text-xs px-2 py-1.5 border border-outline-variant rounded-lg bg-surface-container focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface"
+            />
+            {planAbDatum && (
+              <button onClick={() => setPlanAbDatum('')}
+                className="text-on-surface-variant/40 hover:text-error text-xs px-1">✕</button>
+            )}
+          </div>
+        </div>
         {hasFilters && (
           <button onClick={clearAll}
             className="mt-2 text-xs text-on-surface-variant/50 hover:text-error py-1.5 border border-outline-variant/40 rounded-lg transition-colors">
@@ -328,6 +402,13 @@ export default function ActivitiesView(): JSX.Element {
             className="px-3 py-1.5 text-xs rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high whitespace-nowrap">
             {t('act.csv')}
           </button>
+          {selectedIds.size > 0 && (
+            <button onClick={handleDeleteSelected}
+              className="px-3 py-1.5 text-xs rounded-lg border border-error/50 text-error hover:bg-error/10 whitespace-nowrap flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px] leading-none">delete</span>
+              {selectedIds.size} löschen
+            </button>
+          )}
         </div>
 
         {/* Aktive Filter-Chips */}
@@ -339,6 +420,7 @@ export default function ActivitiesView(): JSX.Element {
             {(Object.entries(colFilters) as [keyof ColFilter, string | undefined][]).map(([col, val]) =>
               val ? <FilterChip key={col} label={`${col}: ${val}`} onClear={() => clearColFilter(col)} /> : null
             )}
+            {planAbDatum && <FilterChip label={`Plan ab: ${planAbDatum}`} onClear={() => setPlanAbDatum('')} />}
           </div>
         )}
 
@@ -346,15 +428,20 @@ export default function ActivitiesView(): JSX.Element {
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="p-8 text-on-surface-variant/60 text-sm">{t('act.searching')}</div>
-          ) : visible.length === 0 ? (
-            <div className="p-8 text-on-surface-variant/60 text-sm">
-              {searchText ? t('act.noResults', { search: searchText }) : t('act.noActivities')}
-            </div>
           ) : viewMode === 'list' ? (
+            recentActs.length === 0 ? (
+              <div className="p-8 text-on-surface-variant/60 text-sm">{t('act.noActivities')}</div>
+            ) : (
             <div className="divide-y divide-outline-variant/40">
-              {visible.map((act) => (
-                <button key={act.id as number} onClick={() => setOpenActId(act.id as number)}
-                  className={`w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-primary/5 transition-colors ${Number(act.Sdone) === 1 ? 'opacity-40' : ''}`}>
+              <div className="px-4 py-2 text-[11px] font-semibold text-on-surface-variant/60 uppercase tracking-wide bg-surface-container/30 border-b border-outline-variant/40">
+                Zuletzt bearbeitet — Doppelklick zum Öffnen
+              </div>
+              {recentActs.map((act, idx) => {
+                const id = Number(act.id)
+                return (
+                <div key={id}
+                  onDoubleClick={() => setOpenActId(id)}
+                  className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-primary/5 transition-colors ${idx % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/40'} ${Number(act.Sdone) === 1 ? 'opacity-40' : ''}`}>
                   <div className="flex-1 min-w-0">
                     <div className="truncate text-sm font-medium text-on-surface" title={String(act.Title ?? '')}>{String(act.Title ?? '')}</div>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -362,21 +449,31 @@ export default function ActivitiesView(): JSX.Element {
                       {act.ThemeName && <span className="text-xs text-on-surface-variant/40">· {String(act.ThemeName)}</span>}
                     </div>
                   </div>
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    {act.Prio1 && <span className="text-xs tabular-nums text-on-surface-variant/60">P{String(act.Prio1)}</span>}
-                    {act.Prio2 && <span className="text-xs tabular-nums text-on-surface-variant/40">·{String(act.Prio2)}</span>}
+                  <div className="flex-shrink-0 flex items-center gap-3">
                     {act.Status && (
                       <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusColor(act.Status)}`}>{String(act.Status)}</span>
                     )}
-                    <span className={`text-xs tabular-nums w-8 text-right ${tageColorCls(act)}`}>{computeTageTxt(act)}</span>
+                    <span className="text-xs tabular-nums text-on-surface-variant/70 whitespace-nowrap w-28 text-right">{formatEdited(act.updated_at)}</span>
                   </div>
-                </button>
-              ))}
+                </div>
+                )
+              })}
+            </div>
+            )
+          ) : visible.length === 0 ? (
+            <div className="p-8 text-on-surface-variant/60 text-sm">
+              {searchText ? t('act.noResults', { search: searchText }) : t('act.noActivities')}
             </div>
           ) : (
             <table className="w-full text-sm border-collapse">
               <thead className="sticky top-0 bg-surface-container-low border-b border-outline-variant z-10">
                 <tr>
+                  <th className="px-2 py-2 w-8">
+                    <input type="checkbox"
+                      className="w-3.5 h-3.5 rounded cursor-pointer"
+                      checked={visible.length > 0 && visible.every(a => selectedIds.has(Number(a.id)))}
+                      onChange={(e) => setSelectedIds(e.target.checked ? new Set(visible.map(a => Number(a.id))) : new Set())} />
+                  </th>
                   <SortTh col="Title"  label="Titel"  sort={sort} onSort={handleSort} className="text-left" />
                   <SortTh col="Prio1"  label="P1"     sort={sort} onSort={handleSort} className="text-left w-12" />
                   <SortTh col="Prio2"  label="P2"     sort={sort} onSort={handleSort} className="text-left w-12" />
@@ -385,10 +482,22 @@ export default function ActivitiesView(): JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((act, idx) => (
-                  <tr key={act.id as number}
-                    className={`border-b border-outline-variant/40 cursor-pointer hover:bg-primary/5 transition-colors ${idx % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/40'} ${Number(act.Sdone) === 1 ? 'opacity-40' : ''}`}
-                    onDoubleClick={() => setOpenActId(act.id as number)}>
+                {visible.map((act, idx) => {
+                  const id = Number(act.id)
+                  const sel = selectedIds.has(id)
+                  return (
+                  <tr key={id}
+                    className={`border-b border-outline-variant/40 cursor-pointer hover:bg-primary/5 transition-colors ${sel ? 'bg-primary/8' : idx % 2 === 0 ? 'bg-surface-container' : 'bg-surface-container-low/40'} ${Number(act.Sdone) === 1 ? 'opacity-40' : ''}`}
+                    onDoubleClick={() => setOpenActId(id)}>
+                    <td className="px-2 py-1.5 w-8" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" className="w-3.5 h-3.5 rounded cursor-pointer"
+                        checked={sel}
+                        onChange={(e) => setSelectedIds(prev => {
+                          const n = new Set(prev)
+                          e.target.checked ? n.add(id) : n.delete(id)
+                          return n
+                        })} />
+                    </td>
                     <td className="px-3 py-1.5 max-w-0">
                       <div className="truncate font-medium text-on-surface" title={String(act.Title ?? '')}>{String(act.Title ?? '')}</div>
                       {act.Com && stripHtml(String(act.Com)) && (
@@ -414,7 +523,8 @@ export default function ActivitiesView(): JSX.Element {
                       {computeTageTxt(act)}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -428,6 +538,12 @@ export default function ActivitiesView(): JSX.Element {
               const exists = prev.some((a) => a.id === updated.id)
               return exists ? prev.map((a) => (a.id === updated.id ? updated : a)) : [updated, ...prev]
             })
+            if (viewMode === 'list') loadRecent()
+            setOpenActId(null)
+          }}
+          onDeleted={(id) => {
+            setActs((prev) => prev.filter((a) => Number(a.id) !== id))
+            if (viewMode === 'list') loadRecent()
             setOpenActId(null)
           }} />
       )}

@@ -70,7 +70,7 @@
     --fp-secondary-container:       217 125 84;     /* #d97d54 Terracotta Light */
     --fp-on-secondary-container:    255 255 255;
     --fp-secondary-fixed:           255 218 213;
-    --fp-secondary-fixed-dim:       255 180 169;
+    --fp-secondary-fixed-dim:       130 50 25;       /* #823219 dark Terracotta — readable on light parchment */
     --fp-on-secondary-fixed:        65 0 1;
     --fp-on-secondary-fixed-variant:147 0 4;
     --fp-tertiary:                  92 67 0;        /* #5c4300 Olive-Gold */
@@ -121,7 +121,7 @@
     --fp-secondary-container:       239 68 68;
     --fp-on-secondary-container:    255 255 255;
     --fp-secondary-fixed:           254 202 202;
-    --fp-secondary-fixed-dim:       252 165 165;
+    --fp-secondary-fixed-dim:       153 27 27;       /* dark red — readable on light background */
     --fp-on-secondary-fixed:        69 10 10;
     --fp-on-secondary-fixed-variant:153 27 27;
     --fp-tertiary:                  180 83 9;
@@ -170,6 +170,27 @@
 }
 
 @layer components {
+  /* Datums-Icon (Kalender-Picker) — dezent, aber sichtbar im Feld-Hintergrund.
+     Dunkel-Theme (Standard): aufgehellt; Hell-Themes: leicht gedämpft. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+    opacity: 0.55;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  input[type="date"]:hover::-webkit-calendar-picker-indicator {
+    opacity: 0.9;
+  }
+  :root[data-theme="erdfarben"] input[type="date"]::-webkit-calendar-picker-indicator,
+  :root[data-theme="tactile-precision"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
+    opacity: 0.5;
+  }
+  :root[data-theme="erdfarben"] input[type="date"]:hover::-webkit-calendar-picker-indicator,
+  :root[data-theme="tactile-precision"] input[type="date"]:hover::-webkit-calendar-picker-indicator {
+    opacity: 0.85;
+  }
+
   .glass-card {
     background: rgba(24, 28, 35, 0.4);
     backdrop-filter: blur(16px);

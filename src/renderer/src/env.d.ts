@@ -9,6 +9,7 @@ interface DbApi {
     create:  (data: Row)             => Promise<{ id: number | bigint }>
     update:  (id: number, data: Row) => Promise<{ ok: boolean }>
     delete:  (id: number)            => Promise<{ ok: boolean }>
+    recent:  (limit?: number)        => Promise<Row[]>
   }
   tel: {
     getAll:               (search?: string)   => Promise<Row[]>
@@ -141,7 +142,7 @@ interface DbApi {
     update:      (id: number, data: Row)                 => Promise<{ ok: boolean }>
     delete:      (id: number)                            => Promise<{ ok: boolean }>
     open:        (url: string, linkType: string)         => Promise<{ ok: boolean }>
-    pickPath:    ()                                      => Promise<{ path: string | null }>
+    pickPath:    (opts?: { defaultPath?: string; mode?: 'file' | 'directory' | 'both' }) => Promise<{ path: string | null }>
   }
   planvariant: {
     getAll:   ()                               => Promise<Row[]>
@@ -177,6 +178,16 @@ interface DbApi {
     connect:     () => Promise<{ ok?: boolean; email?: string; error?: string }>
     disconnect:  () => Promise<{ ok: boolean }>
     sync:        () => Promise<{ count?: number; pushed?: number; error?: string }>
+  }
+  cloud: {
+    authStatus:     () => Promise<{ configured: boolean; loggedIn: boolean; email: string }>
+    login:          (email: string, password: string) => Promise<{ ok?: boolean; email?: string; error?: string }>
+    logout:         () => Promise<{ ok: boolean }>
+    pushRefData:    () => Promise<{ ok: boolean; error?: string }>
+    pushFcmRules:   () => Promise<{ ok: boolean; count?: number; error?: string }>
+    pushActivities: () => Promise<{ ok: boolean; pushed?: number; created?: number; updated?: number; error?: string }>
+    pull:           () => Promise<{ ok: boolean; imported?: number; created?: number; error?: string }>
+    syncAll:        () => Promise<{ ok?: boolean; pushed?: number; pulled?: number; created?: number; updated?: number; error?: string }>
   }
   cal: {
     authStatus: () => Promise<{ configured: boolean; user: string }>

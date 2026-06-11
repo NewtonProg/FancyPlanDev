@@ -21,6 +21,33 @@ const COLORS = [
 
 const SIZES = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24]
 
+const FONTS = [
+  { label: 'Standard',        v: '' },
+  { label: 'Arial',           v: 'Arial, sans-serif' },
+  { label: 'Calibri',         v: 'Calibri, sans-serif' },
+  { label: 'Segoe UI',        v: '"Segoe UI", sans-serif' },
+  { label: 'Tahoma',          v: 'Tahoma, sans-serif' },
+  { label: 'Verdana',         v: 'Verdana, sans-serif' },
+  { label: 'Times New Roman', v: '"Times New Roman", serif' },
+  { label: 'Georgia',         v: 'Georgia, serif' },
+  { label: 'Courier New',     v: '"Courier New", monospace' },
+  { label: 'Comic Sans MS',   v: '"Comic Sans MS", cursive' },
+]
+
+// Hintergrund-/Markierungsfarben (Highlight)
+const BG_COLORS = [
+  { label: 'Keine',     v: 'transparent' },
+  { label: 'Gelb',      v: '#fff59d' },
+  { label: 'Grün',      v: '#c5e1a5' },
+  { label: 'Blau',      v: '#90caf9' },
+  { label: 'Pink',      v: '#f48fb1' },
+  { label: 'Orange',    v: '#ffcc80' },
+  { label: 'Lila',      v: '#ce93d8' },
+  { label: 'Grau',      v: '#cfd8dc' },
+  { label: 'Rot',       v: '#ef9a9a' },
+  { label: 'Türkis',    v: '#80deea' },
+]
+
 const editorCls =
   'w-full border border-outline-variant rounded-lg px-2.5 py-1.5 bg-surface-container ' +
   'focus:outline-none focus:ring-1 focus:ring-primary/40 text-on-surface text-[13px] ' +
@@ -43,6 +70,8 @@ export default function RichEditor({
 
   const [menu,      setMenu]      = useState<MenuPos | null>(null)
   const [showSizes, setShowSizes] = useState(false)
+  const [showFonts, setShowFonts] = useState(false)
+  const [showBg,    setShowBg]    = useState(false)
   const [emoji,     setEmoji]     = useState('')
   const [isEmpty,   setIsEmpty]   = useState(!value)
 
@@ -73,7 +102,7 @@ export default function RichEditor({
     function onDown(e: MouseEvent): void {
       const t = e.target as HTMLElement
       if (!t.closest('[data-richmenu]')) {
-        setMenu(null); setShowSizes(false); setEmoji('')
+        setMenu(null); setShowSizes(false); setShowFonts(false); setShowBg(false); setEmoji('')
       }
     }
     document.addEventListener('mousedown', onDown)
@@ -104,7 +133,7 @@ export default function RichEditor({
     e.preventDefault()
     saveRange()
     setMenu({ x: e.clientX, y: e.clientY })
-    setShowSizes(false)
+    setShowSizes(false); setShowFonts(false); setShowBg(false)
     setEmoji('')
   }
 
@@ -150,6 +179,42 @@ export default function RichEditor({
     range.insertNode(span)
     notify()
     setMenu(null); setShowSizes(false)
+  }
+
+  function applyFontFamily(font: string): void {
+    restoreRange()
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const range = sel.getRangeAt(0)
+    if (range.collapsed) return
+    const span = document.createElement('span')
+    span.style.fontFamily = font || 'inherit'
+    const frag = range.extractContents()
+    frag.querySelectorAll<HTMLElement>('[style]').forEach(el => {
+      el.style.fontFamily = ''
+    })
+    span.appendChild(frag)
+    range.insertNode(span)
+    notify()
+    setMenu(null); setShowFonts(false)
+  }
+
+  function applyBgColor(color: string): void {
+    restoreRange()
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const range = sel.getRangeAt(0)
+    if (range.collapsed) return
+    const span = document.createElement('span')
+    span.style.backgroundColor = color === 'transparent' ? 'transparent' : color
+    const frag = range.extractContents()
+    frag.querySelectorAll<HTMLElement>('[style]').forEach(el => {
+      el.style.backgroundColor = ''
+    })
+    span.appendChild(frag)
+    range.insertNode(span)
+    notify()
+    setMenu(null); setShowBg(false)
   }
 
   function insertLink(): void {
@@ -234,7 +299,7 @@ export default function RichEditor({
 
   const minH = `${rows * 1.6 + 0.4}em`
 
-  const menuTop  = Math.min((menu?.y ?? 0), window.innerHeight - 420)
+  const menuTop  = Math.max(8, Math.min((menu?.y ?? 0), window.innerHeight - 540))
   const menuLeft = Math.min((menu?.x ?? 0), window.innerWidth  - 230)
 
   return (
@@ -301,7 +366,59 @@ export default function RichEditor({
           </div>
 
           <hr className="border-outline-variant/40 my-1" />
-          <MBtn onClick={() => setShowSizes(s => !s)}>
+          <MBtn onClick={() => { setShowBg(b => !b); setShowFonts(false); setShowSizes(false) }}>
+            <span className="font-mono" style={{ background: '#fff59d', color: '#000', padding: '0 2px', borderRadius: 2 }}>ab</span> Hintergrundfarbe {showBg ? '▲' : '▼'}
+          </MBtn>
+          {showBg && (
+          <div className="flex flex-wrap gap-1 px-3 pb-1.5">
+            {BG_COLORS.map((c) => (
+              <button
+                key={c.v}
+                title={c.label}
+                onClick={() => applyBgColor(c.v)}
+                className={
+                  'w-5 h-5 rounded border border-outline-variant/50 hover:scale-110 transition-transform ' +
+                  (c.v === 'transparent' ? 'relative overflow-hidden' : '')
+                }
+                style={{ background: c.v === 'transparent' ? 'var(--fp-surface-container, #fff)' : c.v }}
+              >
+                {c.v === 'transparent' && (
+                  <span className="absolute inset-0 block" style={{ background: 'linear-gradient(to top left, transparent 45%, #e53935 47%, #e53935 53%, transparent 55%)' }} />
+                )}
+              </button>
+            ))}
+            <label title="Eigene Hintergrundfarbe" className="w-5 h-5 rounded border border-outline-variant/50 overflow-hidden cursor-pointer hover:scale-110 transition-transform">
+              <input
+                type="color"
+                className="opacity-0 w-8 h-8 -ml-1.5 -mt-1.5 cursor-pointer"
+                onChange={(e) => { saveRange(); applyBgColor(e.target.value) }}
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            </label>
+          </div>
+          )}
+
+          <hr className="border-outline-variant/40 my-1" />
+          <MBtn onClick={() => { setShowFonts(f => !f); setShowSizes(false); setShowBg(false) }}>
+            <span className="font-mono">Aa</span> Schriftart {showFonts ? '▲' : '▼'}
+          </MBtn>
+          {showFonts && (
+            <div className="flex flex-col px-1.5 pb-1.5 max-h-44 overflow-y-auto">
+              {FONTS.map((f) => (
+                <button
+                  key={f.label}
+                  onClick={() => applyFontFamily(f.v)}
+                  className="text-left px-1.5 py-1 text-[12px] rounded text-on-surface hover:bg-surface-container-high"
+                  style={{ fontFamily: f.v || 'inherit' }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <hr className="border-outline-variant/40 my-1" />
+          <MBtn onClick={() => { setShowSizes(s => !s); setShowFonts(false); setShowBg(false) }}>
             <span className="font-mono">A↑</span> Schriftgröße {showSizes ? '▲' : '▼'}
           </MBtn>
           {showSizes && (
